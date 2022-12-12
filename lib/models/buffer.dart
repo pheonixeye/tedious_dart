@@ -71,6 +71,13 @@ class Buffer {
     _data = ByteData.view(_list.buffer);
   }
 
+  Buffer.fromString(String data, String? encoding)
+      : _list = base64Decode(data),
+        log = Logger('Buffer') {
+    _list.setRange(0, list.length, _list);
+    _data = ByteData.view(_list.buffer);
+  }
+
   /// Returns true if more data can be read from the buffer, false otherwise.
   bool canReadMore() => _readPos < _list.lengthInBytes;
 

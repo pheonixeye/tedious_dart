@@ -1,4 +1,5 @@
 import 'package:tedious_dart/always_encrypted/types.dart';
+import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/buffer.dart';
 
 class Parameter {

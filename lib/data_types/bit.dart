@@ -1,17 +1,16 @@
-// ignore_for_file: constant_identifier_names, non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names
 
+import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/buffer.dart';
 import 'package:tedious_dart/models/data_types.dart';
-import 'package:tedious_dart/models/errors.dart';
-import 'package:tedious_dart/src/tracking_buffer/tracking_buffer.dart';
 
-final DATA_LENGTH = Buffer(0x08);
+final DATA_LENGTH = Buffer(0x01);
 final NULL_LENGTH = Buffer(0x00);
 
-class BigInt extends DataType {
+class Bit extends DataType {
   @override
   String declaration(Parameter parameter) {
-    return 'bigint';
+    return 'bit';
   }
 
   @override
@@ -21,9 +20,7 @@ class BigInt extends DataType {
       return;
     }
 
-    var buffer = WritableTrackingBuffer(initialSize: 8);
-    buffer.writeInt64LE(Number(parameter.value));
-    yield buffer.data!;
+    yield parameter.value ? Buffer.fromList([0x01]) : Buffer.fromList([0x00]);
   }
 
   @override
@@ -37,17 +34,17 @@ class BigInt extends DataType {
 
   @override
   Buffer generateTypeInfo(ParameterData parameter, options) {
-    return Buffer.fromList([IntN.id, 0x08]);
+    return Buffer.fromList([BitN.id, 0x01]);
   }
 
   @override
   bool? get hasTableName => throw UnimplementedError();
 
   @override
-  int get id => 0x7f;
+  int get id => 0x32;
 
   @override
-  String get name => 'BigInt';
+  String get name => 'Bit';
 
   @override
   int? resolveLength(Parameter parameter) {
@@ -65,37 +62,16 @@ class BigInt extends DataType {
   }
 
   @override
-  String get type => 'INT8';
+  String get type => 'BIT';
 
   @override
-  validate(value, collation) {
+  validate(value, Collation? collation) {
     if (value == null) {
       return null;
     }
-
-    if (value.runtimeType != num) {
-      value = Number(value);
-    }
-
-    if (value.isNaN()) {
-      throw MTypeError('Invalid number.');
-    }
-
-    if (value < Number.MIN_SAFE_INTEGER || value > Number.MAX_SAFE_INTEGER) {
-      throw MTypeError(
-          'Value must be between ${Number.MIN_SAFE_INTEGER} and ${Number.MAX_SAFE_INTEGER}, inclusive.  For smaller or bigger numbers, use VarChar type.');
-    }
-
-    return value;
-  }
-}
-
-extension IsNaN on dynamic {
-  bool isNaN() {
-    try {
-      this as num;
+    if (value) {
       return true;
-    } catch (e) {
+    } else {
       return false;
     }
   }
