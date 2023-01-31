@@ -18,7 +18,7 @@ enum TYPE {
   const TYPE(this.value);
 }
 
-WritableTrackingBuffer exportToTrackingBuffer({
+WritableTrackingBuffer writeToTrackingBuffer({
   required WritableTrackingBuffer buffer,
   required Uint8List txnDescriptor,
   required int outstandingRequestCount,
