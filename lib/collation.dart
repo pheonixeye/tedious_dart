@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names, prefer_initializing_formals, unnecessary_this, duplicate_ignore
 
-import 'package:tedious_dart/models/buffer.dart';
+import 'package:node_interop/buffer.dart';
+import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
 
 enum CollationEncoding {
   utf_8('utf-8'),
@@ -374,7 +375,7 @@ class Collation {
       return this.buffer!;
     }
 
-    this.buffer = Buffer.fromList([5]);
+    this.buffer = Buffer.from([5]);
 
     this.buffer![0] = this.lcid & 0xFF;
     this.buffer![1] = (this.lcid >>> 8) & 0xFF;

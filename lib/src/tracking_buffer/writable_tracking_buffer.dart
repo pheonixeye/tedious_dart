@@ -1,15 +1,17 @@
 // ignore_for_file: constant_identifier_names, non_constant_identifier_names, unnecessary_this, library_prefixes
 
-import 'dart:typed_data';
 import 'dart:math' as Math;
-import 'package:tedious_dart/models/buffer.dart';
+import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/models/buffer_encoding.dart';
+// ignore: unused_import
+import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
+import 'package:tedious_dart/extensions/write_big_int64.dart';
 
 const SHIFT_LEFT_32 = (1 << 16) * (1 << 16);
 const SHIFT_RIGHT_32 = 1 / SHIFT_LEFT_32;
 final UNKNOWN_PLP_LEN =
-    Buffer.fromList([0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
-final ZERO_LENGTH_BUFFER = Buffer.fromList([0]);
+    Buffer.from([0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+final ZERO_LENGTH_BUFFER = Buffer.from([0]);
 
 class WritableTrackingBuffer {
   int initialSize;
@@ -27,7 +29,7 @@ class WritableTrackingBuffer {
     initialSize = initialSize;
     encoding = encoding ?? BufferEncoding.ucs2.type;
     doubleSizeGrowth = doubleSizeGrowth ?? false;
-    buffer = Buffer(this.initialSize);
+    buffer = Buffer.alloc(this.initialSize, 0);
     compositeBuffer = ZERO_LENGTH_BUFFER;
     position = 0;
   }
@@ -37,10 +39,10 @@ class WritableTrackingBuffer {
     return this.compositeBuffer;
   }
 
-  copyFrom(Uint8List buffer) {
+  copyFrom(Buffer buffer) {
     var length = buffer.length;
     this.makeRoomFor(length);
-    buffer.insertAll(this.position.toInt(), this.buffer as Iterable<int>);
+    buffer.copy(this.buffer, this.position);
     this.position += length;
   }
 
@@ -59,11 +61,9 @@ class WritableTrackingBuffer {
   }
 
   newBuffer(int size) {
-    final buffer = this.buffer!.slice(size, 0, this.position);
-    this.compositeBuffer = buffer.concat(
-        [this.compositeBuffer!.list, buffer.list] as Uint8List,
-        (this.compositeBuffer!.length + buffer.length));
-    this.buffer = size == 0 ? ZERO_LENGTH_BUFFER : Buffer(0);
+    final _buffer = this.buffer!.slice(0, this.position);
+    this.compositeBuffer = Buffer.concat([this.compositeBuffer!, _buffer]);
+    this.buffer = size == 0 ? ZERO_LENGTH_BUFFER : Buffer.alloc(0);
     this.position = 0;
   }
 
@@ -195,11 +195,12 @@ class WritableTrackingBuffer {
   writeString(String value, String? encoding) {
     encoding ??= this.encoding;
 
-    final length = Buffer.byteLength(value, encoding);
+    final length = Buffer.byteLength(value, encoding).length;
     this.makeRoomFor(length);
 
     // $FlowFixMe https://github.com/facebook/flow/pull/5398
-    this.buffer!.write(value, this.position, encoding);
+    //!!!!!!!!!!!!!!!!!!!//TODO: CHECK IMPLEMENTATION
+    this.buffer!.write(value, this.position, length, encoding ?? 'utf-8');
     this.position += length;
   }
 
@@ -230,7 +231,7 @@ class WritableTrackingBuffer {
       length = value.length;
     } else {
       value = value.toString();
-      length = Buffer.byteLength(value, encoding);
+      length = Buffer.byteLength(value, encoding).length;
     }
     this.writeUInt16LE(length);
     //?
@@ -239,7 +240,7 @@ class WritableTrackingBuffer {
     } else {
       this.makeRoomFor(length);
       // $FlowFixMe https://github.com/facebook/flow/pull/5398
-      this.buffer!.write(value, this.position, encoding);
+      this.buffer!.write(value, this.position, length, encoding ?? 'utf-8');
       this.position += length;
     }
   }
@@ -252,7 +253,7 @@ class WritableTrackingBuffer {
       length = value.length;
     } else {
       value = value.toString();
-      length = Buffer.byteLength(value, encoding);
+      length = Buffer.byteLength(value, encoding).length;
     }
 
     // Length of all chunks.
@@ -268,7 +269,7 @@ class WritableTrackingBuffer {
         this.writeBuffer(value);
       } else {
         this.makeRoomFor(length);
-        this.buffer!.write(value, this.position, encoding);
+        this.buffer!.write(value, this.position, length, encoding ?? 'utf-8');
         this.position += length;
       }
     }

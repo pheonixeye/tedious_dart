@@ -1,10 +1,11 @@
 // ignore_for_file: non_constant_identifier_names, unnecessary_this
 
-import 'package:tedious_dart/models/buffer.dart';
+import 'package:charset_converter/charset_converter.dart';
+import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/data_types.dart';
 
-final NULL_LENGTH = Buffer.fromList([0xFF, 0xFF]);
+final NULL_LENGTH = Buffer.from([0xFF, 0xFF]);
 
 class Char extends DataType {
   int maximumLength;
@@ -39,7 +40,7 @@ class Char extends DataType {
       return;
     }
 
-    yield Buffer.fromString(parameter.value, 'ascii');
+    yield Buffer.from(parameter.value, 'ascii');
   }
 
   @override
@@ -50,34 +51,31 @@ class Char extends DataType {
       return NULL_LENGTH;
     }
 
-    final buffer = Buffer(2);
+    final buffer = Buffer.alloc(2);
     buffer.writeUInt16LE(value.length, 0);
     return buffer;
   }
 
   @override
   Buffer generateTypeInfo(ParameterData parameter, options) {
-    final buffer = Buffer(8);
-    buffer.writeUInt8(this.id, 0);
+    final buffer = Buffer.alloc(8);
+    buffer.writeUInt8(id, 0);
     buffer.writeUInt16LE(parameter.length!, 1);
 
     if (parameter.collation != null) {
-      //TODO: copy method implementation??
+      parameter.collation!.toBuffer().copy(buffer, 3, 0, 5); //! original
 
-      // parameter.collation!.toBuffer().copy(buffer, 3, 0, 5);//! original
-
-      parameter.collation!.toBuffer().copy(buffer, 0, 5);
+      // parameter.collation!.toBuffer().copy(buffer, 0, 5);
     }
 
     return buffer;
   }
 
   @override
-  // TODO: implement hasTableName
   bool? get hasTableName => throw UnimplementedError();
 
   @override
-  int get id => 0xAF;
+  static int get id => 0xAF;
 
   @override
   String get name => 'Char';
@@ -97,13 +95,11 @@ class Char extends DataType {
 
   @override
   num? resolvePrecision(Parameter parameter) {
-    // TODO: implement resolvePrecision
     throw UnimplementedError();
   }
 
   @override
   num? resolveScale(Parameter parameter) {
-    // TODO: implement resolveScale
     throw UnimplementedError();
   }
 
@@ -111,8 +107,27 @@ class Char extends DataType {
   String get type => 'BIGCHAR';
 
   @override
-  validate(value, Collation? collation) {
-    // TODO: implement validate
-    throw UnimplementedError();
+  validate(value, Collation? collation) async {
+    if (value == null) {
+      return null;
+    }
+
+    if (value.runtimeType != String) {
+      throw ArgumentError('Invalid string.');
+    }
+
+    if (collation == null) {
+      throw ArgumentError(
+          'No collation was set by the server for the current connection.');
+    }
+
+    if (collation.codepage == null) {
+      throw ArgumentError(
+          'The collation set by the server has no associated encoding.');
+    }
+
+    final result = await CharsetConverter.encode(collation.codepage!, value);
+
+    return result;
   }
 }

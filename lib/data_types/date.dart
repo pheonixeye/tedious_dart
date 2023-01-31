@@ -1,17 +1,18 @@
-// ignore_for_file: constant_identifier_names, non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names
 
 import 'package:node_interop/buffer.dart';
+import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/data_types.dart';
-import 'package:tedious_dart/models/errors.dart';
-import 'package:tedious_dart/src/tracking_buffer/writable_tracking_buffer.dart';
 
-final DATA_LENGTH = Buffer.alloc(0x08);
+late final DateTime? globalDate;
+final EPOCH_DATE = DateTime(1, 1, 1).toLocal();
 final NULL_LENGTH = Buffer.alloc(0x00);
+final DATA_LENGTH = Buffer.alloc(0x03);
 
-class BigInt extends DataType {
+class Date extends DataType {
   @override
   String declaration(Parameter parameter) {
-    return 'bigint';
+    return 'date';
   }
 
   @override
@@ -21,9 +22,20 @@ class BigInt extends DataType {
       return;
     }
 
-    var buffer = WritableTrackingBuffer(initialSize: 8);
-    buffer.writeInt64LE(Number(parameter.value));
-    yield buffer.data!;
+    final value =
+        parameter.value as DateTime; // Temporary solution. Remove 'any' later.
+
+    DateTime date;
+    if (options.useUTC) {
+      date = DateTime(value.year, value.month + 1, value.day).toUtc().toLocal();
+    } else {
+      date = DateTime(value.year, value.month + 1, value.day).toLocal();
+    }
+
+    var days = EPOCH_DATE.difference(date);
+    var buffer = Buffer.alloc(3);
+    buffer.writeUIntLE(days.inDays, 0, 3);
+    yield buffer;
   }
 
   @override
@@ -37,17 +49,17 @@ class BigInt extends DataType {
 
   @override
   Buffer generateTypeInfo(ParameterData parameter, options) {
-    return Buffer.from([IntN.id, 0x08]);
+    return Buffer.alloc(id);
   }
 
   @override
   bool? get hasTableName => throw UnimplementedError();
 
   @override
-  static int get id => 0x7f;
+  static int get id => 0x28;
 
   @override
-  String get name => 'BigInt';
+  String get name => 'Date';
 
   @override
   int? resolveLength(Parameter parameter) {
@@ -65,38 +77,22 @@ class BigInt extends DataType {
   }
 
   @override
-  String get type => 'INT8';
+  String get type => 'DATEN';
 
   @override
-  validate(value, collation) {
+  validate(value, Collation? collation) {
     if (value == null) {
       return null;
     }
 
-    if (value.runtimeType != num) {
-      value = Number(value);
+    if (!(value.runtimeType == DateTime)) {
+      value = DateTime.parse(value);
     }
 
     if (value.isNaN()) {
-      throw MTypeError('Invalid number.');
-    }
-
-    if (value < Number.MIN_SAFE_INTEGER || value > Number.MAX_SAFE_INTEGER) {
-      throw MTypeError(
-          'Value must be between ${Number.MIN_SAFE_INTEGER} and ${Number.MAX_SAFE_INTEGER}, inclusive.  For smaller or bigger numbers, use VarChar type.');
+      throw ArgumentError('Invalid date.');
     }
 
     return value;
-  }
-}
-
-extension IsNaN on dynamic {
-  bool isNaN() {
-    try {
-      this as num;
-      return true;
-    } catch (e) {
-      return false;
-    }
   }
 }

@@ -1,4 +1,4 @@
-import 'package:tedious_dart/models/buffer.dart';
+import 'package:node_interop/buffer.dart';
 
 class SymmetricKey {
   Buffer? rootKey;
@@ -13,6 +13,6 @@ class SymmetricKey {
   }
 
   zeroOutKey() {
-    rootKey = Buffer.fromList([rootKey!.length]);
+    rootKey = Buffer.alloc(rootKey!.length);
   }
 }

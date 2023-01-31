@@ -1,8 +1,7 @@
 // ignore_for_file: constant_identifier_names, unnecessary_this
 
+import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/always_encrypted/cek_entry.dart';
-
-import '../models/buffer.dart';
 
 enum SQLServerEncryptionType {
   Deterministic(1),

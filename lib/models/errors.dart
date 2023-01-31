@@ -3,9 +3,9 @@ class ConnectionError extends Error {
   bool? isTransient;
 
   ConnectionError(
-    String message,
+    String message, [
     this.code,
-  );
+  ]);
 }
 
 class RequestError extends Error {

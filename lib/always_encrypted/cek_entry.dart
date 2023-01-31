@@ -1,7 +1,7 @@
 // ignore_for_file: unnecessary_this
 
+import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
-import 'package:tedious_dart/models/buffer.dart';
 
 class CEKEntry {
   late List<EncryptionKeyInfo> columnEncryptionKeyValues;
@@ -16,7 +16,7 @@ class CEKEntry {
     databaseId = 0;
     cekId = 0;
     cekVersion = 0;
-    cekMdVersion = Buffer.fromList([0]);
+    cekMdVersion = Buffer.alloc(0);
     columnEncryptionKeyValues = [];
   }
 

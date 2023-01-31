@@ -1,11 +1,12 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/collation.dart';
-import 'package:tedious_dart/models/buffer.dart';
+import 'package:tedious_dart/data_types/bitn.dart';
 import 'package:tedious_dart/models/data_types.dart';
 
-final DATA_LENGTH = Buffer(0x01);
-final NULL_LENGTH = Buffer(0x00);
+final DATA_LENGTH = Buffer.alloc(0x01);
+final NULL_LENGTH = Buffer.alloc(0x00);
 
 class Bit extends DataType {
   @override
@@ -20,7 +21,7 @@ class Bit extends DataType {
       return;
     }
 
-    yield parameter.value ? Buffer.fromList([0x01]) : Buffer.fromList([0x00]);
+    yield parameter.value ? Buffer.from(0x01) : Buffer.from(0x00);
   }
 
   @override
@@ -34,14 +35,14 @@ class Bit extends DataType {
 
   @override
   Buffer generateTypeInfo(ParameterData parameter, options) {
-    return Buffer.fromList([BitN.id, 0x01]);
+    return Buffer.from([BitN.getId, 0x01]);
   }
 
   @override
   bool? get hasTableName => throw UnimplementedError();
 
   @override
-  int get id => 0x32;
+  static int get id => 0x32;
 
   @override
   String get name => 'Bit';

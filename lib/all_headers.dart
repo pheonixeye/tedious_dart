@@ -2,8 +2,8 @@
 
 import 'dart:typed_data';
 
-import 'package:tedious_dart/models/buffer.dart';
-import 'package:tedious_dart/src/tracking_buffer/tracking_buffer.dart';
+import 'package:node_interop/buffer.dart';
+import 'package:tedious_dart/src/tracking_buffer/writable_tracking_buffer.dart';
 
 const TXNDESCRIPTOR_HEADER_DATA_LEN = 4 + 8;
 
@@ -26,7 +26,7 @@ WritableTrackingBuffer exportToTrackingBuffer({
   buffer.writeUInt32LE(0);
   buffer.writeUInt32LE(TXNDESCRIPTOR_HEADER_LEN);
   buffer.writeUInt16LE(TYPE.TXN_DESCRIPTOR.value);
-  buffer.writeBuffer(Buffer.fromList(txnDescriptor));
+  buffer.writeBuffer(Buffer.from(txnDescriptor));
   buffer.writeUInt32LE(outstandingRequestCount);
 
   final data = buffer.data;

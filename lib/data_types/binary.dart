@@ -1,10 +1,10 @@
 // ignore_for_file: non_constant_identifier_names, unnecessary_this
 
-import 'package:tedious_dart/models/buffer.dart';
+import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'dart:math' as math;
 
-final NULL_LENGTH = Buffer.fromList([0xFF, 0xFF]);
+final NULL_LENGTH = Buffer.from([0xFF, 0xFF]);
 
 class Binary extends DataType {
   final int maximumLength;
@@ -49,15 +49,15 @@ class Binary extends DataType {
       return NULL_LENGTH;
     }
 
-    final buffer = Buffer.fromList([2]);
+    final buffer = Buffer.alloc(2);
     buffer.writeUInt16LE(parameter.length!, 0);
     return buffer;
   }
 
   @override
   Buffer generateTypeInfo(ParameterData parameter, options) {
-    final buffer = Buffer.fromList([3]);
-    buffer.writeUInt8(this.id, 0);
+    final buffer = Buffer.alloc(3);
+    buffer.writeUInt8(id, 0);
     buffer.writeUInt16LE(parameter.length!, 1);
     return buffer;
   }
@@ -66,7 +66,7 @@ class Binary extends DataType {
   bool? get hasTableName => throw UnimplementedError();
 
   @override
-  int get id => 0xAD;
+  static int get id => 0xAD;
 
   @override
   String get name => 'Binary';
