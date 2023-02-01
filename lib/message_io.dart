@@ -33,7 +33,7 @@ class MessageIO extends EventSink {
 
   late SecurePair? securePair;
 
-  late Future<Iterator<Message>> incomingMessageIterator;
+  late StreamIterator<Message> incomingMessageIterator;
 
   MessageIO(this.socket, int packetSize, this.debug) : super() {
     socket = socket;
@@ -97,9 +97,9 @@ class MessageIO extends EventSink {
   }
 
   Future<Message> readMessage() async {
-    var result = await this.incomingMessageIterator;
+    var result = this.incomingMessageIterator;
 
-    if (!result.moveNext()) {
+    if (!await result.moveNext()) {
       throw ArgumentError('unexpected end of message stream');
     }
 

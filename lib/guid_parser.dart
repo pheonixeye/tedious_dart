@@ -548,7 +548,7 @@ class GUIDParser {
     'F'
   ].map((d) => d.codeUnitAt(0)).toList();
 
-  abdo() {
+  initCHARCODEMAP() {
     for (var i = 0; i < hexDigits.length; i++) {
       Map<num, num> map = CHARCODEMAP[hexDigits[i]] = {};
       for (var j = 0; j < hexDigits.length; j++) {
@@ -607,6 +607,7 @@ class GUIDParser {
   }
 
   GUIDParser() {
-    abdo();
+    //instead of initializing by a for loop that is not in a function
+    initCHARCODEMAP();
   }
 }

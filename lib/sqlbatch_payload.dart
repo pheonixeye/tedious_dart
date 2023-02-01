@@ -1,6 +1,7 @@
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/src/tracking_buffer/writable_tracking_buffer.dart';
 import 'package:tedious_dart/all_headers.dart';
+import 'package:tedious_dart/tds_versions.dart';
 
 class SqlBatchPayload extends Iterable<Buffer> {
   String sqlText;
@@ -13,7 +14,9 @@ class SqlBatchPayload extends Iterable<Buffer> {
       required this.tdsVersion});
 
   iterate() async* {
-    if (tdsVersion == '7_2') {
+    //todo: mod "==" to ">="
+    //versions from ../tds_versions.dart
+    if (versions[tdsVersion]! >= versions['7_2']!) {
       var buffer = WritableTrackingBuffer(initialSize: 18, encoding: 'ucs2');
       const outstandingRequestCount = 1;
 

@@ -2,6 +2,7 @@
 
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/always_encrypted/cek_entry.dart';
+import 'package:tedious_dart/metadata_parser.dart';
 
 enum SQLServerEncryptionType {
   Deterministic(1),
