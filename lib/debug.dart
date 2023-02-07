@@ -1,6 +1,6 @@
 // ignore_for_file: unnecessary_this, constant_identifier_names
 
-import 'package:node_interop/events.dart';
+import 'package:events_emitter/emitters/event_emitter.dart';
 import 'package:node_interop/util.dart';
 import 'package:tedious_dart/packet.dart';
 
@@ -57,7 +57,8 @@ class Debug extends EventEmitter {
   }
 
   haveListeners() {
-    return this.listeners('debug').isNotEmpty;
+    return this.listeners.isNotEmpty;
+    // return this.listeners('debug').isNotEmpty;
   }
 
   log(String text) {

@@ -46,7 +46,6 @@ abstract class _BufferList {
 
 class BufferList extends _BufferList {
   @override
-  // ignore: overridden_fields
   dynamic initialData;
 
   BufferList(this.initialData);

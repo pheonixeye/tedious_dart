@@ -9,7 +9,7 @@ import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/node/buffer_list.dart';
 import 'package:tedious_dart/packet.dart';
 
-class IncomingMessageStream extends StreamConsumer<Message> {
+class IncomingMessageStream extends Stream<Buffer> {
   Debug debug;
   dynamic bl;
   Message? currentMessage;
@@ -91,70 +91,15 @@ class IncomingMessageStream extends StreamConsumer<Message> {
     callback!();
   }
 
-  transform(
-    Buffer chunk,
-    String encoding,
-    void Function([ConnectionError? error])? callback,
-  ) {
-    this.bl.append(chunk);
-    this.processBufferedData(callback);
+  @override
+  Stream<S> transform<S>(StreamTransformer<Buffer, S> streamTransformer) {
+    return super.transform(streamTransformer);
   }
 
   @override
-  FutureOr<void> Function()? onCancel;
-
-  @override
-  void Function()? onListen;
-
-  @override
-  void Function()? onPause;
-
-  @override
-  void Function()? onResume;
-
-  @override
-  void add(event) {
-    // TODO: implement add
-  }
-
-  @override
-  void addError(Object error, [StackTrace? stackTrace]) {
-    // TODO: implement addError
-  }
-
-  @override
-  Future addStream(Stream source, {bool? cancelOnError}) {
-    // TODO: implement addStream
+  StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
+      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
+    // TODO: implement listen
     throw UnimplementedError();
   }
-
-  @override
-  Future close() {
-    // TODO: implement close
-    throw UnimplementedError();
-  }
-
-  @override
-  // TODO: implement done
-  Future get done => throw UnimplementedError();
-
-  @override
-  // TODO: implement hasListener
-  bool get hasListener => throw UnimplementedError();
-
-  @override
-  // TODO: implement isClosed
-  bool get isClosed => throw UnimplementedError();
-
-  @override
-  // TODO: implement isPaused
-  bool get isPaused => throw UnimplementedError();
-
-  @override
-  // TODO: implement sink
-  StreamSink get sink => throw UnimplementedError();
-
-  @override
-  // TODO: implement stream
-  Stream get stream => throw UnimplementedError();
 }

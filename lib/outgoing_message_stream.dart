@@ -8,7 +8,7 @@ import 'package:tedious_dart/message.dart';
 import 'package:tedious_dart/node/buffer_list.dart';
 import 'package:tedious_dart/packet.dart';
 
-class OutgoingMessageStream implements StreamController<Message?> {
+class OutgoingMessageStream extends Stream<Message?> {
   int packetSize;
   Debug debug;
   dynamic bl;
@@ -23,13 +23,17 @@ class OutgoingMessageStream implements StreamController<Message?> {
     // When the writable side is ended, push `null`
     // to also end the readable side.
 
-    this.stream.listen(
+    this.listen(
       (event) {},
       onDone: () {
-        this.add(null);
+        _controller.sink.add(null);
       },
     );
+
+    _controller.addStream(this);
   }
+
+  final _controller = StreamController.broadcast();
 
   write(
     Message message,
@@ -40,52 +44,53 @@ class OutgoingMessageStream implements StreamController<Message?> {
     var packetNumber = 0;
 
     this.currentMessage = message;
-    this.currentMessage!.onData((Buffer data) async {
-      if (message.ignore!) {
-        return;
-      }
-      this.bl.append(data);
+    this.currentMessage!.listen(
+      (Buffer data) async {
+        if (message.ignore!) {
+          return;
+        }
+        this.bl.append(data);
 
-      while (this.bl.length > length) {
-        var data = this.bl.slice(0, length);
-        this.bl.consume(length);
+        while (this.bl.length > length) {
+          var data = this.bl.slice(0, length);
+          this.bl.consume(length);
+
+          //  Get rid of creating `Packet` instances here.
+          var packet = Packet(message.type);
+          packet.packetId(packetNumber += 1);
+          packet.resetConnection(message.resetConnection);
+          packet.addData(data);
+
+          this.debug.packet(Direction.Sent, packet);
+          this.debug.data(packet);
+
+          if (await this.contains(packet.buffer) == false) {
+            message.pause();
+          }
+        }
+      },
+      onDone: () {
+        var data = this.bl.slice();
+        this.bl.consume(data.length);
 
         //  Get rid of creating `Packet` instances here.
         var packet = Packet(message.type);
         packet.packetId(packetNumber += 1);
         packet.resetConnection(message.resetConnection);
+        packet.last(true);
+        packet.ignore(message.ignore!);
         packet.addData(data);
 
         this.debug.packet(Direction.Sent, packet);
         this.debug.data(packet);
 
-        if (await this.stream.contains(packet.buffer) == false) {
-          message.pause();
-        }
-      }
-    });
+        this._controller.sink.add(packet.buffer);
 
-    this.currentMessage!.onDone(() {
-      var data = this.bl.slice();
-      this.bl.consume(data.length);
+        this.currentMessage = null;
 
-      //  Get rid of creating `Packet` instances here.
-      var packet = Packet(message.type);
-      packet.packetId(packetNumber += 1);
-      packet.resetConnection(message.resetConnection);
-      packet.last(true);
-      packet.ignore(message.ignore!);
-      packet.addData(data);
-
-      this.debug.packet(Direction.Sent, packet);
-      this.debug.data(packet);
-
-      this.add(packet.buffer);
-
-      this.currentMessage = null;
-
-      callback();
-    });
+        callback();
+      },
+    );
   }
 
   read(int size) {
@@ -97,52 +102,13 @@ class OutgoingMessageStream implements StreamController<Message?> {
   }
 
   @override
-  FutureOr<void> Function()? onCancel;
-
-  @override
-  void Function()? onListen;
-
-  @override
-  void Function()? onPause;
-
-  @override
-  void Function()? onResume;
-
-  @override
-  void add(event) {
-    this.add(event);
+  StreamSubscription<Message?> listen(void Function(Message? event)? onData,
+      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
+    return this.listen(
+      onData,
+      onDone: onDone,
+      onError: onError,
+      cancelOnError: cancelOnError,
+    );
   }
-
-  @override
-  void addError(Object error, [StackTrace? stackTrace]) {
-    this.addError(error, stackTrace);
-  }
-
-  @override
-  Future addStream(Stream source, {bool? cancelOnError}) async {
-    await this.addStream(source, cancelOnError: cancelOnError);
-  }
-
-  @override
-  Future close() async {
-    await this.close();
-  }
-
-  @override
-  Future get done async => await this.done;
-
-  @override
-  bool get hasListener => throw UnimplementedError();
-
-  @override
-  bool get isClosed => throw UnimplementedError();
-
-  @override
-  bool get isPaused => throw UnimplementedError();
-
-  @override
-  StreamSink<Message?> get sink => this.sink;
-
-  @override
-  Stream<Message?> get stream => this.stream;
 }

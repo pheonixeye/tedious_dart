@@ -6,6 +6,7 @@ import 'package:tedious_dart/always_encrypted/aead_aes_256_cbc_hmac_encryption_k
 import 'package:tedious_dart/always_encrypted/symmetric_key.dart';
 import 'package:tedious_dart/always_encrypted/symmetric_key_cache.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
+import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/errors.dart';
 
 String validateAndGetEncryptionAlgorithmName(
@@ -21,7 +22,7 @@ String validateAndGetEncryptionAlgorithmName(
 
 Future<Buffer> encryptWithKey(
     Buffer plaintext, CryptoMetadata md, ConnectionOptions options) async {
-  if (!options.trustedServerNameAE) {
+  if (options.trustedServerNameAE == null) {
     throw MTypeError('Server name should not be null in EncryptWithKey');
   }
 
@@ -44,7 +45,7 @@ Future<Buffer> encryptWithKey(
 
 Buffer decryptWithKey(
     Buffer cipherText, CryptoMetadata md, ConnectionOptions options) {
-  if (!options.trustedServerNameAE) {
+  if (options.trustedServerNameAE == null) {
     throw MTypeError('Server name should not be null in DecryptWithKey');
   }
 

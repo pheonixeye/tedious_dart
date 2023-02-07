@@ -3,6 +3,7 @@
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
 import 'package:tedious_dart/collation.dart';
+import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/data_types/bit.dart';
 import 'package:tedious_dart/data_types/bitn.dart';
 import 'package:tedious_dart/data_types/char.dart';
@@ -10,12 +11,12 @@ import 'package:tedious_dart/data_types/date.dart';
 import 'package:tedious_dart/data_types/bigint.dart';
 
 class Parameter {
-  late DataType type;
-  late String name;
+  DataType? type;
+  String? name;
 
   dynamic value;
 
-  late bool output;
+  bool? output;
   int? length;
   num? precision;
   num? scale;
@@ -25,6 +26,19 @@ class Parameter {
   bool? forceEncrypt;
   CryptoMetadata? cryptoMetadata;
   Buffer? encryptedVal;
+
+  Parameter(
+      {this.cryptoMetadata,
+      this.encryptedVal,
+      this.forceEncrypt,
+      this.length,
+      this.name,
+      this.nullable,
+      this.output,
+      this.precision,
+      this.scale,
+      this.type,
+      this.value});
 }
 
 class ParameterData<T> {

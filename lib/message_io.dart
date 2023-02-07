@@ -3,18 +3,18 @@
 import 'dart:async';
 import 'dart:io';
 
-// import 'package:node_interop/events.dart';
-// import 'package:node_interop/net.dart';
-// import 'package:node_interop/stream.dart';
+import 'package:events_emitter/emitters/event_emitter.dart';
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/incoming_message_stream.dart';
 import 'package:tedious_dart/message.dart';
+import 'package:tedious_dart/models/duplex.dart';
 import 'package:tedious_dart/outgoing_message_stream.dart';
 
+//!manufactured class
 class SecurePair {
-  Socket clearText;
-  Stream encrypted;
+  SecureSocket clearText;
+  Duplex encrypted;
 
   SecurePair({
     required this.clearText,
@@ -22,16 +22,16 @@ class SecurePair {
   });
 }
 
-class MessageIO extends EventSink {
+class MessageIO extends EventEmitter {
   Debug debug;
   Socket socket;
 
-  late bool tlsNegotiationComplete;
+  late bool? tlsNegotiationComplete;
 
   IncomingMessageStream? _incomingMessageStream;
   OutgoingMessageStream? outgoingMessageStream;
 
-  late SecurePair? securePair;
+  SecurePair? securePair;
 
   late StreamIterator<Message> incomingMessageIterator;
 
@@ -48,18 +48,9 @@ class MessageIO extends EventSink {
     outgoingMessageStream =
         OutgoingMessageStream(debug, packetSize: packetSize);
 
-    socket.write(_incomingMessageStream);
-    outgoingMessageStream!.addStream(socket);
+    socket.pipe(_incomingMessageStream);
+    outgoingMessageStream!.pipe(socket);
   }
-
-  @override
-  void add(event) {}
-
-  @override
-  void addError(Object error, [StackTrace? stackTrace]) {}
-
-  @override
-  void close() {}
 
   packetSize(List<int> args) {
     if (args.isNotEmpty) {
@@ -71,6 +62,8 @@ class MessageIO extends EventSink {
       this.outgoingMessageStream!.packetSize = packetSize;
     }
 
+    //!socket.setMaxSendFragments is not implemented in dart;
+    //! affects latency only ?? TODO: check if working
     // if (this.securePair != null) {
     //   this
     //       .securePair!
@@ -88,10 +81,10 @@ class MessageIO extends EventSink {
   // todo listen for 'drain' event when socket.write returns false.
   // todo implement incomplete request cancelation (2.2.1.6)
 
-  sendMessage(int packetType, Buffer? data, bool? resetConnection) {
+  sendMessage(int packetType, {Buffer? data, bool? resetConnection}) async {
     final message =
         Message(type: packetType, resetConnection: resetConnection!);
-    message.cancel();
+    await message.drain();
     this.outgoingMessageStream!.write(message, 'utf-8', ([error]) {});
     return message;
   }
@@ -102,7 +95,6 @@ class MessageIO extends EventSink {
     if (!await result.moveNext()) {
       throw ArgumentError('unexpected end of message stream');
     }
-
     return result.current;
   }
 }
