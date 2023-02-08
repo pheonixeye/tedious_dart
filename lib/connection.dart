@@ -1,4 +1,4 @@
-// ignore_for_file: constant_identifier_names, library_private_types_in_public_api
+// ignore_for_file: constant_identifier_names, library_private_types_in_public_api, unnecessary_this
 
 import 'dart:async';
 import 'dart:io';
@@ -9,14 +9,21 @@ import 'package:node_interop/buffer.dart';
 import 'package:node_interop/node_interop.dart';
 import 'package:node_interop/stream.dart';
 import 'package:tedious_dart/always_encrypted/keystore_provider_azure_key_vault.dart';
+import 'package:tedious_dart/bulk_load.dart';
+import 'package:tedious_dart/bulk_load_payload.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/message.dart';
 import 'package:tedious_dart/message_io.dart';
 import 'package:tedious_dart/metadata_parser.dart';
+import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
+import 'package:tedious_dart/models/random_bytes.dart';
 import 'package:tedious_dart/packet.dart';
 import 'package:tedious_dart/request.dart';
+import 'package:tedious_dart/rpcrequest_payload.dart';
+import 'package:tedious_dart/sqlbatch_payload.dart';
+import 'package:tedious_dart/tds_versions.dart';
 import 'package:tedious_dart/transaction.dart';
 import 'package:tedious_dart/transient_error_lookup.dart';
 
@@ -31,7 +38,8 @@ typedef RollbackTransactionCallback = void Function({Error? err});
 
 typedef ResetCallback = void Function({Error? err});
 
-typedef TransactionDoneCallback = void Function({Error? err, Map? args});
+typedef TransactionDoneCallback<T> = void Function(
+    {Error? err, T done, List<CallbackParameters<T>>? args});
 
 typedef CallbackParameters<T> = T? Function({Error? err, Map? args});
 
@@ -1437,29 +1445,660 @@ class Connection extends EventEmitter {
     this.curTransientRetryCount = 0;
     this.transientErrorLookup = TransientErrorLookup();
 
-    this.state = this.STATE['INITIALIZED'];
+    this.state = this.STATE['INITIALIZED']!;
 
-    this._cancelAfterRequestSent = () {
-      this.messageIo.sendMessage(TYPE['ATTENTION']!);
+    this._cancelAfterRequestSent = (_) {
+      this.messageIo.sendMessage(PACKETTYPE['ATTENTION']!);
       this.createCancelTimer();
     };
     //TODO! end of constructor
   }
-  //TODO! end of constructor
 
-  makeRequest(Request request, num packetType, Stream<Buffer> payload,
+  getInitialSql() {
+    List options = [];
+
+    if (this.config!.options!.enableAnsiNull == true) {
+      options.add('set ansi_nulls on');
+    } else if (this.config!.options!.enableAnsiNull == false) {
+      options.add('set ansi_nulls off');
+    }
+
+    if (this.config!.options!.enableAnsiNullDefault == true) {
+      options.add('set ansi_null_dflt_on on');
+    } else if (this.config!.options!.enableAnsiNullDefault == false) {
+      options.add('set ansi_null_dflt_on off');
+    }
+
+    if (this.config!.options!.enableAnsiPadding == true) {
+      options.add('set ansi_padding on');
+    } else if (this.config!.options!.enableAnsiPadding == false) {
+      options.add('set ansi_padding off');
+    }
+
+    if (this.config!.options!.enableAnsiWarnings == true) {
+      options.add('set ansi_warnings on');
+    } else if (this.config!.options!.enableAnsiWarnings == false) {
+      options.add('set ansi_warnings off');
+    }
+
+    if (this.config!.options!.enableArithAbort == true) {
+      options.add('set arithabort on');
+    } else if (this.config!.options!.enableArithAbort == false) {
+      options.add('set arithabort off');
+    }
+
+    if (this.config!.options!.enableConcatNullYieldsNull == true) {
+      options.add('set concat_null_yields_null on');
+    } else if (this.config!.options!.enableConcatNullYieldsNull == false) {
+      options.add('set concat_null_yields_null off');
+    }
+
+    if (this.config!.options!.enableCursorCloseOnCommit == true) {
+      options.add('set cursor_close_on_commit on');
+    } else if (this.config!.options!.enableCursorCloseOnCommit == false) {
+      options.add('set cursor_close_on_commit off');
+    }
+
+    if (this.config!.options!.datefirst != null) {
+      options.add('set datefirst ${this.config!.options!.datefirst}');
+    }
+
+    if (this.config!.options!.dateFormat != null) {
+      options.add('set dateformat ${this.config!.options!.dateFormat}');
+    }
+
+    if (this.config!.options!.enableImplicitTransactions == true) {
+      options.add('set implicit_transactions on');
+    } else if (this.config!.options!.enableImplicitTransactions == false) {
+      options.add('set implicit_transactions off');
+    }
+
+    if (this.config!.options!.language != null) {
+      options.add('set language ${this.config!.options!.language}');
+    }
+
+    if (this.config!.options!.enableNumericRoundabort == true) {
+      options.add('set numeric_roundabort on');
+    } else if (this.config!.options!.enableNumericRoundabort == false) {
+      options.add('set numeric_roundabort off');
+    }
+
+    if (this.config!.options!.enableQuotedIdentifier == true) {
+      options.add('set quoted_identifier on');
+    } else if (this.config!.options!.enableQuotedIdentifier == false) {
+      options.add('set quoted_identifier off');
+    }
+
+    if (this.config!.options!.textsize != null) {
+      options.add('set textsize ${this.config!.options!.textsize}');
+    }
+
+    if (this.config!.options!.connectionIsolationLevel != null) {
+      options.add('set transaction isolation level ${this.getIsolationLevelText(this.config!.options!.connectionIsolationLevel)}');
+    }
+
+    if (this.config!.options!.abortTransactionOnError == true) {
+      options.add('set xact_abort on');
+    } else if (this.config!.options!.abortTransactionOnError == false) {
+      options.add('set xact_abort off');
+    }
+
+    return options.join('\n');
+  }
+
+  processedInitialSql() {
+    this.clearConnectTimer();
+    this.emit('connect');
+  }
+
+  execSqlBatch(Request request) {
+    this.makeRequest(
+        request,
+        PACKETTYPE['SQL_BATCH']!,
+        SqlBatchPayload(
+          sqlText: request.sqlTextOrProcedure!,
+          txnDescriptor: this.currentTransactionDescriptor(),
+          tdsVersion: this.config!.options!.tdsVersion,
+        ));
+  }
+
+  execSql(Request request) {
+    try {
+      request.validateParameters(this.databaseCollation);
+    } catch (error) {
+      request.error = MTypeError(error.toString());
+
+      scheduleMicrotask(() {
+        this.debug.log(error.toString());
+        request.callback(error: MTypeError(error.toString()));
+      });
+
+      return;
+    }
+
+    List<Parameter> parameters = [];
+
+    parameters.add(Parameter(
+        type: DATATYPES[NVarChar.refID],
+        name: 'statement',
+        value: request.sqlTextOrProcedure,
+        output: false,
+        length: null,
+        precision: null,
+        scale: null));
+
+    if (request.parameters.isNotEmpty) {
+      parameters.add(Parameter(
+          type: DATATYPES[NVarChar.refID],
+          name: 'params',
+          value: request.makeParamsParameter(request.parameters),
+          output: false,
+          length: null,
+          precision: null,
+          scale: null));
+
+      parameters.addAll(request.parameters);
+    }
+
+    this.makeRequest(
+        request,
+        PACKETTYPE['RPC_REQUEST']!,
+        RpcRequestPayload(
+          procedure: 'sp_executesql',
+          parameters: parameters,
+          txnDescriptor: this.currentTransactionDescriptor(),
+          options: this.config!.options!,
+          collation: this.databaseCollation,
+        ));
+  }
+
+  newBulkLoad(
+      String table, dynamic callbackOrOptions, BulkLoadCallback? callback) {
+    //callbackOrOptions = BulkLoadOptions | BulkLoadCallback
+    late BulkLoadOptions options;
+
+    if (callback == null) {
+      callback = callbackOrOptions as BulkLoadCallback;
+      options = BulkLoadOptions();
+    } else {
+      options = callbackOrOptions as BulkLoadOptions;
+    }
+
+    if (options is! BulkLoadOptions) {
+      throw MTypeError('"options" argument must be an object');
+    }
+    return BulkLoad(
+      table: table,
+      collation: this.databaseCollation,
+      options: this.config!.options!,
+      bulkOptions: options.options!,
+      callback: callback,
+    );
+  }
+
+  //* something wrong or i am a genius xD
+  execBulkLoad(BulkLoad bulkLoad, dynamic rows) {
+    //* rows = AsyncIterable<unknown[] | { [columnName: string]: unknown }> | Iterable<unknown[] | { [columnName: string]: unknown }>
+    bulkLoad.executionStarted = true;
+
+    if (rows != null) {
+      if (bulkLoad.streamingMode) {
+        throw MTypeError(
+            "Connection.execBulkLoad can't be called with a BulkLoad that was put in streaming mode.");
+      }
+
+      if (bulkLoad.firstRowWritten) {
+        throw MTypeError(
+            "Connection.execBulkLoad can't be called with a BulkLoad that already has rows written to it.");
+      }
+
+      //TODO!: Stream.fromIterable(rows) = Readable.from(rows);
+      final _rowStream = Stream.fromIterable(rows).asBroadcastStream();
+      final rowStreamController = StreamController();
+      rowStreamController.addStream(_rowStream);
+      final rowStreamSubscription =
+          rowStreamController.stream.listen((event) {});
+
+      // Destroy the packet transform if an error happens in the row stream,
+      // e.g. if an error is thrown from within a generator or stream.
+      rowStreamSubscription.onError((err) {
+        //* bulkLoad.rowToPacketTransform.destroy(err);
+        bulkLoad.rowToPacketTransform.controller.close();
+      });
+
+      // Destroy the row stream if an error happens in the packet transform,
+      // e.g. if the bulk load is cancelled.
+      bulkLoad.rowToPacketTransform.controller.stream.handleError((err) {
+        rowStreamController.addError(err);
+        rowStreamController.close();
+      });
+      //* rowStream.pipe(bulkLoad.rowToPacketTransform);
+
+      // rowStreamController.add(bulkLoad.rowToPacketTransform);
+
+      bulkLoad.rowToPacketTransform.controller
+          .addStream(rowStreamController.stream);
+      //TODO??: maybe??
+      //
+    } else if (!bulkLoad.streamingMode) {
+      // If the bulkload was not put into streaming mode by the user,
+      // we end the rowToPacketTransform here for them.
+      //
+      // If it was put into streaming mode, it's the user's responsibility
+      // to end the stream.
+      bulkLoad.rowToPacketTransform.controller.close();
+    }
+
+    late final Request request;
+
+    onCancel() {
+      request.cancel();
+    }
+
+    final payload = BulkLoadPayload(bulkLoad: bulkLoad);
+
+    request = Request(
+        sqlTextOrProcedure: bulkLoad.getBulkInsertSql(),
+        callback: ({error, rowCount, rows}) {
+          bulkLoad.once('cancel', (_) {
+            onCancel();
+          });
+
+          if (error != null) {
+            if (error.toString() == 'UNKNOWN') {
+              error = MTypeError(
+                  ' This is likely because the schema of the BulkLoad does not match the schema of the table you are attempting to insert into.');
+            }
+            bulkLoad.error = error;
+            bulkLoad.callback(error, 0);
+            return;
+          }
+
+          this.makeRequest(bulkLoad, PACKETTYPE['BULK_LOAD']!, payload);
+        });
+
+    bulkLoad.once('cancel', (_) {
+      onCancel();
+    });
+
+    this.execSqlBatch(request);
+  }
+
+  prepare(Request request) {
+    List<Parameter> parameters = [];
+
+    parameters.add(Parameter(
+      type: DATATYPES[Int().refID],
+      name: 'handle',
+      value: null,
+      output: true,
+      length: null,
+      precision: null,
+      scale: null,
+    ));
+
+    parameters.add(Parameter(
+      type: DATATYPES[NVarChar.refID],
+      name: 'params',
+      value: request.parameters.isEmpty
+          ? request.makeParamsParameter(request.parameters)
+          : null,
+      output: false,
+      length: null,
+      precision: null,
+      scale: null,
+    ));
+
+    parameters.add(Parameter(
+      type: DATATYPES[NVarChar().refID],
+      name: 'stmt',
+      value: request.sqlTextOrProcedure,
+      output: false,
+      length: null,
+      precision: null,
+      scale: null,
+    ));
+
+    request.preparing = true;
+    // TODO: We need to clean up this event handler, otherwise this leaks memory
+    // TODO: original function signature was with 2 parameters (String name, dynamic value);
+    request.on('returnValue', (Map<String, dynamic> returnValue) {
+      if (returnValue['name'] == 'handle') {
+        request.handle = returnValue['value']!;
+      } else {
+        request.error = RequestError(
+          'Unexpected output parameter',
+          'Tedious > Unexpected output parameter ${returnValue['name']} from sp_prepare',
+        );
+      }
+    });
+
+    this.makeRequest(
+      request,
+      PACKETTYPE['RPC_REQUEST']!,
+      RpcRequestPayload(
+        procedure: 'sp_prepare',
+        parameters: parameters,
+        txnDescriptor: this.currentTransactionDescriptor(),
+        options: this.config!.options!,
+        collation: this.databaseCollation,
+      ),
+    );
+  }
+
+  unprepare(Request request) {
+    List<Parameter> parameters = [];
+
+    parameters.add(Parameter(
+        type: DATATYPES[Int().refID],
+        name: 'handle',
+        // TODO: Abort if 'request.handle' is not set
+        value: request.handle,
+        output: false,
+        length: null,
+        precision: null,
+        scale: null));
+
+    this.makeRequest(
+      request,
+      PACKETTYPE['RPC_REQUEST']!,
+      RpcRequestPayload(
+        procedure: 'sp_unprepare',
+        parameters: parameters,
+        txnDescriptor: this.currentTransactionDescriptor(),
+        options: this.config!.options!,
+        collation: this.databaseCollation,
+      ),
+    );
+  }
+
+  execute(Request request, Map<String, dynamic>? parameters) {
+    List<Parameter> executeParameters = [];
+
+    executeParameters.add(Parameter(
+        type: DATATYPES[Int().refID],
+        name: 'handle',
+        // TODO: Abort if 'request.handle' is not set
+        value: request.handle,
+        output: false,
+        length: null,
+        precision: null,
+        scale: null));
+
+    try {
+      for (int i = 0, len = request.parameters.length; i < len; i++) {
+        var parameter = request.parameters[i];
+
+        executeParameters.add(parameter
+          ..value = parameter.type!.validate(
+              parameters != null ? parameters[parameter.name] : null,
+              this.databaseCollation));
+      }
+    } catch (error) {
+      request.error = MTypeError(error.toString());
+
+      process.nextTick(() {
+        this.debug.log(error.toString());
+        request.callback(error: MTypeError(error.toString()));
+      });
+
+      return;
+    }
+
+    this.makeRequest(
+        request,
+        PACKETTYPE['RPC_REQUEST']!,
+        RpcRequestPayload(
+          procedure: 'sp_execute',
+          parameters: executeParameters,
+          txnDescriptor: this.currentTransactionDescriptor(),
+          options: this.config!.options!,
+          collation: this.databaseCollation,
+        ));
+  }
+
+  callProcedure(Request request) {
+    try {
+      request.validateParameters(this.databaseCollation);
+    } catch (error) {
+      request.error = MTypeError(error.toString());
+
+      process.nextTick(() {
+        this.debug.log(error.toString());
+        request.callback(
+          error: MTypeError(error.toString()),
+        );
+      });
+
+      return;
+    }
+
+    this.makeRequest(
+        request,
+        PACKETTYPE['RPC_REQUEST']!,
+        RpcRequestPayload(
+            procedure: request.sqlTextOrProcedure!,
+            parameters: request.parameters,
+            txnDescriptor: this.currentTransactionDescriptor(),
+            options: this.config!.options!,
+            collation: this.databaseCollation));
+  }
+
+  beginTransaction(
+      {required BeginTransactionCallback callback,
+      String name = '',
+      num? isolationLevel}) {
+    isolationLevel = this.config!.options!.isolationLevel;
+    assertValidIsolationLevel(isolationLevel, 'isolationLevel');
+
+    final transaction = Transaction(name: name, isolationLevel: isolationLevel);
+
+    if (TDSVERSIONS[this.config!.options!.tdsVersion]! < TDSVERSIONS['7_2']!) {
+      return this.execSqlBatch(Request(
+          sqlTextOrProcedure:
+              'SET TRANSACTION ISOLATION LEVEL ${transaction.isolationLevelToTSQL()};BEGIN TRAN ${transaction.name}',
+          callback: ({error, rowCount, rows}) {
+            this.transactionDepth++;
+            if (this.transactionDepth == 1) {
+              this.inTransaction = true;
+            }
+            callback(err: error);
+          }));
+    }
+
+    final request = Request(
+        sqlTextOrProcedure: null,
+        callback: ({error, rowCount, rows}) {
+          return callback(
+            err: error,
+            transactionDescriptor: this.currentTransactionDescriptor(),
+          );
+        });
+    return this.makeRequest(request, PACKETTYPE['TRANSACTION_MANAGER']!,
+        transaction.beginPayload(this.currentTransactionDescriptor()));
+  }
+
+  commitTransaction({
+    required CommitTransactionCallback callback,
+    String name = '',
+  }) {
+    final transaction = Transaction(name: name);
+    if (TDSVERSIONS[this.config!.options!.tdsVersion]! < TDSVERSIONS['7_2']!) {
+      return this.execSqlBatch(Request(
+          sqlTextOrProcedure: 'COMMIT TRAN ${transaction.name}',
+          callback: ({error, rowCount, rows}) {
+            this.transactionDepth--;
+            if (this.transactionDepth == 0) {
+              this.inTransaction = false;
+            }
+
+            callback(err: error);
+          }));
+    }
+
+    //TODO
+    //ignore:argument_type_not_assignable
+    final request = Request(sqlTextOrProcedure: '', callback: callback);
+    return this.makeRequest(request, PACKETTYPE['TRANSACTION_MANAGER']!,
+        transaction.commitPayload(this.currentTransactionDescriptor()));
+  }
+
+  rollbackTransaction({
+    required RollbackTransactionCallback callback,
+    String name = '',
+  }) {
+    var transaction = Transaction(name: name);
+    if (TDSVERSIONS[this.config!.options!.tdsVersion]! < TDSVERSIONS['7_2']!) {
+      return this.execSqlBatch(
+        Request(
+          sqlTextOrProcedure: 'ROLLBACK TRAN ${transaction.name}',
+          callback: ({error, rowCount, rows}) {
+            this.transactionDepth--;
+            if (this.transactionDepth == 0) {
+              this.inTransaction = false;
+            }
+            callback(err: error);
+          },
+        ),
+      );
+    }
+
+    //TODO
+    //ignore:argument_type_not_assignable
+    var request = Request(sqlTextOrProcedure: '', callback: callback);
+    return this.makeRequest(request, PACKETTYPE['TRANSACTION_MANAGER']!,
+        transaction.rollbackPayload(this.currentTransactionDescriptor()));
+  }
+
+  saveTransaction(SaveTransactionCallback? callback, String name) {
+    var transaction = Transaction(name: name);
+    if (TDSVERSIONS[this.config!.options!.tdsVersion]! < TDSVERSIONS['7_2']!) {
+      return this.execSqlBatch(
+        Request(
+          sqlTextOrProcedure: 'SAVE TRAN ${transaction.name}',
+          callback: ({error, rowCount, rows}) {
+            this.transactionDepth++;
+            callback!(err: error);
+          },
+        ),
+      );
+    }
+    //TODO
+    //ignore:argument_type_not_assignable
+    var request = Request(sqlTextOrProcedure: null, callback: callback);
+    return this.makeRequest(
+      request,
+      PACKETTYPE['TRANSACTION_MANAGER']!,
+      transaction.savePayload(this.currentTransactionDescriptor()),
+    );
+  }
+
+  transaction(
+    void Function({
+      Error? error,
+      TransactionDoneCallback? txDone,
+      List<CallbackParameters>? args,
+    })?
+        cb,
+    num? isolationLevel,
+  ) {
+    if (cb is! Function) {
+      throw MTypeError(''cb' must be a function');
+    }
+
+    var useSavepoint = this.inTransaction;
+
+    var name = '_tedious_${(RandomBytes.gen(10, isString: true))}';
+
+    //function def inside a fns
+    void txDone({
+      Error? err,
+      TransactionDoneCallback? done,
+      List<CallbackParameters>? args,
+    }) {
+      if (err != null) {
+        if (this.inTransaction && this.state == this.STATE['LOGGED_IN']) {
+          this.rollbackTransaction(
+            callback: ({err}) {
+              done!(err: err, args: args);
+            },
+            name: name,
+          );
+        } else {
+          done!(err: err, args: args);
+        }
+      } else if (useSavepoint) {
+        if (TDSVERSIONS[this.config!.options!.tdsVersion]! <
+            TDSVERSIONS['7_2']!) {
+          this.transactionDepth--;
+        }
+        done!(err: null, args: args);
+      } else {
+        this.commitTransaction(
+          callback: ({err}) {
+            done!(err: err, args: args);
+          },
+          name: name,
+        );
+      }
+    }
+    //end of fns declaration
+
+    if (useSavepoint) {
+      return this.saveTransaction(({err}) {
+        if (err != null) {
+          return cb!(error: err);
+        }
+
+        if (isolationLevel != null) {
+          execSqlBatch(
+            Request(
+              sqlTextOrProcedure:
+                  'SET transaction isolation level ${this.getIsolationLevelText(isolationLevel)}',
+              callback: ({error, rowCount, rows}) {
+                //TODO
+                //ignore:argument_type_not_assignable
+                return cb!(error: err, txDone: txDone);
+              },
+            ),
+          );
+        } else {
+          //TODO
+          //ignore:argument_type_not_assignable
+          return cb!(error: null, txDone: txDone);
+        }
+      }, name);
+    } else {
+      return this.beginTransaction(
+          callback: ({err, transactionDescriptor}) {
+            if (err != null) {
+              return cb!(error: err);
+            }
+
+            //TODO
+            //ignore:argument_type_not_assignable
+            return cb!(error: null, txDone: txDone);
+          },
+          name: name,
+          isolationLevel: isolationLevel);
+    }
+  }
+
+  //TODO: check & double check for better implementation
+  makeRequest(dynamic request, num packetType, Stream<Buffer> payload,
       {String Function(String indent)? toString}) {
+    //*request = Request || BulkLoad
     if (this.state != this.STATE['LOGGED_IN']) {
       var message =
           'Requests can only be made in the ${this.STATE['LOGGED_IN']!.name} state, not the ${this.state.name} state';
       this.debug.log(message);
-      request.callback(RequestError(message, 'EINVALIDSTATE'));
+      request.callback(error: RequestError(message, 'EINVALIDSTATE'));
     } else if (request.canceled) {
       process.nextTick(() {
-        request.callback(RequestError('Canceled.', 'ECANCEL'));
+        request.callback(error: RequestError('Canceled.', 'ECANCEL'));
       });
     } else {
-      if (packetType == TYPE['SQL_BATCH']) {
+      if (packetType == PACKETTYPE['SQL_BATCH']) {
         this.isSqlBatch = true;
       } else {
         this.isSqlBatch = false;
@@ -1470,7 +2109,7 @@ class Connection extends EventEmitter {
           resetConnection: this.resetConnectionOnNextRequest!);
       //TODO: better message implementation
       //TODO: redo message & IO implementation
-      //ignore:undefined_method
+      //ignore:null_method
       var payloadStream = Readable.from(payload);
 
       this.request = request;
@@ -1541,13 +2180,12 @@ class Connection extends EventEmitter {
   reset(ResetCallback callback) {
     var request = Request(
         sqlTextOrProcedure: this.getInitialSql(),
-        callback: ([err, rowCount, rows]) {
-          if (this.config!.options!.tdsVersion != '7_2')
-          //TODO: 'String < '7_2''
-          {
+        callback: ({error, rowCount, rows}) {
+          if (TDSVERSIONS[this.config!.options!.tdsVersion]! <
+              TDSVERSIONS['7_2']!) {
             this.inTransaction = false;
           }
-          callback(err: err);
+          callback(err: error);
         });
     resetConnectionOnNextRequest = true;
     execSqlBatch(request);

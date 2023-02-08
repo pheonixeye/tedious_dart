@@ -5,7 +5,7 @@ import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/metadata_parser.dart';
 import 'package:tedious_dart/token/colmetadata_token_parser.dart';
 
-const Map<String, int> TYPE = {
+const Map<String, int> TOKEN_TYPE = {
   "ALTMETADATA": 0x88,
   "ALTROW": 0xD3,
   "COLMETADATA": 0x81,

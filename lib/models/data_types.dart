@@ -1,9 +1,10 @@
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, constant_identifier_names
 
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/connection.dart';
+import 'package:tedious_dart/data_types/binary.dart';
 import 'package:tedious_dart/data_types/bit.dart';
 import 'package:tedious_dart/data_types/bitn.dart';
 import 'package:tedious_dart/data_types/char.dart';
@@ -39,6 +40,33 @@ class Parameter {
       this.scale,
       this.type,
       this.value});
+
+  factory Parameter.copyWith({
+    DataType? type,
+    String? name,
+    dynamic value,
+    bool? output,
+    int? length,
+    num? precision,
+    num? scale,
+    bool? nullable,
+    bool? forceEncrypt,
+    CryptoMetadata? cryptoMetadata,
+    Buffer? encryptedVal,
+  }) {
+    return Parameter()
+      ..type = type
+      ..cryptoMetadata = cryptoMetadata
+      ..encryptedVal = encryptedVal
+      ..forceEncrypt = forceEncrypt
+      ..length = length
+      ..name = name
+      ..nullable = nullable
+      ..output = output
+      ..precision = precision
+      ..scale = scale
+      ..value = value;
+  }
 }
 
 class ParameterData<T> {
@@ -49,10 +77,18 @@ class ParameterData<T> {
   Collation? collation;
 
   T? value;
+
+  ParameterData({
+    this.collation,
+    this.length,
+    this.precision,
+    this.scale,
+    this.value,
+  });
 }
 
 abstract class DataType {
-  static int get id => 0;
+  int get id => 0;
   String get type;
   String get name;
 
@@ -76,27 +112,27 @@ abstract class DataType {
   num? resolveScale(Parameter parameter);
 }
 
-final Map<int, dynamic> TYPE = {
+final Map<int, DataType> DATATYPES = {
   Null.id: Null,
   TinyInt.id: TinyInt,
-  Bit.id: Bit,
+  Bit.refID: Bit(),
   SmallInt.id: SmallInt,
   Int.id: Int,
   SmallDateTime.id: SmallDateTime,
   Real.id: Real,
   Money.id: Money,
-  DateTime.id: DateTime,
+  DateTime.refID: DateTime(),
   Float.id: Float,
   Decimal.id: Decimal,
   Numeric.id: Numeric,
   SmallMoney.id: SmallMoney,
-  BigInt.id: BigInt,
+  BigInt.refID: BigInt(),
   Image.id: Image,
   Text.id: Text,
   UniqueIdentifier.id: UniqueIdentifier,
   IntN.id: IntN,
   NText.id: NText,
-  BitN.id: BitN,
+  BitN.refID: BitN(),
   DecimalN.id: DecimalN,
   NumericN.id: NumericN,
   FloatN.id: FloatN,
@@ -104,13 +140,13 @@ final Map<int, dynamic> TYPE = {
   DateTimeN.id: DateTimeN,
   VarBinary.id: VarBinary,
   VarChar.id: VarChar,
-  Binary.id: Binary,
-  Char.id: Char,
+  Binary.refID: Binary(),
+  Char.refID: Char(),
   NVarChar.id: NVarChar,
   NChar.id: NChar,
   Xml.id: Xml,
   Time.id: Time,
-  Date.id: Date,
+  Date.refID: Date(),
   DateTime2.id: DateTime2,
   DateTimeOffset.id: DateTimeOffset,
   UDT.id: UDT,

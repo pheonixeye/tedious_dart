@@ -62,13 +62,13 @@ assertValidIsolationLevel(dynamic isolationLevel, String name) {
 
 class Transaction {
   String name;
-  num isolationLevel;
-  num outstandingRequestCount;
+  num? isolationLevel;
+  num? outstandingRequestCount;
 
   Transaction({
     required this.name,
-    required this.isolationLevel,
-    required this.outstandingRequestCount,
+    this.isolationLevel,
+    this.outstandingRequestCount,
   }) {
     isolationLevel = ISOLATION_LEVEL['NO_CHANGE']!;
     outstandingRequestCount = 1;

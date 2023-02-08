@@ -1,4 +1,6 @@
-const Map<String, int> versions = {
+// ignore_for_file: constant_identifier_names
+
+const Map<String, int> TDSVERSIONS = {
   '7_1': 0x71000001,
   '7_2': 0x72090002,
   '7_3_A': 0x730A0003,
@@ -7,4 +9,4 @@ const Map<String, int> versions = {
 };
 
 final Map<int, String> versionsByValue =
-    versions.map((key, value) => MapEntry(value, key));
+    TDSVERSIONS.map((key, value) => MapEntry(value, key));

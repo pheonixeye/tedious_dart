@@ -3,6 +3,8 @@ import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/data_types.dart';
 
 class BitN extends DataType {
+  static int get refID => 0x68;
+
   @override
   String declaration(Parameter parameter) {
     throw UnimplementedError();
@@ -28,9 +30,7 @@ class BitN extends DataType {
   bool? get hasTableName => throw UnimplementedError();
 
   @override
-  static int get id => 0x68;
-
-  static int get getId => 0x68;
+  int get id => 0x68;
 
   @override
   String get name => 'BitN';

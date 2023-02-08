@@ -7,6 +7,8 @@ import 'dart:math' as math;
 final NULL_LENGTH = Buffer.from([0xFF, 0xFF]);
 
 class Binary extends DataType {
+  static int get refID => 0xAD;
+
   final int maximumLength;
 
   Binary({this.maximumLength = 8000});
@@ -19,7 +21,7 @@ class Binary extends DataType {
       length = parameter.length!;
     } else if (value != null) {
       length = value.length == 0 ? 1 : value.length;
-    } else if (value == null && !parameter.output) {
+    } else if (value == null && parameter.output != null) {
       length = 1;
     } else {
       length = this.maximumLength;
@@ -66,7 +68,7 @@ class Binary extends DataType {
   bool? get hasTableName => throw UnimplementedError();
 
   @override
-  static int get id => 0xAD;
+  int get id => 0xAD;
 
   @override
   String get name => 'Binary';

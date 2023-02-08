@@ -5,7 +5,9 @@ import 'package:tedious_dart/always_encrypted/types.dart';
 import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
+import 'package:tedious_dart/packet.dart';
 import 'package:tedious_dart/request.dart';
+import 'package:tedious_dart/rpcrequest_payload.dart';
 
 void getParameterEncryptionMetadata(
   Connection connection,
@@ -18,7 +20,7 @@ void getParameterEncryptionMetadata(
 
   final metadataRequest = Request(
       sqlTextOrProcedure: 'sp_describe_parameter_encryption',
-      callback: ([error, rowCount, rows]) async {
+      callback: ({error, rowCount, rows}) async {
         if (error != null) {
           return callback(error: error);
         }
@@ -141,10 +143,10 @@ void getParameterEncryptionMetadata(
         // return Promise.all(decryptSymmetricKeyPromises).then(() {}, (error) {});
       });
 
-  metadataRequest.addParameter(
-      'tsql', TYPES.NVarChar, request.sqlTextOrProcedure, ParameterOptions());
+  metadataRequest.addParameter('tsql', DATATYPES.NVarChar,
+      request.sqlTextOrProcedure, ParameterOptions());
   if (request.parameters.isEmpty) {
-    metadataRequest.addParameter('params', TYPES.NVarChar,
+    metadataRequest.addParameter('params', DATATYPES.NVarChar,
         metadataRequest.makeParamsParameter(request.parameters));
   }
 
@@ -152,13 +154,13 @@ void getParameterEncryptionMetadata(
 
   connection.makeRequest(
       metadataRequest,
-      TYPE.RPC_REQUEST,
+      PACKETTYPE['RPC_REQUEST']!,
       RpcRequestPayload(
-          metadataRequest.sqlTextOrProcedure!,
-          metadataRequest.parameters,
-          connection.currentTransactionDescriptor(),
-          connection.config!.options,
-          connection.databaseCollation));
+          procedure: metadataRequest.sqlTextOrProcedure!,
+          parameters: metadataRequest.parameters,
+          txnDescriptor: connection.currentTransactionDescriptor(),
+          options: connection.config!.options!,
+          collation: connection.databaseCollation));
 }
 
 void todo() {

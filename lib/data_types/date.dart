@@ -10,6 +10,8 @@ final NULL_LENGTH = Buffer.alloc(0x00);
 final DATA_LENGTH = Buffer.alloc(0x03);
 
 class Date extends DataType {
+  static int get refID => 0x28;
+
   @override
   String declaration(Parameter parameter) {
     return 'date';
@@ -56,7 +58,7 @@ class Date extends DataType {
   bool? get hasTableName => throw UnimplementedError();
 
   @override
-  static int get id => 0x28;
+  int get id => 0x28;
 
   @override
   String get name => 'Date';

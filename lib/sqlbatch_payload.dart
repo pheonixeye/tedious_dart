@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/src/tracking_buffer/writable_tracking_buffer.dart';
 import 'package:tedious_dart/all_headers.dart';
 import 'package:tedious_dart/tds_versions.dart';
 
-class SqlBatchPayload extends Iterable<Buffer> {
+class SqlBatchPayload extends Stream<Buffer> {
   String sqlText;
   Buffer txnDescriptor;
   String tdsVersion;
@@ -16,7 +18,7 @@ class SqlBatchPayload extends Iterable<Buffer> {
   iterate() async* {
     //todo: mod "==" to ">="
     //versions from ../tds_versions.dart
-    if (versions[tdsVersion]! >= versions['7_2']!) {
+    if (TDSVERSIONS[tdsVersion]! >= TDSVERSIONS['7_2']!) {
       var buffer = WritableTrackingBuffer(initialSize: 18, encoding: 'ucs2');
       const outstandingRequestCount = 1;
 
@@ -38,7 +40,11 @@ class SqlBatchPayload extends Iterable<Buffer> {
   }
 
   @override
-  Iterator<Buffer> get iterator => throw UnimplementedError();
+  StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
+      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
+    // TODO: implement listen
+    throw UnimplementedError();
+  }
 }
 
 

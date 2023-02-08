@@ -5,7 +5,7 @@ import 'package:sprintf/sprintf.dart';
 
 const HEADER_LENGTH = 8;
 
-const Map<String, int> TYPE = {
+const Map<String, int> PACKETTYPE = {
   "SQL_BATCH": 0x01,
   "RPC_REQUEST": 0x03,
   "TABULAR_RESULT": 0x04,
@@ -18,8 +18,8 @@ const Map<String, int> TYPE = {
   "FEDAUTH_TOKEN": 0x08
 };
 
-final Map<int, String> typeByValue =
-    TYPE.map((key, value) => MapEntry(value, key));
+final Map<int, String> packetTypeByValue =
+    PACKETTYPE.map((key, value) => MapEntry(value, key));
 
 const Map<String, int> STATUS = {
   "NORMAL": 0x00,
@@ -159,7 +159,7 @@ class Packet {
         'type:0x%02X(%s), status:0x%02X(%s), length:0x%04X, spid:0x%04X, packetId:0x%02X, window:0x%02X',
         [
           this.buffer!.readUInt8(OFFSET.Type.value),
-          typeByValue[this.buffer!.readUInt8(OFFSET.Type.value)],
+          packetTypeByValue[this.buffer!.readUInt8(OFFSET.Type.value)],
           this.buffer!.readUInt8(OFFSET.Status.value),
           this.statusAsString(),
           this.buffer!.readUInt16BE(OFFSET.Length.value),

@@ -9,6 +9,8 @@ final DATA_LENGTH = Buffer.alloc(0x08);
 final NULL_LENGTH = Buffer.alloc(0x00);
 
 class BigInt extends DataType {
+  static int get refID => 0x7f;
+
   @override
   String declaration(Parameter parameter) {
     return 'bigint';
@@ -44,7 +46,7 @@ class BigInt extends DataType {
   bool? get hasTableName => throw UnimplementedError();
 
   @override
-  static int get id => 0x7f;
+  int get id => 0x7f;
 
   @override
   String get name => 'BigInt';
@@ -93,7 +95,7 @@ class BigInt extends DataType {
 extension IsNaN on dynamic {
   bool isNaN() {
     try {
-      this as num;
+      this is num;
       return true;
     } catch (e) {
       return false;

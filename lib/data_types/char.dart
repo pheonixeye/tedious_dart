@@ -8,6 +8,8 @@ import 'package:tedious_dart/models/data_types.dart';
 final NULL_LENGTH = Buffer.from([0xFF, 0xFF]);
 
 class Char extends DataType {
+  static int get refID => 0xAF;
+
   int maximumLength;
 
   Char({this.maximumLength = 8000});
@@ -20,7 +22,7 @@ class Char extends DataType {
       length = parameter.length!;
     } else if (value != null) {
       length = value.length == 0 ? 1 : value.length;
-    } else if (value == null && !parameter.output) {
+    } else if (value == null && parameter.output != null) {
       length = 1;
     } else {
       length = this.maximumLength;
@@ -75,7 +77,7 @@ class Char extends DataType {
   bool? get hasTableName => throw UnimplementedError();
 
   @override
-  static int get id => 0xAF;
+  int get id => 0xAF;
 
   @override
   String get name => 'Char';

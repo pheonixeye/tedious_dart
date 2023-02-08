@@ -5,8 +5,11 @@ import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
 
-typedef CompletionCallback = void Function(
-    [Error? error, num? rowCount, dynamic rows]);
+typedef CompletionCallback = void Function({
+  Error? error,
+  num? rowCount,
+  dynamic rows,
+});
 
 class ParameterOptions {
   bool? output;
@@ -89,7 +92,7 @@ class Request extends EventEmitter {
         : SQLServerStatementColumnEncryptionSetting.UseConnectionSetting);
     cryptoMetadataLoaded = false;
 
-    callback = ([Error? error, num? rowCount, dynamic rows]) {
+    callback = ({Error? error, num? rowCount, dynamic rows}) {
       if (preparing) {
         preparing = false;
         if (error != null) {
@@ -99,9 +102,9 @@ class Request extends EventEmitter {
         }
       } else {
         userCallback(
-          error,
-          rowCount,
-          rows,
+          error: error,
+          rowCount: rowCount,
+          rows: rows,
         );
         emit('requestCompleted');
       }

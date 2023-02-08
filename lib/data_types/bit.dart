@@ -9,6 +9,8 @@ final DATA_LENGTH = Buffer.alloc(0x01);
 final NULL_LENGTH = Buffer.alloc(0x00);
 
 class Bit extends DataType {
+  static int get refID => 0x32;
+
   @override
   String declaration(Parameter parameter) {
     return 'bit';
@@ -35,14 +37,14 @@ class Bit extends DataType {
 
   @override
   Buffer generateTypeInfo(ParameterData parameter, options) {
-    return Buffer.from([BitN.getId, 0x01]);
+    return Buffer.from([BitN.refID, 0x01]);
   }
 
   @override
   bool? get hasTableName => throw UnimplementedError();
 
   @override
-  static int get id => 0x32;
+  int get id => 0x32;
 
   @override
   String get name => 'Bit';
