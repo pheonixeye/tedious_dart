@@ -1453,6 +1453,7 @@ class Connection extends EventEmitter {
     };
     //TODO! end of constructor
   }
+  
 
   getInitialSql() {
     List options = [];
