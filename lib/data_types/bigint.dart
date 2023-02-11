@@ -1,12 +1,19 @@
 // ignore_for_file: constant_identifier_names, non_constant_identifier_names
 
+import 'dart:math';
+
 import 'package:node_interop/buffer.dart';
+import 'package:tedious_dart/data_types/intn.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
-import 'package:tedious_dart/src/tracking_buffer/writable_tracking_buffer.dart';
+import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 
 final DATA_LENGTH = Buffer.alloc(0x08);
 final NULL_LENGTH = Buffer.alloc(0x00);
+// const MAX_SAFE_INTEGER = 9007199254740991;
+final MAX_SAFE_INTEGER = pow(2, 53) - 1;
+final MIN_SAFE_INTEGER = -(pow(2, 53) - 1);
+// 2^53 − 1;
 
 class BigInt extends DataType {
   static int get refID => 0x7f;
@@ -24,7 +31,7 @@ class BigInt extends DataType {
     }
 
     var buffer = WritableTrackingBuffer(initialSize: 8);
-    buffer.writeInt64LE(Number(parameter.value));
+    buffer.writeInt64LE(int.tryParse(parameter.value)!);
     yield buffer.data!;
   }
 
@@ -39,7 +46,7 @@ class BigInt extends DataType {
 
   @override
   Buffer generateTypeInfo(ParameterData parameter, options) {
-    return Buffer.from([IntN.id, 0x08]);
+    return Buffer.from([IntN.refID, 0x08]);
   }
 
   @override
@@ -75,30 +82,19 @@ class BigInt extends DataType {
       return null;
     }
 
-    if (value.runtimeType != num) {
-      value = Number(value);
+    if (value is! num) {
+      value = num.tryParse(value);
     }
 
-    if (value.isNaN()) {
+    if (isNaN(value)) {
       throw MTypeError('Invalid number.');
     }
 
-    if (value < Number.MIN_SAFE_INTEGER || value > Number.MAX_SAFE_INTEGER) {
+    if (value < MIN_SAFE_INTEGER || value > MAX_SAFE_INTEGER) {
       throw MTypeError(
-          'Value must be between ${Number.MIN_SAFE_INTEGER} and ${Number.MAX_SAFE_INTEGER}, inclusive.  For smaller or bigger numbers, use VarChar type.');
+          'Value must be between $MIN_SAFE_INTEGER and $MAX_SAFE_INTEGER, inclusive.  For smaller or bigger numbers, use VarChar type.');
     }
 
     return value;
-  }
-}
-
-extension IsNaN on dynamic {
-  bool isNaN() {
-    try {
-      this is num;
-      return true;
-    } catch (e) {
-      return false;
-    }
   }
 }

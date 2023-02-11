@@ -22,13 +22,13 @@ class Debug extends EventEmitter {
   });
 
   data(Packet packet) {
-    if (this.haveListeners() && this.options.data) {
+    if (this.haveListeners() && this.options.data == true) {
       this.log(packet.dataToString(indent: this.indent));
     }
   }
 
   packet(Direction direction, Packet packet) {
-    if (this.haveListeners() && this.options.packet) {
+    if (this.haveListeners() && this.options.packet == true) {
       this.log('');
       this.log(direction.value);
       this.log(packet.headerToString(indent: this.indent));
@@ -36,13 +36,13 @@ class Debug extends EventEmitter {
   }
 
   payload(String Function() generatePayloadText) {
-    if (this.haveListeners() && this.options.payload) {
+    if (this.haveListeners() && this.options.payload == true) {
       this.log(generatePayloadText());
     }
   }
 
   token(dynamic token) {
-    if (this.haveListeners() && this.options.token) {
+    if (this.haveListeners() && this.options.token == true) {
       this.log(
         util.inspect(
           token,
@@ -67,20 +67,20 @@ class Debug extends EventEmitter {
 }
 
 class DebugOptions {
-  final bool data;
-  final bool payload;
-  final bool packet;
-  final bool token;
+  bool? data;
+  bool? payload;
+  bool? packet;
+  bool? token;
 
-  const DebugOptions({
-    required this.data,
-    required this.payload,
-    required this.packet,
-    required this.token,
+  DebugOptions({
+    this.data,
+    this.payload,
+    this.packet,
+    this.token,
   });
 
   factory DebugOptions.allFalse() {
-    return const DebugOptions(
+    return DebugOptions(
       data: false,
       payload: false,
       packet: false,

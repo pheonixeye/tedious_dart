@@ -3,7 +3,7 @@
 import 'package:node_interop/buffer.dart';
 import 'package:sprintf/sprintf.dart';
 import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
-import 'package:tedious_dart/src/tracking_buffer/writable_tracking_buffer.dart';
+import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 
 const optionBufferSize = 20;
 
@@ -38,13 +38,13 @@ const Map<String, int> MARS = {
 final Map<int, String> marsByValue =
     MARS.map((key, value) => MapEntry(value, key));
 
-class Version {
+class PreloginPayloadVersion {
   final num major;
   final num minor;
   final num build;
   final num subbuild;
 
-  Version({
+  PreloginPayloadVersion({
     required this.major,
     required this.minor,
     required this.build,
@@ -52,11 +52,11 @@ class Version {
   });
 }
 
-class Options {
+class PreloginPayloadOptions {
   bool? encrypt;
-  Version? version;
+  PreloginPayloadVersion? version;
 
-  Options({
+  PreloginPayloadOptions({
     this.encrypt,
     this.version,
   });
@@ -64,9 +64,9 @@ class Options {
 
 class PreloginPayload {
   Buffer? data;
-  Options? options;
+  PreloginPayloadOptions? options;
 
-  Version? version;
+  PreloginPayloadVersion? version;
 
   num? encryption;
   String? encryptionString;
@@ -79,11 +79,23 @@ class PreloginPayload {
   String? marsString;
   num? fedAuthRequired;
 
-  PreloginPayload() {
+  PreloginPayload({
+    this.data,
+    this.encryption,
+    this.encryptionString,
+    this.fedAuthRequired,
+    this.instance,
+    this.mars,
+    this.marsString,
+    this.options,
+    this.threadId,
+    this.version,
+  }) {
     if (data == null) {
-      options = Options(
+      options = PreloginPayloadOptions(
         encrypt: false,
-        version: Version(major: 0, minor: 0, build: 0, subbuild: 0),
+        version:
+            PreloginPayloadVersion(major: 0, minor: 0, build: 0, subbuild: 0),
       );
     } else {
       createOptions();
@@ -220,7 +232,7 @@ class PreloginPayload {
   }
 
   extractVersion(int offset) {
-    version = Version(
+    version = PreloginPayloadVersion(
         major: data!.readUInt8(offset + 0),
         minor: data!.readUInt8(offset + 1),
         build: data!.readUInt16BE(offset + 2),

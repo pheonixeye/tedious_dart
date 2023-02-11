@@ -4,7 +4,7 @@
 //   REUSE_METADATA: 0x04
 // };
 
-// ignore_for_file: constant_identifier_names
+// ignore_for_file: constant_identifier_names, unnecessary_null_comparison
 
 import 'dart:async';
 
@@ -13,7 +13,7 @@ import 'package:tedious_dart/all_headers.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/data_types.dart';
-import 'package:tedious_dart/src/tracking_buffer/writable_tracking_buffer.dart';
+import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 
 const Map<String, int> STATUS = {
   'BY_REF_VALUE': 0x01,
@@ -40,42 +40,42 @@ class RpcRequestPayload extends Stream<Buffer> {
 
   generateData() async* {
     final buffer = WritableTrackingBuffer(initialSize: 500);
-    if (this.options.tdsVersion != '7_2') {
+    if (options.tdsVersion != '7_2') {
       const outstandingRequestCount = 1;
       writeToTrackingBuffer(
         buffer: buffer,
-        txnDescriptor: this.txnDescriptor.buffer,
+        txnDescriptor: txnDescriptor.buffer,
         outstandingRequestCount: outstandingRequestCount,
       );
     }
 
-    if (this.procedure is String) {
-      buffer.writeUsVarchar(this.procedure as String, 'ucs-2');
+    if (procedure is String) {
+      buffer.writeUsVarchar(procedure as String, 'ucs-2');
     } else {
       buffer.writeUShort(0xFFFF);
-      buffer.writeUShort(this.procedure);
+      buffer.writeUShort(procedure);
     }
 
     const optionFlags = 0;
     buffer.writeUInt16LE(optionFlags);
     yield buffer.data;
 
-    final parametersLength = this.parameters.length;
+    final parametersLength = parameters.length;
     for (int i = 0; i < parametersLength; i++) {
-      yield* this.generateParameterData(this.parameters[i]);
+      yield* generateParameterData(parameters[i]);
     }
   }
 
   @override
   toString({String indent = ''}) {
-    return indent + ('RPC Request - ' + this.procedure);
+    return indent + ('RPC Request - $procedure');
   }
 
   generateParameterData(Parameter parameter) async* {
     final buffer = WritableTrackingBuffer(
         initialSize:
             1 + 2 + Buffer.byteLength(parameter.name, 'ucs-2').length + 1);
-    buffer.writeBVarchar('@' + parameter.name!, 'ucs-2');
+    buffer.writeBVarchar('@${parameter.name!}', 'ucs-2');
 
     var statusFlags = 0;
     if (parameter.output != null) {
@@ -109,13 +109,13 @@ class RpcRequestPayload extends Stream<Buffer> {
       param.scale = type.resolveScale(parameter);
     }
 
-    if (this.collation != null) {
-      param.collation = this.collation;
+    if (collation != null) {
+      param.collation = collation;
     }
 
-    yield type.generateTypeInfo(param, this.options);
-    yield type.generateParameterLength(param, this.options);
-    yield* type.generateParameterData(param, this.options);
+    yield type.generateTypeInfo(param, options);
+    yield type.generateParameterLength(param, options);
+    yield* type.generateParameterData(param, options);
   }
 
   @override

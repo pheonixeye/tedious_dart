@@ -64,22 +64,22 @@ class DoneToken extends Token {
   @override
   HandlerName handlerName;
 
-  bool more;
-  bool sqlError;
-  bool attention;
-  bool serverError;
+  bool? more;
+  bool? sqlError;
+  bool? attention;
+  bool? serverError;
   num? rowCount;
-  num curCmd;
+  num? curCmd;
 
   DoneToken({
     this.name = 'Done',
     this.handlerName = 'onDone',
-    required this.more,
-    required this.sqlError,
-    required this.attention,
-    required this.serverError,
-    required this.rowCount,
-    required this.curCmd,
+    this.more,
+    this.sqlError,
+    this.attention,
+    this.serverError,
+    this.rowCount,
+    this.curCmd,
   }) : super(
           name: name,
           handlerName: handlerName,
@@ -110,22 +110,22 @@ class DoneInProcToken extends Token {
   @override
   HandlerName handlerName;
 
-  bool more;
-  bool sqlError;
-  bool attention;
-  bool serverError;
+  bool? more;
+  bool? sqlError;
+  bool? attention;
+  bool? serverError;
   num? rowCount;
-  num curCmd;
+  num? curCmd;
 
   DoneInProcToken({
     this.name = 'DONEINPROC',
     this.handlerName = 'onDoneInProc',
-    required this.more,
-    required this.sqlError,
-    required this.attention,
-    required this.serverError,
-    required this.rowCount,
-    required this.curCmd,
+    this.more,
+    this.sqlError,
+    this.attention,
+    this.serverError,
+    this.rowCount,
+    this.curCmd,
   }) : super(
           name: name,
           handlerName: handlerName,
@@ -139,22 +139,22 @@ class DoneProcToken extends Token {
   @override
   HandlerName handlerName;
 
-  bool more;
-  bool sqlError;
-  bool attention;
-  bool serverError;
+  bool? more;
+  bool? sqlError;
+  bool? attention;
+  bool? serverError;
   num? rowCount;
-  num curCmd;
+  num? curCmd;
 
   DoneProcToken({
     this.name = 'DONEPROC',
     this.handlerName = 'onDoneProc',
-    required this.more,
-    required this.sqlError,
-    required this.attention,
-    required this.serverError,
-    required this.rowCount,
-    required this.curCmd,
+    this.more,
+    this.sqlError,
+    this.attention,
+    this.serverError,
+    this.rowCount,
+    this.curCmd,
   }) : super(
           name: name,
           handlerName: handlerName,
@@ -238,8 +238,8 @@ class PacketSizeEnvChangeToken extends Token {
   HandlerName handlerName;
 
   String? type;
-  String newValue;
-  String oldValue;
+  num newValue;
+  num oldValue;
 
   PacketSizeEnvChangeToken({
     this.name = 'ENVCHANGE',

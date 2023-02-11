@@ -1,6 +1,7 @@
 // ignore_for_file: unnecessary_this
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/debug.dart';
@@ -9,19 +10,22 @@ import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/node/buffer_list.dart';
 import 'package:tedious_dart/packet.dart';
 
-class IncomingMessageStream extends Stream<Buffer> {
+class IncomingMessageStream extends Stream<Message>
+    implements StreamConsumer<Uint8List> {
   Debug debug;
   dynamic bl;
   Message? currentMessage;
-
+  late final StreamSubscription<Message> sub;
+  late final StreamController<Message> controller;
   IncomingMessageStream(this.debug) : super() {
     currentMessage = null;
     bl = BufferList([]);
+    sub = controller.stream.listen((event) {});
+    controller = StreamController();
   }
-
   pause() {
     if (this.currentMessage != null) {
-      this.currentMessage!.pause();
+      this.currentMessage!.subscription.pause();
     }
 
     return this;
@@ -29,13 +33,13 @@ class IncomingMessageStream extends Stream<Buffer> {
 
   resume() {
     if (this.currentMessage != null) {
-      this.currentMessage!.resume();
+      this.currentMessage!.subscription.resume();
     }
 
     return this;
   }
 
-  processBufferedData(void Function([ConnectionError? error])? callback) async {
+  processBufferedData(void Function(ConnectionError? error)? callback) async {
     // The packet header is always 8 bytes of length.
     while (this.bl.length >= HEADER_LENGTH) {
       // Get the full packet length
@@ -59,21 +63,21 @@ class IncomingMessageStream extends Stream<Buffer> {
             type: packet.type(),
             resetConnection: false,
           );
-          this.add(message);
+          controller.sink.add(message);
+          // this.add(message);
         }
 
         if (packet.isLast()) {
           // Wait until the current message was fully processed before we
           // continue processing any remaining messages.
-          message.onDone(() {
+          message.subscription.onDone(() {
             this.currentMessage = null;
             this.processBufferedData(callback);
           });
-          message.cancel();
-          // message.once('end', () {});
-          // message.end(packet.data());
+          message.controller.add(packet.data());
+          message.controller.close();
           return;
-        } else if (await message.asFuture(packet.data())) {
+        } else if (await message.subscription.asFuture(packet.data())) {
           // If too much data is buffering up in the
           // current message, wait for it to drain.
           this.processBufferedData(callback);
@@ -88,18 +92,27 @@ class IncomingMessageStream extends Stream<Buffer> {
 
     // Not enough data to read the next packet. Stop here and wait for
     // the next call to `_transform`.
-    callback!();
+    Function.apply(callback!, []);
+  }
+
+  transform_(Buffer chunk, String? _encoding, void Function() callback) {
+    this.bl.append(chunk);
+    this.processBufferedData(Function.apply(callback, []));
   }
 
   @override
-  Stream<S> transform<S>(StreamTransformer<Buffer, S> streamTransformer) {
-    return super.transform(streamTransformer);
-  }
-
-  @override
-  StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
+  StreamSubscription<Message> listen(void Function(Message event)? onData,
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    // TODO: implement listen
-    throw UnimplementedError();
+    return this.controller.stream.listen((event) {});
+  }
+
+  @override
+  Future addStream(Stream<Uint8List> stream) async {
+    this.addStream(stream);
+  }
+
+  @override
+  Future close() async {
+    this.close();
   }
 }

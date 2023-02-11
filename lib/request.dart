@@ -47,7 +47,7 @@ class Request extends EventEmitter {
 
   num? handle;
 
-  Error? error;
+  RequestError? error;
 
   Connection? connection;
 
@@ -113,6 +113,10 @@ class Request extends EventEmitter {
     //TODO! end of constructor
   }
 
+  void setRowCount(num value) {
+    rowCount = value;
+  }
+
   addParameter(String name, DataType type, dynamic value,
       [ParameterOptions? options]) {
     Parameter parameter = Parameter(
@@ -157,8 +161,9 @@ class Request extends EventEmitter {
         parameter.value = parameter.type!.validate(parameter.value, collation);
       } catch (error) {
         throw RequestError(
-          'EPARAM',
-          'Validation failed for parameter \'${parameter.name}\'. $error',
+          code: 'EPARAM',
+          message:
+              'Validation failed for parameter \'${parameter.name}\'. $error',
         );
       }
     }

@@ -87,11 +87,11 @@ class Date extends DataType {
       return null;
     }
 
-    if (!(value.runtimeType == DateTime)) {
+    if (value is! DateTime) {
       value = DateTime.parse(value);
     }
 
-    if (value.isNaN()) {
+    if (isNaN(value)) {
       throw ArgumentError('Invalid date.');
     }
 

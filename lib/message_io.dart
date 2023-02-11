@@ -2,6 +2,8 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
+// import 'dart:typed_data';
 
 import 'package:events_emitter/emitters/event_emitter.dart';
 import 'package:node_interop/buffer.dart';
@@ -9,22 +11,25 @@ import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/incoming_message_stream.dart';
 import 'package:tedious_dart/message.dart';
 import 'package:tedious_dart/models/duplex.dart';
+// import 'package:tedious_dart/models/duplex.dart';
 import 'package:tedious_dart/outgoing_message_stream.dart';
+import 'package:tedious_dart/packet.dart';
 
 //!manufactured class
 class SecurePair {
-  SecureSocket clearText;
-  Duplex encrypted;
+  SecureSocket cleartext;
+  SecureSocket? encrypted;
 
   SecurePair({
-    required this.clearText,
-    required this.encrypted,
+    required this.cleartext,
+    this.encrypted,
   });
 }
 
 class MessageIO extends EventEmitter {
-  Debug debug;
-  Socket socket;
+  final Debug debug;
+  final Socket socket;
+  int _packetSize;
 
   late bool? tlsNegotiationComplete;
 
@@ -35,21 +40,18 @@ class MessageIO extends EventEmitter {
 
   late StreamIterator<Message> incomingMessageIterator;
 
-  MessageIO(this.socket, int packetSize, this.debug) : super() {
-    socket = socket;
-    debug = debug;
-
+  MessageIO(this.socket, this._packetSize, this.debug) : super() {
     tlsNegotiationComplete = false;
 
     _incomingMessageStream = IncomingMessageStream(debug);
-    incomingMessageIterator =
-        _incomingMessageStream!.bl; //TODO: definitely wrong
+    incomingMessageIterator = StreamIterator(_incomingMessageStream!);
 
     outgoingMessageStream =
-        OutgoingMessageStream(debug, packetSize: packetSize);
+        OutgoingMessageStream(debug, packetSize: _packetSize);
 
-    socket.pipe(_incomingMessageStream);
-    outgoingMessageStream!.pipe(socket);
+    socket.pipe(_incomingMessageStream!);
+    //TODO: wrong type
+    outgoingMessageStream?.pipe(socket as StreamConsumer<Message>);
   }
 
   packetSize(List<int> args) {
@@ -74,8 +76,105 @@ class MessageIO extends EventEmitter {
     return this.outgoingMessageStream!.packetSize;
   }
 
-  startTls() {
-    //TODO:
+  startTls(SecurityContext credentialsDetails, String hostname, int port,
+      bool trustServerCertificate) {
+    // if (!credentialsDetails.maxVersion ||
+    //     !['TLSv1.2', 'TLSv1.1', 'TLSv1']
+    //         .includes(credentialsDetails.maxVersion)) {
+    //   credentialsDetails.maxVersion = 'TLSv1.2';
+    // }
+
+    final secureContext = SecurityContext.defaultContext
+      ..allowLegacyUnsafeRenegotiation = true;
+    // tls.createSecureContext(credentialsDetails);
+
+    return Future<void>(() async {
+      final duplexpair = DuplexPair(
+        socket1: await SecureSocket.connect(
+          hostname,
+          port,
+          context: secureContext,
+        ),
+      );
+      final securePair = this.securePair = SecurePair(
+        cleartext: duplexpair.socket1!,
+        encrypted: duplexpair.socket2,
+      );
+      final _socket = securePair.cleartext;
+      // final controller = StreamController();
+      // controller.addStream(_socket);
+      final StreamSubscription<Uint8List> _subscription =
+          _socket.listen((event) {});
+      final consumer = SocketConsumer(_socket);
+      // this.outgoingMessageStream!.unpipe(this.socket);
+      // this.socket.unpipe(this.incomingMessageStream);
+
+      _subscription.onData((data) async {
+        this.socket.pipe(consumer);
+        securePair.encrypted!.pipe(consumer);
+
+        securePair.cleartext.pipe(_incomingMessageStream!);
+        this
+            .outgoingMessageStream!
+            //TODO: wrong type
+            .pipe(securePair.cleartext as StreamConsumer<Message?>);
+
+        this.tlsNegotiationComplete = true;
+
+        final message =
+            Message(type: PACKETTYPE['PRELOGIN']!, resetConnection: false);
+
+        dynamic chunk;
+        while (chunk == await securePair.encrypted!.first) {
+          message.controller.add(chunk);
+        }
+        this.outgoingMessageStream!.write(message, '', (e) {});
+        message.controller.close();
+
+        this.readMessage().then((response) async {
+          // Setup readable handler for the next round of handshaking.
+          // If we encounter a `secureConnect` on the cleartext side
+          // of the secure pair, the `readable` handler is cleared
+          // and no further handshake handling will happen.
+
+          await for (var data in response) {
+            // We feed the server's handshake response back into the
+            // encrypted end of the secure pair.
+            securePair.encrypted!.write(data);
+          }
+        }).catchError((e) {
+          securePair.cleartext.destroy();
+          securePair.encrypted!.destroy();
+          throw e;
+        });
+      });
+
+      _subscription.onError((e) {});
+
+      // void onError(Error? err) {
+      //   securePair.encrypted.removeListener('readable', onReadable);
+      //   securePair.cleartext.removeListener('error', onError);
+      //   securePair.cleartext.removeListener('secureConnect', onSecureConnect);
+
+      //   securePair.cleartext.destroy();
+      //   securePair.encrypted.destroy();
+
+      //   reject(err);
+      // }
+
+      // void onReadable() {
+      //   // When there is handshake data on the encryped stream of the secure pair,
+      //   // we wrap it into a `PRELOGIN` message and send it to the server.
+      //   //
+      //   // For each `PRELOGIN` message we sent we get back exactly one response message
+      //   // that contains the server's handshake response data.
+
+      // }
+
+      // securePair.cleartext.once('error', onError);
+      // securePair.cleartext.once('secureConnect', onSecureConnect);
+      // securePair.encrypted.once('readable', onReadable);
+    });
   }
 
   // todo listen for 'drain' event when socket.write returns false.
@@ -96,5 +195,19 @@ class MessageIO extends EventEmitter {
       throw ArgumentError('unexpected end of message stream');
     }
     return result.current;
+  }
+}
+
+class SocketConsumer extends StreamConsumer<Uint8List> {
+  late final SecureSocket socket;
+  SocketConsumer(this.socket);
+  @override
+  Future addStream(Stream stream) async {
+    this.addStream(socket);
+  }
+
+  @override
+  Future close() async {
+    this.close();
   }
 }

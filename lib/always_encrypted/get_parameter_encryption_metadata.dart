@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:node_interop/node_interop.dart';
 import 'package:tedious_dart/always_encrypted/cek_entry.dart';
 import 'package:tedious_dart/always_encrypted/key_crypto.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
 import 'package:tedious_dart/connection.dart';
+import 'package:tedious_dart/data_types/nvarchar.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/packet.dart';
@@ -136,33 +139,42 @@ void getParameterEncryptionMetadata(
         }
         return await Future.forEach(decryptSymmetricKeyPromises, (element) {
           request.cryptoMetadataLoaded = true;
-          process.nextTick(callback);
+          scheduleMicrotask(callback);
         }).onError((error, stackTrace) {
-          process.nextTick(callback, error);
+          scheduleMicrotask(() {
+            callback(error: error as Error);
+          });
         });
-        // return Promise.all(decryptSymmetricKeyPromises).then(() {}, (error) {});
       });
 
-  metadataRequest.addParameter('tsql', DATATYPES.NVarChar,
-      request.sqlTextOrProcedure, ParameterOptions());
+  metadataRequest.addParameter(
+    'tsql',
+    DATATYPES[NVarChar.refID]!,
+    request.sqlTextOrProcedure,
+    ParameterOptions(),
+  );
+
   if (request.parameters.isEmpty) {
-    metadataRequest.addParameter('params', DATATYPES.NVarChar,
+    metadataRequest.addParameter('params', DATATYPES[NVarChar.refID]!,
         metadataRequest.makeParamsParameter(request.parameters));
   }
+  List resultRows = [];
 
   metadataRequest.on('row', (columns) => {resultRows.add(columns)});
 
   connection.makeRequest(
-      metadataRequest,
-      PACKETTYPE['RPC_REQUEST']!,
-      RpcRequestPayload(
-          procedure: metadataRequest.sqlTextOrProcedure!,
-          parameters: metadataRequest.parameters,
-          txnDescriptor: connection.currentTransactionDescriptor(),
-          options: connection.config!.options!,
-          collation: connection.databaseCollation));
+    metadataRequest,
+    PACKETTYPE['RPC_REQUEST']!,
+    RpcRequestPayload(
+      procedure: metadataRequest.sqlTextOrProcedure!,
+      parameters: metadataRequest.parameters,
+      txnDescriptor: connection.currentTransactionDescriptor(),
+      options: connection.config!.options!,
+      collation: connection.databaseCollation,
+    ),
+  );
 }
 
 void todo() {
-//TODO!: needs serious revision
+//TODO!: needs revision
 }

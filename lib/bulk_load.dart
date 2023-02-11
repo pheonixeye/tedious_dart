@@ -9,7 +9,7 @@ import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
-import 'package:tedious_dart/src/tracking_buffer/writable_tracking_buffer.dart';
+import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 import 'package:tedious_dart/tds_versions.dart';
 import 'package:tedious_dart/token/token.dart';
 import 'extensions/subscript_on_iterable.dart';

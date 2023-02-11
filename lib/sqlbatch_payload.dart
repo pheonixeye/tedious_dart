@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:node_interop/buffer.dart';
-import 'package:tedious_dart/src/tracking_buffer/writable_tracking_buffer.dart';
+import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 import 'package:tedious_dart/all_headers.dart';
 import 'package:tedious_dart/tds_versions.dart';
 
@@ -10,10 +10,11 @@ class SqlBatchPayload extends Stream<Buffer> {
   Buffer txnDescriptor;
   String tdsVersion;
 
-  SqlBatchPayload(
-      {required this.sqlText,
-      required this.txnDescriptor,
-      required this.tdsVersion});
+  SqlBatchPayload({
+    required this.sqlText,
+    required this.txnDescriptor,
+    required this.tdsVersion,
+  });
 
   iterate() async* {
     //todo: mod "==" to ">="

@@ -114,7 +114,7 @@ class Char extends DataType {
       return null;
     }
 
-    if (value.runtimeType != String) {
+    if (value is! String) {
       throw ArgumentError('Invalid string.');
     }
 
