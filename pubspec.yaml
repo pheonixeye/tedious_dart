@@ -11,13 +11,15 @@ dependencies:
   # eventify: ^1.0.1
   buffer:
   logger:
-  charset_converter:
-  node_interop:
+  # charset_converter:
+  # node_interop:
+    # path: ./node_interop-2.1.0
   sprintf:
   crypto:
   convert:
   pointycastle:
   dcache:
+  # js:
   # ts_definition:
   events_emitter:
   

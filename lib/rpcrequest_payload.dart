@@ -11,7 +11,7 @@ import 'dart:async';
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/all_headers.dart';
 import 'package:tedious_dart/collation.dart';
-import 'package:tedious_dart/connection.dart';
+import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 

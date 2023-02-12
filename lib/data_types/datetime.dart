@@ -2,8 +2,8 @@
 
 import 'dart:core';
 import 'package:node_interop/node_interop.dart';
-import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/collation.dart';
+import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/data_types/datetimen.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'dart:core' as core show DateTime;

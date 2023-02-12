@@ -2,7 +2,7 @@ import 'package:dcache/dcache.dart';
 import 'package:node_interop/node_interop.dart';
 import 'package:tedious_dart/always_encrypted/symmetric_key.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
-import 'package:tedious_dart/connection.dart';
+import 'package:tedious_dart/conn_config.dart';
 import 'package:tedious_dart/models/errors.dart';
 
 final cache = SimpleCache(storage: InMemoryStorage<String, SymmetricKey>(0));

@@ -1,7 +1,7 @@
 // ignore_for_file: non_finalant_identifier_names, non_constant_identifier_names
 
 import 'package:node_interop/buffer.dart';
-import 'package:tedious_dart/connection.dart';
+import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
@@ -149,7 +149,8 @@ class TVP extends DataType {
       return null;
     }
 
-    if (value is! Object) {
+    if (value is! dynamic) {
+      //TODO:object ,instead of dynamic, of typescript?? needed??
       throw MTypeError('Invalid table.');
     }
 

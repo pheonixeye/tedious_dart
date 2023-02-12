@@ -1,14 +1,17 @@
-// ignore_for_file: constant_identifier_names, library_private_types_in_public_api, unnecessary_this, unnecessary_null_comparison, unnecessary_type_check
+// ignore_for_file: constant_identifier_names, library_private_types_in_public_api,  unnecessary_null_comparison, unnecessary_type_check
 
 import 'dart:async';
 import 'dart:io';
 
 import 'package:events_emitter/events_emitter.dart';
 import 'package:node_interop/node_interop.dart';
-import 'package:tedious_dart/always_encrypted/keystore_provider_azure_key_vault.dart';
 import 'package:tedious_dart/bulk_load.dart';
 import 'package:tedious_dart/bulk_load_payload.dart';
 import 'package:tedious_dart/collation.dart';
+import 'package:tedious_dart/conn_authentication.dart';
+import 'package:tedious_dart/conn_config.dart';
+import 'package:tedious_dart/conn_const_typedef.dart';
+import 'package:tedious_dart/conn_states.dart';
 import 'package:tedious_dart/connector.dart';
 import 'package:tedious_dart/data_types/int.dart';
 import 'package:tedious_dart/data_types/nvarchar.dart';
@@ -18,14 +21,12 @@ import 'package:tedious_dart/library.dart';
 import 'package:tedious_dart/login7_payload.dart';
 import 'package:tedious_dart/message.dart';
 import 'package:tedious_dart/message_io.dart';
-import 'package:tedious_dart/metadata_parser.dart';
+import 'package:tedious_dart/meta/annotations.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/models/random_bytes.dart';
 import 'package:tedious_dart/node/abort_controller.dart';
-import 'package:tedious_dart/node/connection_m_classes.dart';
 import 'package:tedious_dart/ntlm.dart';
-import 'package:tedious_dart/ntlm_payload.dart';
 import 'package:tedious_dart/packet.dart';
 import 'package:tedious_dart/prelogin_payload.dart';
 import 'package:tedious_dart/request.dart';
@@ -37,1093 +38,6 @@ import 'package:tedious_dart/token/stream_parser.dart';
 import 'package:tedious_dart/token/token_stream_parser.dart';
 import 'package:tedious_dart/transaction.dart';
 import 'package:tedious_dart/transient_error_lookup.dart';
-
-typedef BeginTransactionCallback = void Function(
-    {Error? err, Buffer? transactionDescriptor});
-
-typedef SaveTransactionCallback = void Function({Error? err});
-
-typedef CommitTransactionCallback = void Function({Error? err});
-
-typedef RollbackTransactionCallback = void Function({Error? err});
-
-typedef ResetCallback = void Function({Error? err});
-
-typedef TransactionDoneCallback<T> = void Function(
-    {Error? err, T done, List<CallbackParameters<T>>? args});
-
-typedef CallbackParameters<T> = T? Function({Error? err, Map? args});
-
-typedef TransactionDone<T> = void Function(
-    {Error? err, T done, CallbackParameters<T> callbackParameters});
-
-typedef TransactionCallback<T> = void Function(
-    {Error? err, TransactionDone<T>? txDone});
-
-const KEEP_ALIVE_INITIAL_DELAY = 30 * 1000;
-
-const DEFAULT_CONNECT_TIMEOUT = 15 * 1000;
-
-const DEFAULT_CLIENT_REQUEST_TIMEOUT = 15 * 1000;
-
-const DEFAULT_CANCEL_TIMEOUT = 5 * 1000;
-
-const DEFAULT_CONNECT_RETRY_INTERVAL = 500;
-
-const DEFAULT_PACKET_SIZE = 4 * 1024;
-
-const DEFAULT_TEXTSIZE = 2147483647;
-
-const DEFAULT_DATEFIRST = 7;
-
-const DEFAULT_PORT = 1433;
-
-const DEFAULT_TDS_VERSION = '7_4';
-
-const DEFAULT_LANGUAGE = 'us_english';
-
-const DEFAULT_DATEFORMAT = 'mdy';
-
-class _AuthOptions {
-  String? clientId;
-  String? token;
-  String? userName;
-  String? password;
-  String? tenantId;
-  String? clientSecret;
-  String? domain;
-  _AuthOptions({
-    this.clientId,
-    this.clientSecret,
-    this.domain,
-    this.password,
-    this.tenantId,
-    this.token,
-    this.userName,
-  });
-}
-
-abstract class _Authentication {
-  String? get type;
-  _AuthOptions? get options;
-}
-
-class AzureActiveDirectoryMsiAppServiceAuthentication extends _Authentication {
-  AzureActiveDirectoryMsiAppServiceAuthentication({
-    this.clientId,
-  });
-  final String? clientId;
-  @override
-  _AuthOptions get options => _AuthOptions(
-        clientId: clientId,
-      );
-
-  @override
-  String get type => 'azure-active-directory-msi-app-service';
-}
-
-class AzureActiveDirectoryMsiVmAuthentication extends _Authentication {
-  AzureActiveDirectoryMsiVmAuthentication({
-    this.clientId,
-  });
-  final String? clientId;
-  @override
-  _AuthOptions get options => _AuthOptions(
-        clientId: clientId,
-      );
-
-  @override
-  String get type => 'azure-active-directory-msi-vm';
-}
-
-class AzureActiveDirectoryDefaultAuthentication extends _Authentication {
-  AzureActiveDirectoryDefaultAuthentication({
-    this.clientId,
-  });
-  final String? clientId;
-  @override
-  _AuthOptions get options => _AuthOptions(
-        clientId: clientId,
-      );
-
-  @override
-  String get type => 'azure-active-directory-default';
-}
-
-class AzureActiveDirectoryAccessTokenAuthentication extends _Authentication {
-  AzureActiveDirectoryAccessTokenAuthentication({
-    this.token,
-  });
-  final String? token;
-  @override
-  _AuthOptions get options => _AuthOptions(
-        token: token,
-      );
-
-  @override
-  String get type => 'azure-active-directory-access-token';
-}
-
-class AzureActiveDirectoryPasswordAuthentication extends _Authentication {
-  AzureActiveDirectoryPasswordAuthentication({
-    this.userName,
-    this.password,
-    this.clientId,
-    this.tenantId,
-  });
-  final String? userName;
-  final String? password;
-  final String? clientId;
-  final String? tenantId;
-  @override
-  _AuthOptions get options => _AuthOptions(
-        userName: userName,
-        password: password,
-        clientId: clientId,
-        tenantId: tenantId,
-      );
-
-  @override
-  String get type => 'azure-active-directory-password';
-}
-
-class AzureActiveDirectoryServicePrincipalSecret extends _Authentication {
-  AzureActiveDirectoryServicePrincipalSecret({
-    this.clientId,
-    this.tenantId,
-    this.clientSecret,
-  });
-  final String? clientId;
-  final String? tenantId;
-  final String? clientSecret;
-  @override
-  _AuthOptions get options => _AuthOptions(
-        clientId: clientId,
-        tenantId: tenantId,
-        clientSecret: clientSecret,
-      );
-
-  @override
-  String get type => 'azure-active-directory-service-principal-secret';
-}
-
-class NtlmAuthentication extends _Authentication {
-  NtlmAuthentication({
-    this.userName,
-    this.password,
-    this.domain,
-  });
-  final String? userName;
-  final String? password;
-  final String? domain;
-  @override
-  _AuthOptions get options => _AuthOptions(
-        userName: userName,
-        password: password,
-        domain: domain,
-      );
-
-  @override
-  String get type => 'ntlm';
-}
-
-class DefaultAuthentication extends _Authentication {
-  DefaultAuthentication({
-    this.userName,
-    this.password,
-  });
-  final String? userName;
-  final String? password;
-  @override
-  _AuthOptions get options => _AuthOptions(
-        userName: userName,
-        password: password,
-      );
-
-  @override
-  String get type => 'default';
-}
-
-typedef ColumnNameReplacer = String? Function(
-    {String? colName, num? index, Metadata? metadata});
-
-class InternalConnectionOptions {
-  InternalConnectionOptions(
-      {required this.abortTransactionOnError,
-      required this.appName,
-      required this.camelCaseColumns,
-      required this.cancelTimeout,
-      required this.columnEncryptionKeyCacheTTL,
-      required this.columnEncryptionSetting,
-      required this.columnNameReplacer,
-      required this.connectionRetryInterval,
-      required this.connectTimeout,
-      required this.cryptoCredentialsDetails,
-      required this.database,
-      required this.datefirst,
-      required this.dateFormat,
-      required this.debug,
-      this.enableAnsiNull,
-      this.enableAnsiNullDefault,
-      this.enableAnsiPadding,
-      this.enableAnsiWarnings,
-      this.enableArithAbort,
-      this.enableConcatNullYieldsNull,
-      this.enableCursorCloseOnCommit,
-      this.enableImplicitTransactions,
-      this.enableNumericRoundabort,
-      this.enableQuotedIdentifier,
-      required this.encrypt,
-      required this.encryptionKeyStoreProviders,
-      required this.fallbackToDefaultDb,
-      required this.instanceName,
-      required this.language,
-      this.localAddress,
-      required this.maxRetriesOnTransientErrors,
-      required this.multiSubnetFailover,
-      required this.packetSize,
-      this.port,
-      required this.readOnlyIntent,
-      required this.requestTimeout,
-      required this.rowCollectionOnDone,
-      required this.rowCollectionOnRequestCompletion,
-      this.serverName,
-      required this.serverSupportsColumnEncryption,
-      required this.tdsVersion,
-      required this.textsize,
-      required this.trustedServerNameAE,
-      required this.trustServerCertificate,
-      required this.useColumnNames,
-      required this.useUTC,
-      this.workstationId,
-      required this.lowerCaseGuids,
-      required this.isolationLevel,
-      required this.connectionIsolationLevel});
-  bool abortTransactionOnError;
-  String? appName;
-  bool camelCaseColumns;
-  num cancelTimeout;
-  num columnEncryptionKeyCacheTTL;
-  bool columnEncryptionSetting;
-  ColumnNameReplacer? columnNameReplacer;
-  num connectionRetryInterval;
-  num connectTimeout;
-  num connectionIsolationLevel;
-  SecurityContext? cryptoCredentialsDetails;
-  String? database;
-  num? datefirst;
-  String? dateFormat;
-  DebugOptions? debug;
-  bool? enableAnsiNull;
-  bool? enableAnsiNullDefault;
-  bool? enableAnsiPadding;
-  bool? enableAnsiWarnings;
-  bool? enableArithAbort;
-  bool? enableConcatNullYieldsNull;
-  bool? enableCursorCloseOnCommit;
-  bool? enableImplicitTransactions;
-  bool? enableNumericRoundabort;
-  bool? enableQuotedIdentifier;
-  bool encrypt;
-  KeyStoreProviderMap encryptionKeyStoreProviders;
-  bool fallbackToDefaultDb;
-  String? instanceName;
-  num isolationLevel;
-  String language;
-  String? localAddress;
-  num maxRetriesOnTransientErrors;
-  bool multiSubnetFailover;
-  num packetSize;
-  num? port;
-  bool readOnlyIntent;
-  num requestTimeout;
-  bool rowCollectionOnDone;
-  bool rowCollectionOnRequestCompletion;
-  String? serverName;
-  bool serverSupportsColumnEncryption;
-  String tdsVersion;
-  num textsize;
-  String? trustedServerNameAE;
-  bool trustServerCertificate;
-  bool useColumnNames;
-  bool useUTC;
-  String? workstationId;
-  bool lowerCaseGuids;
-}
-
-typedef KeyStoreProviderMap
-    = Map<String, ColumnEncryptionAzureKeyVaultProvider>;
-
-//!objectLiteral class
-// ignore: camel_case_types
-
-//TODO!
-/// String? name;
-///  void enter({Connection? connection});
-///  void exit({Connection? connection, State? newState});
-///  void socketError({Connection? connection, Error? err});
-///  void connectionTimeout({Connection? connection});
-///  void message({Connection? connection, Message? message});
-///  void retry({Connection? connection});
-///  void reconnect({Connection? connection});
-abstract class _State {
-  String name;
-  Function? enter;
-  Function? exit;
-  Function? socketError;
-  Function? connectionTimeout;
-  Function? message;
-  Function? retry;
-  Function? reconnect;
-  _State(
-    this.name, {
-    this.connectionTimeout,
-    this.enter,
-    this.exit,
-    this.message,
-    this.reconnect,
-    this.retry,
-    this.socketError,
-  });
-}
-
-class State extends _State {
-  static late final Map<String, Function?> eventsMap;
-  State(
-    super.name, {
-    super.connectionTimeout,
-    super.enter,
-    super.exit,
-    super.message,
-    super.reconnect,
-    super.retry,
-    super.socketError,
-  }) {
-    eventsMap = {
-      'enter': this.enter,
-      'exit': this.exit,
-      'socketError': this.socketError,
-      'connectionTimeout': this.connectionTimeout,
-      'message': this.message,
-      'retry': this.retry,
-      'reconnect': this.reconnect,
-    };
-  }
-}
-
-//TODO: ??
-// ignore: non_constant_identifier_names
-Map<String, State> STATES() {
-  final c = Connection(null);
-  return {
-    "INITIALIZED": State('Initialized'),
-    "CONNECTING": State(
-      'Connecting',
-      enter: () {
-        c.initialiseConnection();
-      },
-      socketError: () {
-        c.transitionTo(c.STATE['FINAL']!);
-      },
-      connectionTimeout: () {
-        c.transitionTo(c.STATE['FINAL']!);
-      },
-    ),
-    "SENT_PRELOGIN": State(
-      'SentPrelogin',
-      enter: () {
-        () async {
-          var messageBuffer = Buffer.alloc(0);
-          late Message message;
-          try {
-            message = await c.messageIo.readMessage();
-          } on Error catch (e, _) {
-            return c.socketError(e);
-          }
-
-          await for (var data in message) {
-            messageBuffer = Buffer.concat([messageBuffer, data]);
-          }
-
-          final preloginPayload = PreloginPayload(data: messageBuffer);
-          c.debug.payload(() {
-            return preloginPayload.toString(indent: '  ');
-          });
-
-          if (preloginPayload.fedAuthRequired == 1) {
-            c.fedAuthRequired = true;
-          }
-
-          if (preloginPayload.encryptionString == 'ON' ||
-              preloginPayload.encryptionString == 'REQ') {
-            if (!c.config!.options!.encrypt) {
-              c.emit(
-                  'connect',
-                  ConnectionError(
-                      "Server requires encryption, set 'encrypt' config option to true.",
-                      'EENCRYPT'));
-              return c.close();
-            }
-
-            try {
-              c.transitionTo(c.STATE['SENT_TLSSSLNEGOTIATION']!);
-              await c.messageIo.startTls(
-                  c.secureContextOptions,
-                  c.routingData?.server ?? c.config!.server!,
-                  c.routingData?.port as int,
-                  c.config!.options!.trustServerCertificate);
-            } on Error catch (e) {
-              return c.socketError(e);
-            }
-          }
-          c.sendLogin7Packet();
-
-          final authentication = c.config!.authentication!;
-
-          switch (authentication.type) {
-            case 'azure-active-directory-password':
-            case 'azure-active-directory-msi-vm':
-            case 'azure-active-directory-msi-app-service':
-            case 'azure-active-directory-service-principal-secret':
-            case 'azure-active-directory-default':
-              c.transitionTo(c.STATE['SENT_LOGIN7_WITH_FEDAUTH']!);
-              break;
-            case 'ntlm':
-              c.transitionTo(c.STATE['SENT_LOGIN7_WITH_NTLM']!);
-              break;
-            default:
-              c.transitionTo(c.STATE['SENT_LOGIN7_WITH_STANDARD_LOGIN']!);
-              break;
-          }
-        }.call().catchError((e) {
-          scheduleMicrotask(() {
-            throw e;
-          });
-        });
-      },
-      socketError: () {
-        c.transitionTo(c.STATE['FINAL']!);
-      },
-      connectionTimeout: () {
-        c.transitionTo(c.STATE['FINAL']!);
-      },
-    ),
-    "REROUTING": State('ReRouting',
-        enter: () {
-          c.cleanupConnection(CLEANUP_TYPE['REDIRECT']!);
-        },
-        message: () {},
-        socketError: () {
-          c.transitionTo(c.STATE['FINAL']!);
-        },
-        connectionTimeout: () {
-          c.transitionTo(c.STATE['FINAL']!);
-        },
-        reconnect: () {
-          c.transitionTo(c.STATE['CONNECTING']!);
-        }),
-    "TRANSIENT_FAILURE_RETRY": State('TRANSIENT_FAILURE_RETRY',
-        enter: () {
-          c.curTransientRetryCount++;
-          c.cleanupConnection(CLEANUP_TYPE['RETRY']!);
-        },
-        message: () {},
-        socketError: () {
-          c.transitionTo(c.STATE['FINAL']!);
-        },
-        connectionTimeout: () {
-          c.transitionTo(c.STATE['FINAL']!);
-        },
-        retry: () {
-          c.createRetryTimer();
-        }),
-    "SENT_TLSSSLNEGOTIATION": State(
-      'SentTLSSSLNegotiation',
-      socketError: () {
-        c.transitionTo(c.STATE['FINAL']!);
-      },
-      connectionTimeout: () {
-        c.transitionTo(c.STATE['FINAL']!);
-      },
-    ),
-    "SENT_LOGIN7_WITH_STANDARD_LOGIN": State(
-      'SentLogin7WithStandardLogin',
-      enter: () {
-        () async {
-          late Message message;
-          try {
-            message = await c.messageIo.readMessage();
-          } on Error catch (e) {
-            return c.socketError(e);
-          }
-          final handler = Login7TokenHandler(c);
-          final tokenStreamParser = c.createTokenStreamParser(message, handler);
-
-          await c.once('end', tokenStreamParser);
-
-          if (handler.loginAckReceived) {
-            if (handler.routingData != null) {
-              c.routingData = handler.routingData;
-              c.transitionTo(c.STATE['REROUTING']!);
-            } else {
-              c.transitionTo(c.STATE['LOGGED_IN_SENDING_INITIAL_SQL']!);
-            }
-          } else if (c.loginError != null) {
-            if (isTransientError(c.loginError)) {
-              c.debug.log('Initiating retry on transient error');
-              c.transitionTo(c.STATE['TRANSIENT_FAILURE_RETRY']!);
-            } else {
-              c.emit('connect', c.loginError);
-              c.transitionTo(c.STATE['FINAL']!);
-            }
-          } else {
-            c.emit('connect', ConnectionError('Login failed.', 'ELOGIN'));
-            c.transitionTo(c.STATE['FINAL']!);
-          }
-        }.call().catchError((e) {
-          scheduleMicrotask(() {
-            throw e;
-          });
-        });
-      },
-      socketError: () {
-        c.transitionTo(c.STATE['FINAL']!);
-      },
-      connectionTimeout: () {
-        c.transitionTo(c.STATE['FINAL']!);
-      },
-    ),
-    "SENT_LOGIN7_WITH_NTLM": State('SentLogin7WithNTLMLogin', enter: () {
-      () async {
-        while (true) {
-          late Message message;
-          try {
-            message = await c.messageIo.readMessage();
-          } on Error catch (e) {
-            return c.socketError(e);
-          }
-
-          final handler = Login7TokenHandler(c);
-          final tokenStreamParser = c.createTokenStreamParser(message, handler);
-
-          await c.once('end', tokenStreamParser);
-
-          if (handler.loginAckReceived) {
-            if (handler.routingData != null) {
-              c.routingData = handler.routingData;
-              return c.transitionTo(c.STATE['REROUTING']!);
-            } else {
-              return c.transitionTo(c.STATE['LOGGED_IN_SENDING_INITIAL_SQL']!);
-            }
-          } else if (c.ntlmpacket != null) {
-            final authentication =
-                c.config!.authentication as NtlmAuthentication;
-
-            final payload = NTLMResponsePayload(
-              data: null,
-              loginData: NTLMOptions(
-                  domain: authentication.options.domain,
-                  userName: authentication.options.userName,
-                  password: authentication.options.password,
-                  ntlmpacket: c.ntlmpacket),
-            );
-
-            c.messageIo
-                .sendMessage(PACKETTYPE['NTLMAUTH_PKT']!, data: payload.data);
-            c.debug.payload(() {
-              return payload.toString(indent: '  ');
-            });
-
-            c.ntlmpacket = null;
-          } else if (c.loginError != null) {
-            if (isTransientError(c.loginError)) {
-              c.debug.log('Initiating retry on transient error');
-              return c.transitionTo(c.STATE['TRANSIENT_FAILURE_RETRY']!);
-            } else {
-              c.emit('connect', c.loginError);
-              return c.transitionTo(c.STATE['FINAL']!);
-            }
-          } else {
-            c.emit('connect', ConnectionError('Login failed.', 'ELOGIN'));
-            return c.transitionTo(c.STATE['FINAL']!);
-          }
-        }
-      }.call().catchError((e) {
-        scheduleMicrotask(() {
-          throw e;
-        });
-      });
-    }, socketError: () {
-      c.transitionTo(c.STATE['FINAL']!);
-    }, connectionTimeout: () {
-      c.transitionTo(c.STATE['FINAL']!);
-    }),
-    "SENT_LOGIN7_WITH_FEDAUTH": State('SentLogin7Withfedauth', enter: () {
-      () async {
-        late Message message;
-        try {
-          message = await c.messageIo.readMessage();
-        } on Error catch (e) {
-          return c.socketError(e);
-        }
-
-        final handler = Login7TokenHandler(c);
-        final tokenStreamParser = c.createTokenStreamParser(message, handler);
-        await c.once('end', tokenStreamParser);
-        if (handler.loginAckReceived) {
-          if (handler.routingData != null) {
-            c.routingData = handler.routingData;
-            c.transitionTo(c.STATE['REROUTING']!);
-          } else {
-            c.transitionTo(c.STATE['LOGGED_IN_SENDING_INITIAL_SQL']!);
-          }
-
-          return;
-        }
-        final fedAuthInfoToken = handler.fedAuthInfoToken;
-
-        if (fedAuthInfoToken != null &&
-            fedAuthInfoToken.stsurl != null &&
-            fedAuthInfoToken.spn != null) {
-          final authentication = c.config!.authentication;
-          final tokenScope =
-              Uri(path: '/.default', pathSegments: [fedAuthInfoToken.spn!])
-                  .toString();
-
-          dynamic credentials;
-
-          switch (authentication!.type) {
-            case 'azure-active-directory-password':
-              credentials = UsernamePasswordCredential(
-                  authentication.options!.tenantId ?? 'common',
-                  authentication.options!.clientId,
-                  authentication.options!.userName,
-                  authentication.options!.password);
-              break;
-            case 'azure-active-directory-msi-vm':
-            case 'azure-active-directory-msi-app-service':
-              final msiArgs = authentication.options!.clientId == null
-                  ? [authentication.options!.clientId, {}]
-                  : [{}];
-              credentials = ManagedIdentityCredential(msiArgs);
-              break;
-            case 'azure-active-directory-default':
-              final args = authentication.options!.clientId == null
-                  ? {
-                      'managedIdentityClientId':
-                          authentication.options!.clientId
-                    }
-                  : {};
-              credentials = DefaultAzureCredential(args);
-              break;
-            case 'azure-active-directory-service-principal-secret':
-              credentials = ClientSecretCredential(
-                authentication.options!.clientId!,
-                authentication.options!.clientSecret!,
-                authentication.options!.tenantId!,
-              );
-              break;
-          }
-
-          dynamic tokenResponse;
-          try {
-            tokenResponse = await credentials.getToken(tokenScope);
-          } catch (err) {
-            c.loginError = ConnectionError(
-                'Security token could not be authenticated or authorized.',
-                'EFEDAUTH');
-            c.emit('connect', c.loginError);
-            c.transitionTo(c.STATE['FINAL']!);
-            return;
-          }
-
-          final token = tokenResponse.token;
-          c.sendFedAuthTokenMessage(token);
-        } else if (c.loginError != null) {
-          if (isTransientError(c.loginError)) {
-            c.debug.log('Initiating retry on transient error');
-            c.transitionTo(c.STATE['TRANSIENT_FAILURE_RETRY']!);
-          } else {
-            c.emit('connect', c.loginError);
-            c.transitionTo(c.STATE['FINAL']!);
-          }
-        } else {
-          c.emit('connect', ConnectionError('Login failed.', 'ELOGIN'));
-          c.transitionTo(c.STATE['FINAL']!);
-        }
-      }.call().catchError((e) {
-        scheduleMicrotask(() {
-          throw e;
-        });
-      });
-    }, socketError: () {
-      c.transitionTo(c.STATE['FINAL']!);
-    }, connectionTimeout: () {
-      c.transitionTo(c.STATE['FINAL']!);
-    }),
-    "LOGGED_IN_SENDING_INITIAL_SQL":
-        State('LoggedInSendingInitialSql', enter: () {
-      () async {
-        c.sendInitialSql();
-        late Message message;
-        try {
-          message = await c.messageIo.readMessage();
-        } on Error catch (e) {
-          return c.socketError(e);
-        }
-        final tokenStreamParser =
-            c.createTokenStreamParser(message, InitialSqlTokenHandler(c));
-        await c.once('end', tokenStreamParser);
-
-        c.transitionTo(c.STATE['LOGGED_IN']!);
-        c.processedInitialSql();
-      }()
-          .catchError((e) {
-        scheduleMicrotask(() {
-          throw e;
-        });
-      });
-    }, socketError: () {
-      c.transitionTo(c.STATE['FINAL']!);
-    }, connectionTimeout: () {
-      c.transitionTo(c.STATE['FINAL']!);
-    }),
-    "LOGGED_IN": State(
-      'LoggedIn',
-      socketError: () {
-        c.transitionTo(c.STATE['FINAL']!);
-      },
-    ),
-    "SENT_CLIENT_REQUEST": State(
-      'SentClientRequest',
-      enter: () {
-        () async {
-          late Message message;
-          try {
-            message = await c.messageIo.readMessage();
-          } on Error catch (e) {
-            return c.socketError(e);
-          }
-          c.clearRequestTimer();
-
-          final tokenStreamParser = c.createTokenStreamParser(
-              message,
-              RequestTokenHandler(
-                c,
-                c.request!,
-                [],
-              ));
-
-          if (c.request?.canceled && c.cancelTimer != null) {
-            return c.transitionTo(c.STATE['SENT_ATTENTION']!);
-          }
-          onResume() {
-            tokenStreamParser.resume();
-          }
-
-          onPause() {
-            tokenStreamParser.pause();
-
-            c.request?.once('resume', onResume);
-          }
-
-          c.request?.on('pause', onPause);
-
-          if (c.request is Request && c.request.paused) {
-            onPause();
-          }
-
-          onEndOfMessage() {
-            c.request?.removeListener('cancel', c._cancelAfterRequestSent);
-            //ignore:referenced_before_declaration
-            c.request?.removeListener('cancel', onCancel);
-            c.request?.removeListener('pause', onPause);
-            c.request?.removeListener('resume', onResume);
-
-            c.transitionTo(c.STATE['LOGGED_IN']!);
-            final sqlRequest = c.request as Request;
-            c.request = undefined;
-            if (TDSVERSIONS[c.config!.options!.tdsVersion]! <
-                    TDSVERSIONS['7_2']! &&
-                sqlRequest.error != null &&
-                c.isSqlBatch) {
-              c.inTransaction = false;
-            }
-            sqlRequest.callback(
-              error: sqlRequest.error,
-              rowCount: sqlRequest.rowCount,
-              rows: sqlRequest.rows,
-            );
-          }
-
-          onCancel() {
-            tokenStreamParser.removeListener('end', onEndOfMessage);
-
-            if (c.request is Request && c.request.paused) {
-              // resume the request if it was paused so we can read the remaining tokens
-              c.request.resume();
-            }
-
-            c.request?.removeListener('pause', onPause);
-            c.request?.removeListener('resume', onResume);
-
-            // The `_cancelAfterRequestSent` callback will have sent a
-            // attention message, so now we need to also switch to
-            // the `SENT_ATTENTION` state to make sure the attention ack
-            // message is processed correctly.
-            c.transitionTo(c.STATE['SENT_ATTENTION']!);
-          }
-
-          tokenStreamParser.once('end', onEndOfMessage);
-          c.request?.once('cancel', onCancel);
-        }.call();
-      },
-      exit: (State nextState) {
-        c.clearRequestTimer();
-      },
-      socketError: (err) {
-        final sqlRequest = c.request!;
-        c.request = null;
-        c.transitionTo(c.STATE['FINAL']!);
-
-        sqlRequest.callback(err);
-      },
-    ),
-    "SENT_ATTENTION": State('SentAttention', enter: () {
-      () async {
-        late Message message;
-        try {
-          message = await c.messageIo.readMessage();
-        } on Error catch (e) {
-          return c.socketError(e);
-        }
-
-        final handler = AttentionTokenHandler(c, c.request!);
-        final tokenStreamParser = c.createTokenStreamParser(message, handler);
-
-        await c.once('end', tokenStreamParser);
-        // 3.2.5.7 Sent Attention State
-        // Discard any data contained in the response, until we receive the attention response
-        if (handler.attentionReceived) {
-          c.clearCancelTimer();
-
-          final sqlRequest = c.request! as Request;
-          c.request = null;
-          c.transitionTo(c.STATE['LOGGED_IN']!);
-
-          if (sqlRequest.error != null &&
-              sqlRequest.error is RequestError &&
-              sqlRequest.error!.code == 'ETIMEOUT') {
-            sqlRequest.callback(error: sqlRequest.error);
-          } else {
-            sqlRequest.callback(
-                error: RequestError(message: 'Canceled.', code: 'ECANCEL'));
-          }
-        }
-      }()
-          .catchError((e) {
-        scheduleMicrotask(() {
-          throw e;
-        });
-      });
-    }, socketError: (err) {
-      final sqlRequest = c.request!;
-      c.request = null;
-
-      c.transitionTo(c.STATE['FINAL']!);
-
-      sqlRequest.callback(err);
-    }),
-    "FINAL": State('Final', enter: () {
-      c.cleanupConnection(CLEANUP_TYPE['NORMAL']!);
-    }, connectionTimeout: () {
-      // Do nothing, as the timer should be cleaned up.
-    }, message: () {
-      // Do nothing
-    }, socketError: () {
-      // Do nothing
-    }),
-  };
-}
-
-class AuthenticationType {
-  late _Authentication? auth;
-  String type;
-  AuthenticationType(this.type) {
-    switch (type) {
-      case 'ntlm':
-        auth = NtlmAuthentication();
-        break;
-      case 'azure-active-directory-password':
-        auth = AzureActiveDirectoryPasswordAuthentication();
-        break;
-      case 'azure-active-directory-msi-app-service':
-        auth = AzureActiveDirectoryMsiAppServiceAuthentication();
-        break;
-      case 'azure-active-directory-msi-vm':
-        auth = AzureActiveDirectoryMsiVmAuthentication();
-        break;
-      case 'azure-active-directory-access-token':
-        auth = AzureActiveDirectoryAccessTokenAuthentication();
-        break;
-      case 'azure-active-directory-service-principal-secret':
-        auth = AzureActiveDirectoryServicePrincipalSecret();
-        break;
-      case 'azure-active-directory-default':
-        auth = AzureActiveDirectoryDefaultAuthentication();
-        break;
-      case 'default':
-        auth = DefaultAuthentication();
-        break;
-      default:
-        auth = null;
-    }
-  }
-}
-
-class InternalConnectionConfig {
-  String? server;
-  InternalConnectionOptions? options;
-  _Authentication? authentication;
-
-  InternalConnectionConfig({
-    required this.server,
-    required this.options,
-    required this.authentication,
-  });
-}
-
-class ConnectionConfiguration {
-  String server;
-  ConnectionOptions options;
-  AuthenticationOptions authentication;
-
-  ConnectionConfiguration({
-    required this.server,
-    required this.options,
-    required this.authentication,
-  });
-}
-
-class AuthenticationOptions {
-  AuthenticationType? type;
-  dynamic options;
-  AuthenticationOptions({
-    this.type,
-    this.options,
-  });
-}
-
-class ConnectionOptions {
-  ConnectionOptions({
-    required this.abortTransactionOnError,
-    required this.appName,
-    required this.camelCaseColumns,
-    required this.cancelTimeout,
-    required this.columnEncryptionKeyCacheTTL,
-    required this.columnEncryptionSetting,
-    required this.columnNameReplacer,
-    required this.connectionRetryInterval,
-    required this.connectTimeout,
-    required this.cryptoCredentialsDetails,
-    required this.database,
-    required this.datefirst,
-    required this.dateFormat,
-    required this.debug,
-    this.enableAnsiNull,
-    this.enableAnsiNullDefault,
-    this.enableAnsiPadding,
-    this.enableAnsiWarnings,
-    this.enableArithAbort,
-    this.enableConcatNullYieldsNull,
-    this.enableCursorCloseOnCommit,
-    this.enableImplicitTransactions,
-    this.enableNumericRoundabort,
-    this.enableQuotedIdentifier,
-    required this.encrypt,
-    required this.encryptionKeyStoreProviders,
-    required this.fallbackToDefaultDb,
-    required this.instanceName,
-    required this.language,
-    this.localAddress,
-    required this.maxRetriesOnTransientErrors,
-    required this.multiSubnetFailover,
-    required this.packetSize,
-    this.port,
-    required this.readOnlyIntent,
-    required this.requestTimeout,
-    required this.rowCollectionOnDone,
-    required this.rowCollectionOnRequestCompletion,
-    this.serverName,
-    required this.serverSupportsColumnEncryption,
-    required this.tdsVersion,
-    required this.textsize,
-    this.trustedServerNameAE,
-    required this.trustServerCertificate,
-    required this.useColumnNames,
-    required this.useUTC,
-    this.workstationId,
-    required this.lowerCaseGuids,
-    required this.isolationLevel,
-    required this.connectionIsolationLevel,
-  });
-  bool abortTransactionOnError;
-  String? appName;
-  bool camelCaseColumns;
-  num cancelTimeout;
-  num columnEncryptionKeyCacheTTL;
-  bool columnEncryptionSetting;
-  ColumnNameReplacer? columnNameReplacer;
-  num connectionRetryInterval;
-  num connectTimeout;
-  num connectionIsolationLevel;
-  SecurityContext cryptoCredentialsDetails;
-  String? database;
-  num? datefirst;
-  String? dateFormat;
-  DebugOptions debug;
-  bool? enableAnsiNull;
-  bool? enableAnsiNullDefault;
-  bool? enableAnsiPadding;
-  bool? enableAnsiWarnings;
-  bool? enableArithAbort;
-  bool? enableConcatNullYieldsNull;
-  bool? enableCursorCloseOnCommit;
-  bool? enableImplicitTransactions;
-  bool? enableNumericRoundabort;
-  bool? enableQuotedIdentifier;
-  bool encrypt;
-  KeyStoreProviderMap encryptionKeyStoreProviders;
-  bool fallbackToDefaultDb;
-  String instanceName;
-  num isolationLevel;
-  String language;
-  String? localAddress;
-  num maxRetriesOnTransientErrors;
-  bool multiSubnetFailover;
-  num packetSize;
-  num? port;
-  bool readOnlyIntent;
-  num requestTimeout;
-  bool rowCollectionOnDone;
-  bool rowCollectionOnRequestCompletion;
-  String? serverName;
-  bool serverSupportsColumnEncryption;
-  String tdsVersion;
-  num textsize;
-  String? trustedServerNameAE;
-  bool trustServerCertificate;
-  bool useColumnNames;
-  bool useUTC;
-  String? workstationId;
-  bool lowerCaseGuids;
-}
-
-const Map<String, int> CLEANUP_TYPE = {
-  'NORMAL': 0,
-  'REDIRECT': 1,
-  'RETRY': 2,
-};
 
 class RoutingData {
   String server;
@@ -1137,7 +51,7 @@ class RoutingData {
 class Connection extends EventEmitter {
   late bool fedAuthRequired;
 
-  InternalConnectionConfig? config;
+  ConnectionConfiguration config;
 
   late SecurityContext secureContextOptions;
 
@@ -1165,7 +79,7 @@ class Connection extends EventEmitter {
   Buffer? ntlmpacketBuffer;
 
   // ignore: non_constant_identifier_names
-  Map<String, State> STATE = STATES();
+  late Map<String, State> STATE;
 
   RoutingData? routingData;
 
@@ -1192,19 +106,19 @@ class Connection extends EventEmitter {
 
   Timer? retryTimer;
 
-  //todo
-  late Function(dynamic)? _cancelAfterRequestSent;
+  late void Function() cancelAfterRequestSent;
 
   Collation? databaseCollation;
 
   Connection(this.config) : super() {
+    STATE = STATES(this);
     //
     if (config.runtimeType != Object || config == null) {
       throw MTypeError(
           'The "config" argument is required and must be of type Object.');
     }
 
-    if (config!.server.runtimeType != String) {
+    if (config.server.runtimeType != String) {
       throw MTypeError(
           'The "config.server" property is required and must be of type string.');
     }
@@ -1212,20 +126,21 @@ class Connection extends EventEmitter {
     fedAuthRequired = false;
 
     AuthenticationType authentication;
-    if (config!.authentication != null) {
-      if (config!.authentication.runtimeType != Object ||
-          config!.authentication == null) {
+    if (config.authentication != null) {
+      if (config.authentication.runtimeType != Object ||
+          config.authentication == null) {
         throw MTypeError(
             'The "config.authentication" property must be of type Object.');
       }
 
-      var type = config!.authentication!.type;
-      var options = config!.authentication!.options;
+      var type = config.authentication.type;
+      var options = config.authentication.options;
 
       if (type.runtimeType != String) {
         throw MTypeError(
             'The "config.authentication.type" property must be of type string.');
       }
+
       if (type != 'default' &&
           type != 'ntlm' &&
           type != 'azure-active-directory-password' &&
@@ -1259,12 +174,10 @@ class Connection extends EventEmitter {
           throw MTypeError(
               'The "config.authentication.options.password" property must be of type string.');
         }
-        authentication = AuthenticationType(type!)
-          ..auth = NtlmAuthentication(
-            userName: options.userName,
-            password: options.password,
-            domain: options.domain,
-          );
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
       }
       //!
       else if (type == 'azure-active-directory-password') {
@@ -1290,13 +203,10 @@ class Connection extends EventEmitter {
           throw MTypeError(
               'The "config.authentication.options.tenantId" property must be of type string.');
         }
-        authentication = AuthenticationType(type!)
-          ..auth = AzureActiveDirectoryPasswordAuthentication(
-            userName: options.userName,
-            password: options.password,
-            clientId: options.clientId,
-            tenantId: options.tenantId,
-          );
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
       }
       //!
       else if (type == 'azure-active-directory-access-token') {
@@ -1304,10 +214,10 @@ class Connection extends EventEmitter {
           throw MTypeError(
               'The "config.authentication.options.token" property must be of type string.');
         }
-        authentication = AuthenticationType(type!)
-          ..auth = AzureActiveDirectoryAccessTokenAuthentication(
-            token: options.token,
-          );
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
       }
       //!
       else if (type == 'azure-active-directory-msi-vm') {
@@ -1316,10 +226,10 @@ class Connection extends EventEmitter {
           throw MTypeError(
               'The "config.authentication.options.clientId" property must be of type string.');
         }
-        authentication = AuthenticationType(type!)
-          ..auth = AzureActiveDirectoryMsiAppServiceAuthentication(
-            clientId: options.clientId,
-          );
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
       }
       //!
       else if (type == 'azure-active-directory-default') {
@@ -1328,10 +238,10 @@ class Connection extends EventEmitter {
           throw MTypeError(
               'The "config.authentication.options.clientId" property must be of type string.');
         }
-        authentication = AuthenticationType(type!)
-          ..auth = AzureActiveDirectoryDefaultAuthentication(
-            clientId: options.clientId,
-          );
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
       }
       //!
       else if (type == 'azure-active-directory-msi-app-service') {
@@ -1340,10 +250,10 @@ class Connection extends EventEmitter {
           throw MTypeError(
               'The "config.authentication.options.clientId" property must be of type string.');
         }
-        authentication = AuthenticationType(type!)
-          ..auth = AzureActiveDirectoryMsiAppServiceAuthentication(
-            clientId: options.clientId,
-          );
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
       }
       //!
       else if (type == 'azure-active-directory-service-principal-secret') {
@@ -1361,12 +271,10 @@ class Connection extends EventEmitter {
           throw MTypeError(
               'The "config.authentication.options.tenantId" property must be of type string.');
         }
-        authentication = AuthenticationType(type!)
-          ..auth = AzureActiveDirectoryServicePrincipalSecret(
-            clientId: options.clientId,
-            clientSecret: options.clientSecret,
-            tenantId: options.tenantId,
-          );
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
       }
       //!
       else {
@@ -1381,682 +289,494 @@ class Connection extends EventEmitter {
           throw MTypeError(
               'The "config.authentication.options.password" property must be of type string.');
         }
-        authentication = AuthenticationType(type!)
-          ..auth = DefaultAuthentication(
-            userName: options.userName,
-            password: options.password,
-          );
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
       }
     } else {
-      authentication = AuthenticationType('default')
-        ..auth = DefaultAuthentication(
-          userName: null,
-          password: null,
-        );
+      authentication =
+          AuthenticationType(type: 'default', options: AuthOptions());
     }
-    config = InternalConnectionConfig(
-      server: config!.server,
-      authentication: authentication.auth,
-      options: InternalConnectionOptions(
-        abortTransactionOnError: false,
-        appName: null,
-        camelCaseColumns: false,
-        cancelTimeout: DEFAULT_CANCEL_TIMEOUT,
-        columnEncryptionKeyCacheTTL: 2 * 60 * 60 * 1000, // Units: miliseconds
-        columnEncryptionSetting: false,
-        columnNameReplacer: null,
-        connectionRetryInterval: DEFAULT_CONNECT_RETRY_INTERVAL,
-        connectTimeout: DEFAULT_CONNECT_TIMEOUT,
-        connectionIsolationLevel: ISOLATION_LEVEL['READ_COMMITTED']!,
-        cryptoCredentialsDetails: SecurityContext(),
-        database: null,
-        datefirst: DEFAULT_DATEFIRST,
-        dateFormat: DEFAULT_DATEFORMAT,
-        debug: DebugOptions(
-          data: false,
-          packet: false,
-          payload: false,
-          token: false,
-        ),
-        enableAnsiNull: true,
-        enableAnsiNullDefault: true,
-        enableAnsiPadding: true,
-        enableAnsiWarnings: true,
-        enableArithAbort: true,
-        enableConcatNullYieldsNull: true,
-        enableCursorCloseOnCommit: null,
-        enableImplicitTransactions: false,
-        enableNumericRoundabort: false,
-        enableQuotedIdentifier: true,
-        encrypt: true,
-        fallbackToDefaultDb: false,
-        encryptionKeyStoreProviders: {},
-        instanceName: null,
-        isolationLevel: ISOLATION_LEVEL['READ_COMMITTED']!,
-        language: DEFAULT_LANGUAGE,
-        localAddress: null,
-        maxRetriesOnTransientErrors: 3,
-        multiSubnetFailover: false,
-        packetSize: DEFAULT_PACKET_SIZE,
-        port: DEFAULT_PORT,
-        readOnlyIntent: false,
-        requestTimeout: DEFAULT_CLIENT_REQUEST_TIMEOUT,
-        rowCollectionOnDone: false,
-        rowCollectionOnRequestCompletion: false,
-        serverName: null,
-        serverSupportsColumnEncryption: false,
-        tdsVersion: DEFAULT_TDS_VERSION,
-        textsize: DEFAULT_TEXTSIZE,
-        trustedServerNameAE: null,
-        trustServerCertificate: false,
-        useColumnNames: false,
-        useUTC: true,
-        workstationId: null,
-        lowerCaseGuids: false,
-      ),
-    );
+
     //! i think that these are useless type checks
-    if (config!.options != null) {
-      if (config!.options!.port != null &&
-          config!.options!.instanceName != null) {
+    if (config.options != null) {
+      if (config.options.port != null && config.options.instanceName != null) {
         throw MTypeError(
-            'Port and instanceName are mutually exclusive, but   ${config!.options!.port}  and   ${config!.options!.instanceName}  provided');
+            'Port and instanceName are mutually exclusive, but   ${config.options.port}  and   ${config.options.instanceName}  provided');
       }
 
-      if (config!.options!.abortTransactionOnError != null) {
-        if (config!.options!.abortTransactionOnError is! bool &&
-            config!.options!.abortTransactionOnError != null) {
+      if (config.options.abortTransactionOnError != null) {
+        if (config.options.abortTransactionOnError is! bool &&
+            config.options.abortTransactionOnError != null) {
           throw MTypeError(
-              'The "config!.options!.abortTransactionOnError" property must be of type string or null.');
+              'The "config!.options!.abortTransactionOnError" property must be of type bool.');
         }
-
-        this.config!.options!.abortTransactionOnError =
-            config!.options!.abortTransactionOnError;
       }
 
-      if (config!.options!.appName != null) {
-        if (config!.options!.appName is! String) {
+      if (config.options.appName != null) {
+        if (config.options.appName is! String) {
           throw MTypeError(
               'The "config!.options!.appName" property must be of type string.');
         }
-
-        this.config!.options!.appName = config!.options!.appName;
       }
 
-      if (config!.options!.camelCaseColumns != null) {
-        if (config!.options!.camelCaseColumns is! bool) {
+      if (config.options.camelCaseColumns != null) {
+        if (config.options.camelCaseColumns is! bool) {
           throw MTypeError(
               'The "config!.options!.camelCaseColumns" property must be of type boolean.');
         }
-
-        this.config!.options!.camelCaseColumns =
-            config!.options!.camelCaseColumns;
       }
 
-      if (config!.options!.cancelTimeout != null) {
-        if (config!.options!.cancelTimeout is! num) {
+      if (config.options.cancelTimeout != null) {
+        if (config.options.cancelTimeout is! num) {
           throw MTypeError(
               'The "config!.options!.cancelTimeout" property must be of type number.');
         }
-
-        this.config!.options!.cancelTimeout = config!.options!.cancelTimeout;
       }
 
-      if (config!.options!.columnNameReplacer != null) {
-        if (config!.options!.columnNameReplacer is! Function) {
+      if (config.options.columnNameReplacer != null) {
+        if (config.options.columnNameReplacer is! Function) {
           throw MTypeError(
               'The "config!.options!.cancelTimeout" property must be of type function.');
         }
-
-        this.config!.options!.columnNameReplacer =
-            config!.options!.columnNameReplacer;
       }
 
-      if (config!.options!.connectionIsolationLevel != null) {
-        assertValidIsolationLevel(config!.options!.connectionIsolationLevel,
+      if (config.options.connectionIsolationLevel != null) {
+        assertValidIsolationLevel(config.options.connectionIsolationLevel,
             'config!.options!.connectionIsolationLevel');
-
-        this.config!.options!.connectionIsolationLevel =
-            config!.options!.connectionIsolationLevel;
       }
 
-      if (config!.options!.connectTimeout != null) {
-        if (config!.options!.connectTimeout is! num) {
+      if (config.options.connectTimeout != null) {
+        if (config.options.connectTimeout is! num) {
           throw MTypeError(
               'The "config!.options!.connectTimeout" property must be of type number.');
         }
-
-        this.config!.options!.connectTimeout = config!.options!.connectTimeout;
       }
 
-      if (config!.options!.cryptoCredentialsDetails != null) {
-        if (config!.options!.cryptoCredentialsDetails is! SecurityContext ||
-            config!.options!.cryptoCredentialsDetails == null) {
+      if (config.options.cryptoCredentialsDetails != null) {
+        if (config.options.cryptoCredentialsDetails is! SecurityContext ||
+            config.options.cryptoCredentialsDetails == null) {
           throw MTypeError(
               'The "config!.options!.cryptoCredentialsDetails" property must be of type Object.');
         }
-
-        this.config!.options!.cryptoCredentialsDetails =
-            config!.options!.cryptoCredentialsDetails;
       }
 
-      if (config!.options!.database != null) {
-        if (config!.options!.database is! String) {
+      if (config.options.database != null) {
+        if (config.options.database is! String) {
           throw MTypeError(
               'The "config!.options!.database" property must be of type string.');
         }
-
-        this.config!.options!.database = config!.options!.database;
       }
 
-      if (config!.options!.datefirst != null) {
-        if (config!.options!.datefirst is! num &&
-            config!.options!.datefirst != null) {
+      if (config.options.datefirst != null) {
+        if (config.options.datefirst is! num &&
+            config.options.datefirst != null) {
           throw MTypeError(
               'The "config!.options!.datefirst" property must be of type number.');
         }
 
-        if (config!.options!.datefirst != null &&
-            (config!.options!.datefirst! < 1 ||
-                config!.options!.datefirst! > 7)) {
+        if (config.options.datefirst != null &&
+            (config.options.datefirst! < 1 || config.options.datefirst! > 7)) {
           throw RangeError(
               'The "config!.options!.datefirst" property must be >= 1 and <= 7');
         }
-
-        this.config!.options!.datefirst = config!.options!.datefirst;
       }
 
-      if (config!.options!.dateFormat != null) {
-        if (config!.options!.dateFormat is! String &&
-            config!.options!.dateFormat != null) {
+      if (config.options.dateFormat != null) {
+        if (config.options.dateFormat is! String &&
+            config.options.dateFormat != null) {
           throw MTypeError(
               'The "config!.options!.dateFormat" property must be of type string or null.');
         }
-
-        this.config!.options!.dateFormat = config!.options!.dateFormat;
       }
 
-      if (config!.options!.debug != null) {
-        if (config!.options!.debug!.data != null) {
-          if (config!.options!.debug!.data is! bool) {
+      if (config.options.debug != null) {
+        if (config.options.debug!.data != null) {
+          if (config.options.debug!.data is! bool) {
             throw MTypeError(
                 'The "config!.options!.debug.data" property must be of type boolean.');
           }
-
-          this.config!.options!.debug!.data = config!.options!.debug!.data;
         }
 
-        if (config!.options!.debug!.packet != null) {
-          if (config!.options!.debug!.packet is! bool) {
+        if (config.options.debug!.packet != null) {
+          if (config.options.debug!.packet is! bool) {
             throw MTypeError(
                 'The "config!.options!.debug.packet" property must be of type boolean.');
           }
-
-          this.config!.options!.debug!.packet = config!.options!.debug!.packet;
         }
 
-        if (config!.options!.debug!.payload != null) {
-          if (config!.options!.debug!.payload is! bool) {
+        if (config.options.debug!.payload != null) {
+          if (config.options.debug!.payload is! bool) {
             throw MTypeError(
                 'The "config!.options!.debug.payload" property must be of type boolean.');
           }
-
-          this.config!.options!.debug!.payload =
-              config!.options!.debug!.payload;
         }
 
-        if (config!.options!.debug!.token != null) {
-          if (config!.options!.debug!.token is! bool) {
+        if (config.options.debug!.token != null) {
+          if (config.options.debug!.token is! bool) {
             throw MTypeError(
                 'The "config!.options!.debug.token" property must be of type boolean.');
           }
-
-          this.config!.options!.debug!.token = config!.options!.debug!.token;
         }
       }
 
-      if (config!.options!.enableAnsiNull != null) {
-        if (config!.options!.enableAnsiNull is! bool &&
-            config!.options!.enableAnsiNull != null) {
+      if (config.options.enableAnsiNull != null) {
+        if (config.options.enableAnsiNull is! bool &&
+            config.options.enableAnsiNull != null) {
           throw MTypeError(
               'The "config!.options!.enableAnsiNull" property must be of type boolean or null.');
         }
-
-        this.config!.options!.enableAnsiNull = config!.options!.enableAnsiNull;
       }
 
-      if (config!.options!.enableAnsiNullDefault != null) {
-        if (config!.options!.enableAnsiNullDefault is! bool &&
-            config!.options!.enableAnsiNullDefault != null) {
+      if (config.options.enableAnsiNullDefault != null) {
+        if (config.options.enableAnsiNullDefault is! bool &&
+            config.options.enableAnsiNullDefault != null) {
           throw MTypeError(
               'The "config!.options!.enableAnsiNullDefault" property must be of type boolean or null.');
         }
-
-        this.config!.options!.enableAnsiNullDefault =
-            config!.options!.enableAnsiNullDefault;
       }
 
-      if (config!.options!.enableAnsiPadding != null) {
-        if (config!.options!.enableAnsiPadding is! bool &&
-            config!.options!.enableAnsiPadding != null) {
+      if (config.options.enableAnsiPadding != null) {
+        if (config.options.enableAnsiPadding is! bool &&
+            config.options.enableAnsiPadding != null) {
           throw MTypeError(
               'The "config!.options!.enableAnsiPadding" property must be of type boolean or null.');
         }
-
-        this.config!.options!.enableAnsiPadding =
-            config!.options!.enableAnsiPadding;
       }
 
-      if (config!.options!.enableAnsiWarnings != null) {
-        if (config!.options!.enableAnsiWarnings is! bool &&
-            config!.options!.enableAnsiWarnings != null) {
+      if (config.options.enableAnsiWarnings != null) {
+        if (config.options.enableAnsiWarnings is! bool &&
+            config.options.enableAnsiWarnings != null) {
           throw MTypeError(
               'The "config!.options!.enableAnsiWarnings" property must be of type boolean or null.');
         }
-
-        this.config!.options!.enableAnsiWarnings =
-            config!.options!.enableAnsiWarnings;
       }
 
-      if (config!.options!.enableArithAbort != null) {
-        if (config!.options!.enableArithAbort is! bool &&
-            config!.options!.enableArithAbort != null) {
+      if (config.options.enableArithAbort != null) {
+        if (config.options.enableArithAbort is! bool &&
+            config.options.enableArithAbort != null) {
           throw MTypeError(
               'The "config!.options!.enableArithAbort" property must be of type boolean or null.');
         }
-
-        this.config!.options!.enableArithAbort =
-            config!.options!.enableArithAbort;
       }
 
-      if (config!.options!.enableConcatNullYieldsNull != null) {
-        if (config!.options!.enableConcatNullYieldsNull is! bool &&
-            config!.options!.enableConcatNullYieldsNull != null) {
+      if (config.options.enableConcatNullYieldsNull != null) {
+        if (config.options.enableConcatNullYieldsNull is! bool &&
+            config.options.enableConcatNullYieldsNull != null) {
           throw MTypeError(
               'The "config!.options!.enableConcatNullYieldsNull" property must be of type boolean or null.');
         }
-
-        this.config!.options!.enableConcatNullYieldsNull =
-            config!.options!.enableConcatNullYieldsNull;
       }
 
-      if (config!.options!.enableCursorCloseOnCommit != null) {
-        if (config!.options!.enableCursorCloseOnCommit is! bool &&
-            config!.options!.enableCursorCloseOnCommit != null) {
+      if (config.options.enableCursorCloseOnCommit != null) {
+        if (config.options.enableCursorCloseOnCommit is! bool &&
+            config.options.enableCursorCloseOnCommit != null) {
           throw MTypeError(
               'The "config!.options!.enableCursorCloseOnCommit" property must be of type boolean or null.');
         }
-
-        this.config!.options!.enableCursorCloseOnCommit =
-            config!.options!.enableCursorCloseOnCommit;
       }
 
-      if (config!.options!.enableImplicitTransactions != null) {
-        if (config!.options!.enableImplicitTransactions is! bool &&
-            config!.options!.enableImplicitTransactions != null) {
+      if (config.options.enableImplicitTransactions != null) {
+        if (config.options.enableImplicitTransactions is! bool &&
+            config.options.enableImplicitTransactions != null) {
           throw MTypeError(
               'The "config!.options!.enableImplicitTransactions" property must be of type boolean or null.');
         }
-
-        this.config!.options!.enableImplicitTransactions =
-            config!.options!.enableImplicitTransactions;
       }
 
-      if (config!.options!.enableNumericRoundabort != null) {
-        if (config!.options!.enableNumericRoundabort is! bool &&
-            config!.options!.enableNumericRoundabort != null) {
+      if (config.options.enableNumericRoundabort != null) {
+        if (config.options.enableNumericRoundabort is! bool &&
+            config.options.enableNumericRoundabort != null) {
           throw MTypeError(
               'The "config!.options!.enableNumericRoundabort" property must be of type boolean or null.');
         }
-
-        this.config!.options!.enableNumericRoundabort =
-            config!.options!.enableNumericRoundabort;
       }
 
-      if (config!.options!.enableQuotedIdentifier != null) {
-        if (config!.options!.enableQuotedIdentifier is! bool &&
-            config!.options!.enableQuotedIdentifier != null) {
+      if (config.options.enableQuotedIdentifier != null) {
+        if (config.options.enableQuotedIdentifier is! bool &&
+            config.options.enableQuotedIdentifier != null) {
           throw MTypeError(
               'The "config!.options!.enableQuotedIdentifier" property must be of type boolean or null.');
         }
-
-        this.config!.options!.enableQuotedIdentifier =
-            config!.options!.enableQuotedIdentifier;
       }
 
-      if (config!.options!.encrypt != null) {
-        if (config!.options!.encrypt is! bool) {
+      if (config.options.encrypt != null) {
+        if (config.options.encrypt is! bool) {
           throw MTypeError(
               'The "config!.options!.encrypt" property must be of type boolean.');
         }
-
-        this.config!.options!.encrypt = config!.options!.encrypt;
       }
 
-      if (config!.options!.fallbackToDefaultDb != null) {
-        if (config!.options!.fallbackToDefaultDb is! bool) {
+      if (config.options.fallbackToDefaultDb != null) {
+        if (config.options.fallbackToDefaultDb is! bool) {
           throw MTypeError(
               'The "config!.options!.fallbackToDefaultDb" property must be of type boolean.');
         }
-
-        this.config!.options!.fallbackToDefaultDb =
-            config!.options!.fallbackToDefaultDb;
       }
 
-      if (config!.options!.instanceName != null) {
-        if (config!.options!.instanceName is! String) {
+      if (config.options.instanceName != null) {
+        if (config.options.instanceName is! String) {
           throw MTypeError(
               'The "config!.options!.instanceName" property must be of type string.');
         }
-
-        this.config!.options!.instanceName = config!.options!.instanceName;
-        this.config!.options!.port = null;
       }
 
-      if (config!.options!.isolationLevel != null) {
+      if (config.options.isolationLevel != null) {
         assertValidIsolationLevel(
-            config!.options!.isolationLevel, 'config!.options!.isolationLevel');
-
-        this.config!.options!.isolationLevel = config!.options!.isolationLevel;
+            config.options.isolationLevel, 'config!.options!.isolationLevel');
       }
 
-      if (config!.options!.language != null) {
-        if (config!.options!.language is! String &&
-            config!.options!.language != null) {
+      if (config.options.language != null) {
+        if (config.options.language is! String &&
+            config.options.language != null) {
           throw MTypeError(
               'The "config!.options!.language" property must be of type string or null.');
         }
-
-        this.config!.options!.language = config!.options!.language;
       }
 
-      if (config!.options!.localAddress != null) {
-        if (config!.options!.localAddress is! String) {
+      if (config.options.localAddress != null) {
+        if (config.options.localAddress is! String) {
           throw MTypeError(
               'The "config!.options!.localAddress" property must be of type string.');
         }
-
-        this.config!.options!.localAddress = config!.options!.localAddress;
       }
 
-      if (config!.options!.multiSubnetFailover != null) {
-        if (config!.options!.multiSubnetFailover is! bool) {
+      if (config.options.multiSubnetFailover != null) {
+        if (config.options.multiSubnetFailover is! bool) {
           throw MTypeError(
               'The "config!.options!.multiSubnetFailover" property must be of type boolean.');
         }
-
-        this.config!.options!.multiSubnetFailover =
-            config!.options!.multiSubnetFailover;
       }
 
-      if (config!.options!.packetSize != null) {
-        if (config!.options!.packetSize is! num) {
+      if (config.options.packetSize != null) {
+        if (config.options.packetSize is! num) {
           throw MTypeError(
               'The "config!.options!.packetSize" property must be of type number.');
         }
-
-        this.config!.options!.packetSize = config!.options!.packetSize;
       }
 
-      if (config!.options!.port != null) {
-        if (config!.options!.port is! num) {
+      if (config.options.port != null) {
+        if (config.options.port is! num) {
           throw MTypeError(
               'The "config!.options!.port" property must be of type number.');
         }
 
-        if (config!.options!.port! <= 0 || config!.options!.port! >= 65536) {
+        if (config.options.port! <= 0 || config.options.port! >= 65536) {
           throw RangeError(
               'The "config!.options!.port" property must be > 0 and < 65536');
         }
-
-        this.config!.options!.port = config!.options!.port;
-        this.config!.options!.instanceName = null;
       }
 
-      if (config!.options!.readOnlyIntent != null) {
-        if (config!.options!.readOnlyIntent is! bool) {
+      if (config.options.readOnlyIntent != null) {
+        if (config.options.readOnlyIntent is! bool) {
           throw MTypeError(
               'The "config!.options!.readOnlyIntent" property must be of type boolean.');
         }
-
-        this.config!.options!.readOnlyIntent = config!.options!.readOnlyIntent;
       }
 
-      if (config!.options!.requestTimeout != null) {
-        if (config!.options!.requestTimeout is! num) {
+      if (config.options.requestTimeout != null) {
+        if (config.options.requestTimeout is! num) {
           throw MTypeError(
               'The "config!.options!.requestTimeout" property must be of type number.');
         }
-
-        this.config!.options!.requestTimeout = config!.options!.requestTimeout;
       }
 
-      if (config!.options!.maxRetriesOnTransientErrors != null) {
-        if (config!.options!.maxRetriesOnTransientErrors is! num) {
+      if (config.options.maxRetriesOnTransientErrors != null) {
+        if (config.options.maxRetriesOnTransientErrors is! num) {
           throw MTypeError(
               'The "config!.options!.maxRetriesOnTransientErrors" property must be of type number.');
         }
 
-        if (config!.options!.maxRetriesOnTransientErrors < 0) {
+        if (config.options.maxRetriesOnTransientErrors < 0) {
           throw MTypeError(
               'The "config!.options!.maxRetriesOnTransientErrors" property must be equal or greater than 0.');
         }
-
-        this.config!.options!.maxRetriesOnTransientErrors =
-            config!.options!.maxRetriesOnTransientErrors;
       }
 
-      if (config!.options!.connectionRetryInterval != null) {
-        if (config!.options!.connectionRetryInterval is! num) {
+      if (config.options.connectionRetryInterval != null) {
+        if (config.options.connectionRetryInterval is! num) {
           throw MTypeError(
               'The "config!.options!.connectionRetryInterval" property must be of type number.');
         }
 
-        if (config!.options!.connectionRetryInterval <= 0) {
+        if (config.options.connectionRetryInterval <= 0) {
           throw MTypeError(
               'The "config!.options!.connectionRetryInterval" property must be greater than 0.');
         }
-
-        this.config!.options!.connectionRetryInterval =
-            config!.options!.connectionRetryInterval;
       }
 
-      if (config!.options!.rowCollectionOnDone != null) {
-        if (config!.options!.rowCollectionOnDone is! bool) {
+      if (config.options.rowCollectionOnDone != null) {
+        if (config.options.rowCollectionOnDone is! bool) {
           throw MTypeError(
               'The "config!.options!.rowCollectionOnDone" property must be of type boolean.');
         }
-
-        this.config!.options!.rowCollectionOnDone =
-            config!.options!.rowCollectionOnDone;
       }
 
-      if (config!.options!.rowCollectionOnRequestCompletion != null) {
-        if (config!.options!.rowCollectionOnRequestCompletion is! bool) {
+      if (config.options.rowCollectionOnRequestCompletion != null) {
+        if (config.options.rowCollectionOnRequestCompletion is! bool) {
           throw MTypeError(
               'The "config!.options!.rowCollectionOnRequestCompletion" property must be of type boolean.');
         }
-
-        this.config!.options!.rowCollectionOnRequestCompletion =
-            config!.options!.rowCollectionOnRequestCompletion;
       }
 
-      if (config!.options!.tdsVersion != null) {
-        if (config!.options!.tdsVersion is! String) {
+      if (config.options.tdsVersion != null) {
+        if (config.options.tdsVersion is! String) {
           throw MTypeError(
               'The "config!.options!.tdsVersion" property must be of type string.');
         }
-
-        this.config!.options!.tdsVersion = config!.options!.tdsVersion;
       }
 
-      if (config!.options!.textsize != null) {
-        if (config!.options!.textsize is! num &&
-            config!.options!.textsize != null) {
+      if (config.options.textsize != null) {
+        if (config.options.textsize is! num &&
+            config.options.textsize != null) {
           throw MTypeError(
               'The "config!.options!.textsize" property must be of type number or null.');
         }
 
-        if (config!.options!.textsize > 2147483647) {
+        if (config.options.textsize > 2147483647) {
           throw MTypeError(
               'The "config!.options!.textsize" can\'t be greater than 2147483647.');
-        } else if (config!.options!.textsize < -1) {
+        } else if (config.options.textsize < -1) {
           throw MTypeError(
               'The "config!.options!.textsize" can\'t be smaller than -1.');
         }
-
-        this.config!.options!.textsize = config!.options!.textsize; //TODO |0
       }
 
-      if (config!.options!.trustServerCertificate != null) {
-        if (config!.options!.trustServerCertificate is! bool) {
+      if (config.options.trustServerCertificate != null) {
+        if (config.options.trustServerCertificate is! bool) {
           throw MTypeError(
               'The "config!.options!.trustServerCertificate" property must be of type boolean.');
         }
-
-        this.config!.options!.trustServerCertificate =
-            config!.options!.trustServerCertificate;
       }
 
-      if (config!.options!.useColumnNames != null) {
-        if (config!.options!.useColumnNames is! bool) {
+      if (config.options.useColumnNames != null) {
+        if (config.options.useColumnNames is! bool) {
           throw MTypeError(
               'The "config!.options!.useColumnNames" property must be of type boolean.');
         }
-
-        this.config!.options!.useColumnNames = config!.options!.useColumnNames;
       }
 
-      if (config!.options!.useUTC != null) {
-        if (config!.options!.useUTC is! bool) {
+      if (config.options.useUTC != null) {
+        if (config.options.useUTC is! bool) {
           throw MTypeError(
               'The "config!.options!.useUTC" property must be of type boolean.');
         }
-
-        this.config!.options!.useUTC = config!.options!.useUTC;
       }
 
-      if (config!.options!.workstationId != null) {
-        if (config!.options!.workstationId != 'string') {
+      if (config.options.workstationId != null) {
+        if (config.options.workstationId is! String) {
           throw MTypeError(
               'The "config!.options!.workstationId" property must be of type string.');
         }
-
-        this.config!.options!.workstationId = config!.options!.workstationId;
       }
 
-      if (config!.options!.lowerCaseGuids != null) {
-        if (config!.options!.lowerCaseGuids is! bool) {
+      if (config.options.lowerCaseGuids != null) {
+        if (config.options.lowerCaseGuids is! bool) {
           throw MTypeError(
               'The "config!.options!.lowerCaseGuids" property must be of type boolean.');
         }
-
-        this.config!.options!.lowerCaseGuids = config!.options!.lowerCaseGuids;
       }
     }
-    this.debug = this.createDebug();
-    this.inTransaction = false;
-    this.transactionDescriptors = [
+    debug = createDebug();
+    inTransaction = false;
+    transactionDescriptors = [
       Buffer.from([0, 0, 0, 0, 0, 0, 0, 0])
     ];
-
     // 'beginTransaction', 'commitTransaction' and 'rollbackTransaction'
     // events are utilized to maintain inTransaction property state which in
     // turn is used in managing transactions. These events are only fired for
     // TDS version 7.2 and beyond. The properties below are used to emulate
     // equivalent behavior for TDS versions before 7.2.
-    this.transactionDepth = 0;
-    this.isSqlBatch = false;
-    this.closed = false;
-    this.messageBuffer = Buffer.alloc(0);
-
-    this.curTransientRetryCount = 0;
-    this.transientErrorLookup = TransientErrorLookup();
-
-    this.state = this.STATE['INITIALIZED']!;
-
-    this._cancelAfterRequestSent = (_) {
-      this.messageIo.sendMessage(PACKETTYPE['ATTENTION']!);
-      this.createCancelTimer();
+    transactionDepth = 0;
+    isSqlBatch = false;
+    closed = false;
+    messageBuffer = Buffer.alloc(0);
+    curTransientRetryCount = 0;
+    transientErrorLookup = TransientErrorLookup();
+    state = STATE['INITIALIZED']!;
+    cancelAfterRequestSent = () {
+      messageIo.sendMessage(PACKETTYPE['ATTENTION']!);
+      createCancelTimer();
     };
     //TODO! end of constructor
   }
 
-  connect(void Function(Error error)? connectListener) {
-    if (this.state != this.STATE['INITIALIZED']!) {
+  connect([void Function(Error error)? connectListener]) {
+    if (state != STATE['INITIALIZED']!) {
       throw ConnectionError(
-          '`.connect` can not be called on a Connection in `${this.state!.name}` state.');
+          '`.connect` can not be called on a Connection in `${state!.name}` state.');
     }
 
     if (connectListener != null) {
       onError(Error err) {
-        this.removeEventListener(EventListener('connect', (error) {}));
+        removeEventListener(EventListener('connect', (error) {}));
         connectListener(err);
       }
 
       onConnect(Error err) {
-        this.removeEventListener(EventListener('error', onError));
+        removeEventListener(EventListener('error', onError));
         connectListener(err);
       }
 
-      this.once('connect', onConnect);
-      this.once('error', onError);
+      once('connect', onConnect);
+      once('error', onError);
     }
 
-    this.transitionTo(this.STATE['CONNECTING']!);
+    transitionTo(STATE['CONNECTING']!);
   }
 
   close() {
-    this.transitionTo(this.STATE['FINAL']!);
+    transitionTo(STATE['FINAL']!);
   }
 
   initialiseConnection() {
-    final signal = this.createConnectTimer();
+    final signal = createConnectTimer();
 
-    if (this.config!.options!.port != null) {
-      return this.connectOnPort(
-        this.config!.options!.port!,
-        this.config!.options!.multiSubnetFailover,
+    if (config.options.port != null) {
+      return connectOnPort(
+        config.options.port!,
+        config.options.multiSubnetFailover,
         signal,
       );
     } else {
       return instanceLookup(InstanceLookUpOptions(
-        server: this.config!.server,
-        instanceName: this.config!.options!.instanceName!,
-        timeout: this.config!.options!.connectTimeout,
+        server: config.server,
+        instanceName: config.options.instanceName!,
+        timeout: config.options.connectTimeout,
         signal: signal,
       )).then((port) {
         scheduleMicrotask(() {
-          this.connectOnPort(
+          connectOnPort(
             port,
-            this.config!.options!.multiSubnetFailover,
+            config.options.multiSubnetFailover,
             signal,
           );
         });
       }).catchError((err) {
-        this.clearConnectTimer();
+        clearConnectTimer();
         if (err.name == 'AbortError') {
           // Ignore the AbortError for now, this is still handled by the connectTimer firing
           return;
         }
         scheduleMicrotask(() {
-          this.emit('connect', ConnectionError(err.message, 'EINSTLOOKUP'));
+          emit('connect', ConnectionError(err.message, 'EINSTLOOKUP'));
         });
       });
     }
   }
 
   cleanupConnection(int cleanupType) {
-    if (!this.closed) {
-      this.clearConnectTimer();
-      this.clearRequestTimer();
-      this.clearRetryTimer();
-      this.closeConnection();
+    if (!closed) {
+      clearConnectTimer();
+      clearRequestTimer();
+      clearRetryTimer();
+      closeConnection();
       if (cleanupType == CLEANUP_TYPE['REDIRECT']) {
-        this.emit('rerouting');
+        emit('rerouting');
       } else if (cleanupType != CLEANUP_TYPE['RETRY']) {
         scheduleMicrotask(() {
-          this.emit('end');
+          emit('end');
         });
       }
 
@@ -2069,15 +789,15 @@ class Connection extends EventEmitter {
         this.request = undefined;
       }
 
-      this.closed = true;
-      this.loginError = undefined;
+      closed = true;
+      loginError = undefined;
     }
   }
 
   createDebug() {
-    final debug = Debug(options: this.config!.options!.debug!);
+    final debug = Debug(options: config.options.debug!);
     debug.on('debug', (message) {
-      this.emit('debug', message);
+      emit('debug', message);
     });
     return debug;
   }
@@ -2086,15 +806,15 @@ class Connection extends EventEmitter {
     return TokenStreamParser(
       //TODO:
       message: message,
-      debug: this.debug,
+      debug: debug,
       tokenHandler: handler,
       options: ParserOptions(
-        camelCaseColumns: this.config!.options!.camelCaseColumns,
-        columnNameReplacer: this.config!.options!.columnNameReplacer,
-        lowerCaseGuids: this.config!.options!.lowerCaseGuids,
-        tdsVersion: this.config!.options!.tdsVersion,
-        useColumnNames: this.config!.options!.useColumnNames,
-        useUTC: this.config!.options!.useUTC,
+        camelCaseColumns: config.options.camelCaseColumns,
+        columnNameReplacer: config.options.columnNameReplacer,
+        lowerCaseGuids: config.options.lowerCaseGuids,
+        tdsVersion: config.options.tdsVersion,
+        useColumnNames: config.options.useColumnNames,
+        useUTC: config.options.useUTC,
       ),
     );
   }
@@ -2102,11 +822,9 @@ class Connection extends EventEmitter {
   connectOnPort(num port, bool multiSubnetFailover, AbortSignal signal) {
     //TODO:
     final connectOpts = {
-      'host': this.routingData != null
-          ? this.routingData!.server
-          : this.config!.server,
-      'port': this.routingData != null ? this.routingData!.port : port,
-      'localAddress': this.config!.options!.localAddress,
+      'host': routingData != null ? routingData!.server : config.server,
+      'port': routingData != null ? routingData!.port : port,
+      'localAddress': config.options.localAddress,
     };
 
     final connect = multiSubnetFailover ? connectInParallel : connectInSequence;
@@ -2123,85 +841,82 @@ class Connection extends EventEmitter {
           socketClose();
         }
         //
-        this.messageIo = MessageIO(
+        messageIo = MessageIO(
           socket,
-          this.config!.options!.packetSize as int,
-          this.debug,
+          config.options.packetSize as int,
+          debug,
         );
-        this
-            .messageIo
-            .on('secure', (cleartext) => {this.emit('secure', cleartext)});
+        messageIo.on('secure', (cleartext) => {emit('secure', cleartext)});
 
         this.socket = socket;
-        this.closed = false;
-        this.debug.log(
-            'connected to ${this.config!.server!}:${this.config!.options!.port}');
+        closed = false;
+        debug.log('connected to ${config.server}:${config.options.port}');
 
-        this.sendPreLogin();
-        this.transitionTo(this.STATE['SENT_PRELOGIN']!);
+        sendPreLogin();
+        transitionTo(STATE['SENT_PRELOGIN']!);
       });
       //TODO!!!!!!: socket.on('event', (){});
     });
   }
 
   closeConnection() {
-    if (this.socket != null) {
-      this.socket!.destroy();
+    if (socket != null) {
+      socket!.destroy();
     }
   }
 
   createConnectTimer() {
     final controller = AbortController();
-    this.connectTimer = Timer(
+    connectTimer = Timer(
       Duration(
-        seconds: this.config!.options!.connectTimeout as int,
+        seconds: config.options.connectTimeout as int,
       ),
       () {
         controller.abort();
-        this.connectTimeout();
+        connectTimeout();
       },
     );
     return controller.signal;
   }
 
   createCancelTimer() {
-    this.clearCancelTimer();
-    final timeout = this.config!.options!.cancelTimeout;
+    clearCancelTimer();
+    final timeout = config.options.cancelTimeout;
     if (timeout > 0) {
-      this.cancelTimer = Timer(
+      cancelTimer = Timer(
         Duration(seconds: timeout as int),
         () {
-          this.cancelTimeout();
+          cancelTimeout();
         },
       );
     }
   }
 
   createRequestTimer() {
-    this.clearRequestTimer(); // release old timer, just to be safe
+    clearRequestTimer(); // release old timer, just to be safe
     final request = this.request as Request;
     final timeout = (request.timeout != null)
         ? request.timeout
-        : this.config!.options!.requestTimeout;
+        : config.options.requestTimeout;
     if (timeout != null) {
       // this.requestTimer = setTimeout(() => {
       //   this.requestTimeout();
       // }, timeout);
-      this.requestTimer = Timer(
+      requestTimer = Timer(
         Duration(seconds: timeout as int),
         () {
-          this.requestTimeout();
+          requestTimeout();
         },
       );
     }
   }
 
   createRetryTimer() {
-    this.clearRetryTimer();
-    this.retryTimer = Timer(
-      Duration(seconds: this.config!.options!.connectionRetryInterval as int),
+    clearRetryTimer();
+    retryTimer = Timer(
+      Duration(seconds: config.options.connectionRetryInterval as int),
       () {
-        this.retryTimeout();
+        retryTimeout();
       },
     );
     // this.retryTimer = setTimeout(
@@ -2214,95 +929,95 @@ class Connection extends EventEmitter {
 
   connectTimeout() {
     final message = """ 
-    Failed to connect to ${this.config!.server} ${this.config!.options!.port == null ? this.config!.options!.port : this.config!.options!.instanceName} in ${this.config!.options!.connectTimeout} ms
+    Failed to connect to ${config.server} ${config.options.port == null ? config.options.port : config.options.instanceName} in ${config.options.connectTimeout} ms
     """;
-    this.debug.log(message);
-    this.emit('connect', ConnectionError(message, 'ETIMEOUT'));
-    this.connectTimer = undefined;
-    this.dispatchEvent('connectTimeout');
+    debug.log(message);
+    emit('connect', ConnectionError(message, 'ETIMEOUT'));
+    connectTimer = undefined;
+    dispatchEvent('connectTimeout');
   }
 
   cancelTimeout() {
     final message =
-        'Failed to cancel request in ${this.config!.options!.cancelTimeout}ms';
-    this.debug.log(message);
-    this.dispatchEvent('socketError', ConnectionError(message, 'ETIMEOUT'));
+        'Failed to cancel request in ${config.options.cancelTimeout}ms';
+    debug.log(message);
+    dispatchEvent('socketError', ConnectionError(message, 'ETIMEOUT'));
   }
 
   requestTimeout() {
-    this.requestTimer = null;
+    requestTimer = null;
     final request = this.request!;
     request.cancel();
     final timeout = (request.timeout != null)
         ? request.timeout
-        : this.config!.options!.requestTimeout;
+        : config.options.requestTimeout;
     final message = 'Timeout: Request failed to complete in $timeout ms';
     request.error = RequestError(message: message, code: 'ETIMEOUT');
   }
 
   retryTimeout() {
-    this.retryTimer = undefined;
-    this.emit('retry');
-    this.transitionTo(this.STATE['CONNECTING']!);
+    retryTimer = undefined;
+    emit('retry');
+    transitionTo(STATE['CONNECTING']!);
   }
 
   clearConnectTimer() {
-    if (this.connectTimer != null) {
-      this.connectTimer!.cancel();
+    if (connectTimer != null) {
+      connectTimer!.cancel();
       // clearTimeout(this.connectTimer);
-      this.connectTimer = undefined;
+      connectTimer = undefined;
     }
   }
 
   clearCancelTimer() {
-    if (this.cancelTimer != null) {
-      this.cancelTimer!.cancel();
+    if (cancelTimer != null) {
+      cancelTimer!.cancel();
       // clearTimeout(this.cancelTimer);
-      this.cancelTimer = undefined;
+      cancelTimer = undefined;
     }
   }
 
   clearRequestTimer() {
-    if (this.requestTimer != null) {
-      this.requestTimer!.cancel();
+    if (requestTimer != null) {
+      requestTimer!.cancel();
       // clearTimeout(this.requestTimer);
-      this.requestTimer = undefined;
+      requestTimer = undefined;
     }
   }
 
   clearRetryTimer() {
-    if (this.retryTimer != null) {
-      this.retryTimer!.cancel();
+    if (retryTimer != null) {
+      retryTimer!.cancel();
       // clearTimeout(this.retryTimer);
-      this.retryTimer = undefined;
+      retryTimer = undefined;
     }
   }
 
   transitionTo(State newState) {
-    if (this.state == newState) {
-      this.debug.log('State is already ${newState.name}');
+    if (state == newState) {
+      debug.log('State is already ${newState.name}');
       return;
     }
 
-    if (this.state != null && this.state!.exit != null) {
-      this.state!.exit!(this, newState);
+    if (state != null && state!.exit != null) {
+      state!.exit!(this, newState);
     }
 
-    this.debug.log(
-        'State change: ${this.state != null ? this.state!.name : 'undefined'} -> ${newState.name}');
-    this.state = newState;
+    debug.log(
+        'State change: ${state != null ? state!.name : 'undefined'} -> ${newState.name}');
+    state = newState;
 
-    if (this.state!.enter != null) {
-      Function.apply(this.state!.enter!, [this]);
+    if (state!.enter != null) {
+      Function.apply(state!.enter!, [this]);
     }
   }
 
   getEventHandler(String eventName) {
     final handler = State.eventsMap[eventName];
     if (handler == null) {
-      throw MTypeError("No event '$eventName' in state '${this.state!.name}'");
+      throw MTypeError("No event '$eventName' in state '${state!.name}'");
     }
-    return handler!;
+    return handler;
   }
 
   dispatchEvent(String eventName, [dynamic args]) {
@@ -2312,58 +1027,51 @@ class Connection extends EventEmitter {
       Function.apply(handler, [this, args]);
       // handler(this, args);
     } else {
-      this.emit('error',
-          MTypeError("No event '$eventName' in state '${this.state!.name}"));
-      this.close();
+      emit('error',
+          MTypeError("No event '$eventName' in state '${state!.name}"));
+      close();
     }
   }
 
   socketError(Error error) {
-    if (this.state == this.STATE['CONNECTING'] ||
-        this.state == this.STATE['SENT_TLSSSLNEGOTIATION']) {
+    if (state == STATE['CONNECTING'] ||
+        state == STATE['SENT_TLSSSLNEGOTIATION']) {
       final message =
-          'Failed to connect to ${this.config!.server}:${this.config!.options!.port} - ${error.toString()}';
-      this.debug.log(message);
-      this.emit('connect', ConnectionError(message, 'ESOCKET'));
+          'Failed to connect to ${config.server}:${config.options.port} - ${error.toString()}';
+      debug.log(message);
+      emit('connect', ConnectionError(message, 'ESOCKET'));
     } else {
       final message = 'Connection lost - ${error.toString()}';
-      this.debug.log(message);
-      this.emit('error', ConnectionError(message, 'ESOCKET'));
+      debug.log(message);
+      emit('error', ConnectionError(message, 'ESOCKET'));
     }
-    this.dispatchEvent('socketError', error);
+    dispatchEvent('socketError', error);
   }
 
   socketEnd() {
-    this.debug.log('socket ended');
-    if (this.state != this.STATE['FINAL']) {
+    debug.log('socket ended');
+    if (state != STATE['FINAL']) {
       final error = ConnectionError('socket hang up');
       error.code = 'ECONNRESET';
-      this.socketError(error);
+      socketError(error);
     }
   }
 
   socketClose() {
-    this.debug.log(
-        'connection to ${this.config!.server!}:${this.config!.options!.port} closed');
-    if (this.state == this.STATE['REROUTING']) {
-      this.debug.log(
-          'Rerouting to ${this.routingData!.server}:${this.routingData!.port}');
+    debug.log('connection to ${config.server}:${config.options.port} closed');
+    if (state == STATE['REROUTING']) {
+      debug.log('Rerouting to ${routingData!.server}:${routingData!.port}');
 
-      this.dispatchEvent('reconnect');
-    } else if (this.state == this.STATE['TRANSIENT_FAILURE_RETRY']) {
-      final server = this.routingData != null
-          ? this.routingData!.server
-          : this.config!.server;
-      final port = this.routingData != null
-          ? this.routingData!.port
-          : this.config!.options!.port;
-      this
-          .debug
-          .log('Retry after transient failure connecting to ${server!}:$port');
+      dispatchEvent('reconnect');
+    } else if (state == STATE['TRANSIENT_FAILURE_RETRY']) {
+      final server = routingData != null ? routingData!.server : config.server;
+      final port =
+          routingData != null ? routingData!.port : config.options.port;
+      debug.log('Retry after transient failure connecting to ${server}:$port');
 
-      this.dispatchEvent('retry');
+      dispatchEvent('retry');
     } else {
-      this.transitionTo(this.STATE['FINAL']!);
+      transitionTo(STATE['FINAL']!);
     }
   }
 
@@ -2375,7 +1083,7 @@ class Connection extends EventEmitter {
     final subbuild = '0';
     final payload = PreloginPayload(
       options: PreloginPayloadOptions(
-        encrypt: this.config!.options!.encrypt,
+        encrypt: config.options.encrypt,
         version: PreloginPayloadVersion(
           major: num.parse(major),
           minor: num.parse(minor),
@@ -2385,8 +1093,8 @@ class Connection extends EventEmitter {
       ),
     );
 
-    this.messageIo.sendMessage(PACKETTYPE['PRELOGIN']!, data: payload.data);
-    this.debug.payload(() {
+    messageIo.sendMessage(PACKETTYPE['PRELOGIN']!, data: payload.data);
+    debug.payload(() {
       return payload.toString(indent: '  ');
     });
   }
@@ -2394,8 +1102,8 @@ class Connection extends EventEmitter {
   sendLogin7Packet() {
     final payload = Login7Payload(
       login7Options: Login7Options(
-          tdsVersion: TDSVERSIONS[this.config!.options!.tdsVersion],
-          packetSize: this.config!.options!.packetSize,
+          tdsVersion: TDSVERSIONS[config.options.tdsVersion],
+          packetSize: config.options.packetSize,
           clientProgVer: 0,
           clientPid: process.pid,
           connectionId: 0,
@@ -2403,18 +1111,18 @@ class Connection extends EventEmitter {
           clientLcid: 0x00000409),
     );
 
-    var authentication = this.config!.authentication!;
+    var authentication = config.authentication;
     switch (authentication.type) {
       case 'azure-active-directory-password':
-        payload.fedAuth = FedAuth(
-            type: 'ADAL', echo: this.fedAuthRequired, workflow: 'default');
+        payload.fedAuth =
+            FedAuth(type: 'ADAL', echo: fedAuthRequired, workflow: 'default');
         break;
 
       case 'azure-active-directory-access-token':
         payload.fedAuth = FedAuth(
             type: 'SECURITYTOKEN',
-            echo: this.fedAuthRequired,
-            fedAuthToken: authentication.options!.token);
+            echo: fedAuthRequired,
+            fedAuthToken: authentication.options.token);
         break;
 
       case 'azure-active-directory-msi-vm':
@@ -2422,40 +1130,38 @@ class Connection extends EventEmitter {
       case 'azure-active-directory-msi-app-service':
       case 'azure-active-directory-service-principal-secret':
         payload.fedAuth = FedAuth(
-            type: 'ADAL', echo: this.fedAuthRequired, workflow: 'integrated');
+            type: 'ADAL', echo: fedAuthRequired, workflow: 'integrated');
         break;
 
       case 'ntlm':
         payload.sspi = createNTLMRequest(
           NTLMrequestOption(
-            domain: authentication.options!.domain,
+            domain: authentication.options.domain,
           ),
         );
         break;
 
       default:
-        payload.userName = authentication.options!.userName;
-        payload.password = authentication.options!.password;
+        payload.userName = authentication.options.userName;
+        payload.password = authentication.options.password;
     }
 
-    payload.hostname =
-        this.config!.options!.workstationId ?? Platform.localHostname;
-    payload.serverName = this.routingData == null
-        ? this.routingData!.server
-        : this.config!.server;
-    payload.appName = this.config!.options!.appName ?? 'Tedious';
+    payload.hostname = config.options.workstationId ?? Platform.localHostname;
+    payload.serverName =
+        routingData == null ? routingData!.server : config.server;
+    payload.appName = config.options.appName ?? 'Tedious';
     payload.libraryName = LIBRARYNAME;
-    payload.language = this.config!.options!.language;
-    payload.database = this.config!.options!.database;
+    payload.language = config.options.language;
+    payload.database = config.options.database;
     payload.clientId = Buffer.from([1, 2, 3, 4, 5, 6]);
 
-    payload.readOnlyIntent = this.config!.options!.readOnlyIntent;
-    payload.initDbFatal = !this.config!.options!.fallbackToDefaultDb;
+    payload.readOnlyIntent = config.options.readOnlyIntent;
+    payload.initDbFatal = !config.options.fallbackToDefaultDb;
 
-    this.routingData = undefined;
-    this.messageIo.sendMessage(PACKETTYPE['LOGIN7']!, data: payload.toBuffer());
+    routingData = undefined;
+    messageIo.sendMessage(PACKETTYPE['LOGIN7']!, data: payload.toBuffer());
 
-    this.debug.payload(() {
+    debug.payload(() {
       return payload.toString(indent: '  ');
     });
   }
@@ -2467,27 +1173,24 @@ class Connection extends EventEmitter {
     offset = data.writeUInt32LE(accessTokenLen.length + 4, offset);
     offset = data.writeUInt32LE(accessTokenLen.length, offset);
     data.write(token, offset, 0, 'ucs2');
-    this.messageIo.sendMessage(PACKETTYPE['FEDAUTH_TOKEN']!, data: data);
+    messageIo.sendMessage(PACKETTYPE['FEDAUTH_TOKEN']!, data: data);
     // sent the fedAuth token message, the rest is similar to standard login 7
     //TODO:
-    this.transitionTo(this.STATE['SENT_LOGIN7_WITH_STANDARD_LOGIN']!);
+    transitionTo(STATE['SENT_LOGIN7_WITH_STANDARD_LOGIN']!);
   }
 
   sendInitialSql() async {
     final payload = SqlBatchPayload(
-      sqlText: this.getInitialSql(),
-      txnDescriptor: this.currentTransactionDescriptor(),
-      tdsVersion: this.config!.options!.tdsVersion,
+      sqlText: getInitialSql(),
+      txnDescriptor: currentTransactionDescriptor(),
+      tdsVersion: config.options.tdsVersion,
     );
 
     final message = Message(
       type: PACKETTYPE['SQL_BATCH']!,
       resetConnection: false,
     );
-    this
-        .messageIo
-        .outgoingMessageStream!
-        .write(message, 'usc-2', (([error]) {}));
+    messageIo.outgoingMessageStream!.write(message, 'usc-2', (([error]) {}));
     //TODO* Readable.from(payload).pipe(message);
     final _controller = StreamController.broadcast();
     _controller.addStream(payload);
@@ -2497,90 +1200,90 @@ class Connection extends EventEmitter {
   getInitialSql() {
     List options = [];
 
-    if (this.config!.options!.enableAnsiNull == true) {
+    if (config.options.enableAnsiNull == true) {
       options.add('set ansi_nulls on');
-    } else if (this.config!.options!.enableAnsiNull == false) {
+    } else if (config.options.enableAnsiNull == false) {
       options.add('set ansi_nulls off');
     }
 
-    if (this.config!.options!.enableAnsiNullDefault == true) {
+    if (config.options.enableAnsiNullDefault == true) {
       options.add('set ansi_null_dflt_on on');
-    } else if (this.config!.options!.enableAnsiNullDefault == false) {
+    } else if (config.options.enableAnsiNullDefault == false) {
       options.add('set ansi_null_dflt_on off');
     }
 
-    if (this.config!.options!.enableAnsiPadding == true) {
+    if (config.options.enableAnsiPadding == true) {
       options.add('set ansi_padding on');
-    } else if (this.config!.options!.enableAnsiPadding == false) {
+    } else if (config.options.enableAnsiPadding == false) {
       options.add('set ansi_padding off');
     }
 
-    if (this.config!.options!.enableAnsiWarnings == true) {
+    if (config.options.enableAnsiWarnings == true) {
       options.add('set ansi_warnings on');
-    } else if (this.config!.options!.enableAnsiWarnings == false) {
+    } else if (config.options.enableAnsiWarnings == false) {
       options.add('set ansi_warnings off');
     }
 
-    if (this.config!.options!.enableArithAbort == true) {
+    if (config.options.enableArithAbort == true) {
       options.add('set arithabort on');
-    } else if (this.config!.options!.enableArithAbort == false) {
+    } else if (config.options.enableArithAbort == false) {
       options.add('set arithabort off');
     }
 
-    if (this.config!.options!.enableConcatNullYieldsNull == true) {
+    if (config.options.enableConcatNullYieldsNull == true) {
       options.add('set concat_null_yields_null on');
-    } else if (this.config!.options!.enableConcatNullYieldsNull == false) {
+    } else if (config.options.enableConcatNullYieldsNull == false) {
       options.add('set concat_null_yields_null off');
     }
 
-    if (this.config!.options!.enableCursorCloseOnCommit == true) {
+    if (config.options.enableCursorCloseOnCommit == true) {
       options.add('set cursor_close_on_commit on');
-    } else if (this.config!.options!.enableCursorCloseOnCommit == false) {
+    } else if (config.options.enableCursorCloseOnCommit == false) {
       options.add('set cursor_close_on_commit off');
     }
 
-    if (this.config!.options!.datefirst != null) {
-      options.add('set datefirst ${this.config!.options!.datefirst}');
+    if (config.options.datefirst != null) {
+      options.add('set datefirst ${config.options.datefirst}');
     }
 
-    if (this.config!.options!.dateFormat != null) {
-      options.add('set dateformat ${this.config!.options!.dateFormat}');
+    if (config.options.dateFormat != null) {
+      options.add('set dateformat ${config.options.dateFormat}');
     }
 
-    if (this.config!.options!.enableImplicitTransactions == true) {
+    if (config.options.enableImplicitTransactions == true) {
       options.add('set implicit_transactions on');
-    } else if (this.config!.options!.enableImplicitTransactions == false) {
+    } else if (config.options.enableImplicitTransactions == false) {
       options.add('set implicit_transactions off');
     }
 
-    if (this.config!.options!.language != null) {
-      options.add('set language ${this.config!.options!.language}');
+    if (config.options.language != null) {
+      options.add('set language ${config.options.language}');
     }
 
-    if (this.config!.options!.enableNumericRoundabort == true) {
+    if (config.options.enableNumericRoundabort == true) {
       options.add('set numeric_roundabort on');
-    } else if (this.config!.options!.enableNumericRoundabort == false) {
+    } else if (config.options.enableNumericRoundabort == false) {
       options.add('set numeric_roundabort off');
     }
 
-    if (this.config!.options!.enableQuotedIdentifier == true) {
+    if (config.options.enableQuotedIdentifier == true) {
       options.add('set quoted_identifier on');
-    } else if (this.config!.options!.enableQuotedIdentifier == false) {
+    } else if (config.options.enableQuotedIdentifier == false) {
       options.add('set quoted_identifier off');
     }
 
-    if (this.config!.options!.textsize != null) {
-      options.add('set textsize ${this.config!.options!.textsize}');
+    if (config.options.textsize != null) {
+      options.add('set textsize ${config.options.textsize}');
     }
 
-    if (this.config!.options!.connectionIsolationLevel != null) {
+    if (config.options.connectionIsolationLevel != null) {
       options.add(
-          'set transaction isolation level ${this.getIsolationLevelText(this.config!.options!.connectionIsolationLevel)}');
+          'set transaction isolation level ${getIsolationLevelText(config.options.connectionIsolationLevel)}');
     }
 
-    if (this.config!.options!.abortTransactionOnError == true) {
+    if (config.options.abortTransactionOnError == true) {
       options.add('set xact_abort on');
-    } else if (this.config!.options!.abortTransactionOnError == false) {
+    } else if (config.options.abortTransactionOnError == false) {
       options.add('set xact_abort off');
     }
 
@@ -2588,30 +1291,30 @@ class Connection extends EventEmitter {
   }
 
   processedInitialSql() {
-    this.clearConnectTimer();
-    this.emit('connect');
+    clearConnectTimer();
+    emit('connect');
   }
 
   execSqlBatch(Request request) {
-    this.makeRequest(
+    makeRequest(
         request,
         PACKETTYPE['SQL_BATCH']!,
         SqlBatchPayload(
           sqlText: request.sqlTextOrProcedure!,
-          txnDescriptor: this.currentTransactionDescriptor(),
-          tdsVersion: this.config!.options!.tdsVersion,
+          txnDescriptor: currentTransactionDescriptor(),
+          tdsVersion: config.options.tdsVersion,
         ));
   }
 
   execSql(Request request) {
     try {
-      request.validateParameters(this.databaseCollation);
+      request.validateParameters(databaseCollation);
     } catch (error) {
       request.error = RequestError(message: error.toString());
 
       scheduleMicrotask(() {
-        this.debug.log(error.toString());
-        request.callback(error: MTypeError(error.toString()));
+        debug.log(error.toString());
+        request.callback(MTypeError(error.toString()));
       });
 
       return;
@@ -2641,38 +1344,28 @@ class Connection extends EventEmitter {
       parameters.addAll(request.parameters);
     }
 
-    this.makeRequest(
+    makeRequest(
         request,
         PACKETTYPE['RPC_REQUEST']!,
         RpcRequestPayload(
           procedure: 'sp_executesql',
           parameters: parameters,
-          txnDescriptor: this.currentTransactionDescriptor(),
-          options: this.config!.options!,
-          collation: this.databaseCollation,
+          txnDescriptor: currentTransactionDescriptor(),
+          options: config.options,
+          collation: databaseCollation,
         ));
   }
 
-  newBulkLoad(
-      String table, dynamic callbackOrOptions, BulkLoadCallback? callback) {
-    //callbackOrOptions = BulkLoadOptions | BulkLoadCallback
-    late BulkLoadOptions options;
-
-    if (callback == null) {
-      callback = callbackOrOptions as BulkLoadCallback;
-      options = BulkLoadOptions();
-    } else {
-      options = callbackOrOptions as BulkLoadOptions;
-    }
-
+  BulkLoad newBulkLoad(String table, BulkLoadOptions options,
+      [BulkLoadCallback? callback]) {
     if (options is! BulkLoadOptions) {
       throw MTypeError('"options" argument must be an object');
     }
     return BulkLoad(
       table: table,
-      collation: this.databaseCollation,
-      options: this.config!.options!,
-      bulkOptions: options.options!,
+      collation: databaseCollation,
+      options: config.options,
+      bulkOptions: options,
       callback: callback,
     );
   }
@@ -2740,7 +1433,7 @@ class Connection extends EventEmitter {
 
     request = Request(
         sqlTextOrProcedure: bulkLoad.getBulkInsertSql(),
-        callback: ({error, rowCount, rows}) {
+        callback: ([error, rowCount, rows]) {
           bulkLoad.once('cancel', (_) {
             onCancel();
           });
@@ -2751,18 +1444,18 @@ class Connection extends EventEmitter {
                   ' This is likely because the schema of the BulkLoad does not match the schema of the table you are attempting to insert into.');
             }
             bulkLoad.error = error;
-            bulkLoad.callback(error, 0);
+            bulkLoad.callback == null ? () {} : bulkLoad.callback!(error, 0);
             return;
           }
 
-          this.makeRequest(bulkLoad, PACKETTYPE['BULK_LOAD']!, payload);
+          makeRequest(bulkLoad, PACKETTYPE['BULK_LOAD']!, payload);
         });
 
     bulkLoad.once('cancel', (_) {
       onCancel();
     });
 
-    this.execSqlBatch(request);
+    execSqlBatch(request);
   }
 
   prepare(Request request) {
@@ -2815,15 +1508,15 @@ class Connection extends EventEmitter {
       }
     });
 
-    this.makeRequest(
+    makeRequest(
       request,
       PACKETTYPE['RPC_REQUEST']!,
       RpcRequestPayload(
         procedure: 'sp_prepare',
         parameters: parameters,
-        txnDescriptor: this.currentTransactionDescriptor(),
-        options: this.config!.options!,
-        collation: this.databaseCollation,
+        txnDescriptor: currentTransactionDescriptor(),
+        options: config.options,
+        collation: databaseCollation,
       ),
     );
   }
@@ -2841,15 +1534,15 @@ class Connection extends EventEmitter {
         precision: null,
         scale: null));
 
-    this.makeRequest(
+    makeRequest(
       request,
       PACKETTYPE['RPC_REQUEST']!,
       RpcRequestPayload(
         procedure: 'sp_unprepare',
         parameters: parameters,
-        txnDescriptor: this.currentTransactionDescriptor(),
-        options: this.config!.options!,
-        collation: this.databaseCollation,
+        txnDescriptor: currentTransactionDescriptor(),
+        options: config.options,
+        collation: databaseCollation,
       ),
     );
   }
@@ -2874,75 +1567,75 @@ class Connection extends EventEmitter {
         executeParameters.add(parameter
           ..value = parameter.type!.validate(
               parameters != null ? parameters[parameter.name] : null,
-              this.databaseCollation));
+              databaseCollation));
       }
     } catch (error) {
       request.error = RequestError(message: error.toString());
 
       process.nextTick(() {
-        this.debug.log(error.toString());
-        request.callback(error: MTypeError(error.toString()));
+        debug.log(error.toString());
+        request.callback(MTypeError(error.toString()));
       });
 
       return;
     }
 
-    this.makeRequest(
+    makeRequest(
         request,
         PACKETTYPE['RPC_REQUEST']!,
         RpcRequestPayload(
           procedure: 'sp_execute',
           parameters: executeParameters,
-          txnDescriptor: this.currentTransactionDescriptor(),
-          options: this.config!.options!,
-          collation: this.databaseCollation,
+          txnDescriptor: currentTransactionDescriptor(),
+          options: config.options,
+          collation: databaseCollation,
         ));
   }
 
   callProcedure(Request request) {
     try {
-      request.validateParameters(this.databaseCollation);
+      request.validateParameters(databaseCollation);
     } catch (error) {
       request.error = RequestError(message: error.toString());
 
       process.nextTick(() {
-        this.debug.log(error.toString());
+        debug.log(error.toString());
         request.callback(
-          error: MTypeError(error.toString()),
+          MTypeError(error.toString()),
         );
       });
 
       return;
     }
 
-    this.makeRequest(
+    makeRequest(
         request,
         PACKETTYPE['RPC_REQUEST']!,
         RpcRequestPayload(
             procedure: request.sqlTextOrProcedure!,
             parameters: request.parameters,
-            txnDescriptor: this.currentTransactionDescriptor(),
-            options: this.config!.options!,
-            collation: this.databaseCollation));
+            txnDescriptor: currentTransactionDescriptor(),
+            options: config.options,
+            collation: databaseCollation));
   }
 
   beginTransaction(
       {required BeginTransactionCallback callback,
       String name = '',
       num? isolationLevel}) {
-    isolationLevel = this.config!.options!.isolationLevel;
+    isolationLevel = config.options.isolationLevel;
     assertValidIsolationLevel(isolationLevel, 'isolationLevel');
 
     final transaction = Transaction(name: name, isolationLevel: isolationLevel);
 
-    if (TDSVERSIONS[this.config!.options!.tdsVersion]! < TDSVERSIONS['7_2']!) {
-      return this.execSqlBatch(Request(
+    if (TDSVERSIONS[config.options.tdsVersion]! < TDSVERSIONS['7_2']!) {
+      return execSqlBatch(Request(
           sqlTextOrProcedure:
               'SET TRANSACTION ISOLATION LEVEL ${transaction.isolationLevelToTSQL()};BEGIN TRAN ${transaction.name}',
-          callback: ({error, rowCount, rows}) {
-            this.transactionDepth++;
-            if (this.transactionDepth == 1) {
-              this.inTransaction = true;
+          callback: ([error, rowCount, rows]) {
+            transactionDepth++;
+            if (transactionDepth == 1) {
+              inTransaction = true;
             }
             callback(err: error);
           }));
@@ -2950,14 +1643,14 @@ class Connection extends EventEmitter {
 
     final request = Request(
         sqlTextOrProcedure: null,
-        callback: ({error, rowCount, rows}) {
+        callback: ([error, rowCount, rows]) {
           return callback(
             err: error,
-            transactionDescriptor: this.currentTransactionDescriptor(),
+            transactionDescriptor: currentTransactionDescriptor(),
           );
         });
-    return this.makeRequest(request, PACKETTYPE['TRANSACTION_MANAGER']!,
-        transaction.beginPayload(this.currentTransactionDescriptor()));
+    return makeRequest(request, PACKETTYPE['TRANSACTION_MANAGER']!,
+        transaction.beginPayload(currentTransactionDescriptor()));
   }
 
   commitTransaction({
@@ -2965,13 +1658,13 @@ class Connection extends EventEmitter {
     String name = '',
   }) {
     final transaction = Transaction(name: name);
-    if (TDSVERSIONS[this.config!.options!.tdsVersion]! < TDSVERSIONS['7_2']!) {
-      return this.execSqlBatch(Request(
+    if (TDSVERSIONS[config.options.tdsVersion]! < TDSVERSIONS['7_2']!) {
+      return execSqlBatch(Request(
           sqlTextOrProcedure: 'COMMIT TRAN ${transaction.name}',
-          callback: ({error, rowCount, rows}) {
-            this.transactionDepth--;
-            if (this.transactionDepth == 0) {
-              this.inTransaction = false;
+          callback: ([error, rowCount, rows]) {
+            transactionDepth--;
+            if (transactionDepth == 0) {
+              inTransaction = false;
             }
 
             callback(err: error);
@@ -2979,10 +1672,13 @@ class Connection extends EventEmitter {
     }
 
     //TODO
-    //ignore:argument_type_not_assignable
-    final request = Request(sqlTextOrProcedure: '', callback: callback);
-    return this.makeRequest(request, PACKETTYPE['TRANSACTION_MANAGER']!,
-        transaction.commitPayload(this.currentTransactionDescriptor()));
+    // ignore:argument_type_not_assignable
+
+    // final fns = ;
+    final request =
+        Request(sqlTextOrProcedure: '', callback: Function.apply(callback, []));
+    return makeRequest(request, PACKETTYPE['TRANSACTION_MANAGER']!,
+        transaction.commitPayload(currentTransactionDescriptor()));
   }
 
   rollbackTransaction({
@@ -2990,14 +1686,14 @@ class Connection extends EventEmitter {
     String name = '',
   }) {
     var transaction = Transaction(name: name);
-    if (TDSVERSIONS[this.config!.options!.tdsVersion]! < TDSVERSIONS['7_2']!) {
-      return this.execSqlBatch(
+    if (TDSVERSIONS[config.options.tdsVersion]! < TDSVERSIONS['7_2']!) {
+      return execSqlBatch(
         Request(
           sqlTextOrProcedure: 'ROLLBACK TRAN ${transaction.name}',
-          callback: ({error, rowCount, rows}) {
-            this.transactionDepth--;
-            if (this.transactionDepth == 0) {
-              this.inTransaction = false;
+          callback: ([error, rowCount, rows]) {
+            transactionDepth--;
+            if (transactionDepth == 0) {
+              inTransaction = false;
             }
             callback(err: error);
           },
@@ -3006,20 +1702,20 @@ class Connection extends EventEmitter {
     }
 
     //TODO
-    //ignore:argument_type_not_assignable
-    var request = Request(sqlTextOrProcedure: '', callback: callback);
-    return this.makeRequest(request, PACKETTYPE['TRANSACTION_MANAGER']!,
-        transaction.rollbackPayload(this.currentTransactionDescriptor()));
+    var request =
+        Request(sqlTextOrProcedure: '', callback: Function.apply(callback, []));
+    return makeRequest(request, PACKETTYPE['TRANSACTION_MANAGER']!,
+        transaction.rollbackPayload(currentTransactionDescriptor()));
   }
 
   saveTransaction(SaveTransactionCallback? callback, String name) {
     var transaction = Transaction(name: name);
-    if (TDSVERSIONS[this.config!.options!.tdsVersion]! < TDSVERSIONS['7_2']!) {
-      return this.execSqlBatch(
+    if (TDSVERSIONS[config.options.tdsVersion]! < TDSVERSIONS['7_2']!) {
+      return execSqlBatch(
         Request(
           sqlTextOrProcedure: 'SAVE TRAN ${transaction.name}',
-          callback: ({error, rowCount, rows}) {
-            this.transactionDepth++;
+          callback: ([error, rowCount, rows]) {
+            transactionDepth++;
             callback!(err: error);
           },
         ),
@@ -3027,11 +1723,13 @@ class Connection extends EventEmitter {
     }
     //TODO
     //ignore:argument_type_not_assignable
-    var request = Request(sqlTextOrProcedure: null, callback: callback);
-    return this.makeRequest(
+
+    var request = Request(
+        sqlTextOrProcedure: null, callback: Function.apply(callback!, []));
+    return makeRequest(
       request,
       PACKETTYPE['TRANSACTION_MANAGER']!,
-      transaction.savePayload(this.currentTransactionDescriptor()),
+      transaction.savePayload(currentTransactionDescriptor()),
     );
   }
 
@@ -3048,7 +1746,7 @@ class Connection extends EventEmitter {
       throw MTypeError('cb must be a function');
     }
 
-    var useSavepoint = this.inTransaction;
+    var useSavepoint = inTransaction;
 
     var name = '_tedious_${(RandomBytes.gen(10, isString: true))}';
 
@@ -3059,8 +1757,8 @@ class Connection extends EventEmitter {
       List<CallbackParameters>? args,
     }) {
       if (err != null) {
-        if (this.inTransaction && this.state == this.STATE['LOGGED_IN']) {
-          this.rollbackTransaction(
+        if (inTransaction && state == STATE['LOGGED_IN']) {
+          rollbackTransaction(
             callback: ({err}) {
               done!(err: err, args: args);
             },
@@ -3070,13 +1768,12 @@ class Connection extends EventEmitter {
           done!(err: err, args: args);
         }
       } else if (useSavepoint) {
-        if (TDSVERSIONS[this.config!.options!.tdsVersion]! <
-            TDSVERSIONS['7_2']!) {
-          this.transactionDepth--;
+        if (TDSVERSIONS[config.options.tdsVersion]! < TDSVERSIONS['7_2']!) {
+          transactionDepth--;
         }
         done!(err: null, args: args);
       } else {
-        this.commitTransaction(
+        commitTransaction(
           callback: ({err}) {
             done!(err: err, args: args);
           },
@@ -3087,7 +1784,7 @@ class Connection extends EventEmitter {
     //end of fns declaration
 
     if (useSavepoint) {
-      return this.saveTransaction(({err}) {
+      return saveTransaction(({err}) {
         if (err != null) {
           return cb!(error: err);
         }
@@ -3096,22 +1793,24 @@ class Connection extends EventEmitter {
           execSqlBatch(
             Request(
               sqlTextOrProcedure:
-                  'SET transaction isolation level ${this.getIsolationLevelText(isolationLevel)}',
-              callback: ({error, rowCount, rows}) {
+                  'SET transaction isolation level ${getIsolationLevelText(isolationLevel)}',
+              callback: ([error, rowCount, rows]) {
                 //TODO
                 //ignore:argument_type_not_assignable
-                return cb!(error: err, txDone: txDone);
+
+                // return cb!(error: err, txDone: txDone);
               },
             ),
           );
         } else {
           //TODO
           //ignore:argument_type_not_assignable
-          return cb!(error: null, txDone: txDone);
+
+          // return cb!(error: null, txDone: txDone);
         }
       }, name);
     } else {
-      return this.beginTransaction(
+      return beginTransaction(
           callback: ({err, transactionDescriptor}) {
             if (err != null) {
               return cb!(error: err);
@@ -3119,7 +1818,8 @@ class Connection extends EventEmitter {
 
             //TODO
             //ignore:argument_type_not_assignable
-            return cb!(error: null, txDone: txDone);
+
+            // return cb!(error: null, txDone: txDone);
           },
           name: name,
           isolationLevel: isolationLevel);
@@ -3127,35 +1827,37 @@ class Connection extends EventEmitter {
   }
 
   //TODO: check & double check for better implementation
+
+  @PrivateExposed('Used in get_parameter_encryption_metadata.dart')
+  @DynamicParameterType('request', 'Request || BulkLoad')
   makeRequest(dynamic request, num packetType, Stream<Buffer> payload,
-      {String Function(String indent)? toString}) {
-    //*request = Request || BulkLoad
-    if (this.state != this.STATE['LOGGED_IN']) {
-      var message =
-          'Requests can only be made in the ${this.STATE['LOGGED_IN']!.name} state, not the ${this.state?.name} state';
-      this.debug.log(message);
-      request.callback(
-          error: RequestError(message: message, code: 'EINVALIDSTATE'));
+      {String Function(String indent)? toString}) async {
+    if (state != STATE['LOGGED_IN']) {
+      final message =
+          'Requests can only be made in the ${STATE['LOGGED_IN']!.name} state, not the ${state?.name} state';
+      debug.log(message);
+      request.callback(RequestError(message: message, code: 'EINVALIDSTATE'));
     } else if (request.canceled) {
       scheduleMicrotask(() {
-        request.callback(
-            error: RequestError(message: 'Canceled.', code: 'ECANCEL'));
-      });
+        request.callback(RequestError(message: 'Canceled.', code: 'ECANCEL'));
+      }) as RequestCompletionCallback;
     } else {
       if (packetType == PACKETTYPE['SQL_BATCH']) {
-        this.isSqlBatch = true;
+        isSqlBatch = true;
       } else {
-        this.isSqlBatch = false;
+        isSqlBatch = false;
       }
 
       var message = Message(
         type: packetType as int,
-        resetConnection: this.resetConnectionOnNextRequest!,
+        resetConnection: resetConnectionOnNextRequest!,
       );
       //TODO: better message implementation
       //TODO: redo message & IO implementation
-      //ignore:null_method
-      var payloadStream = payload.listen((event) {});
+
+      StreamController<Buffer> payloadStreamController = StreamController();
+      payloadStreamController.addStream(payload);
+      StreamSubscription<Buffer> payloadStream = payload.listen((event) {});
 
       this.request = request;
       request.connection = this;
@@ -3163,8 +1865,10 @@ class Connection extends EventEmitter {
       request.rows = [];
       request.rst = [];
 
-      dynamic onCancel() {
-        payloadStream.asFuture(message);
+      onCancel() {
+        payloadStreamController.stream
+            .drain(message); //payloadStream.unpipe(message);
+        payloadStream.cancel();
         payloadStream.onError((e) {
           throw RequestError(message: 'Canceled.', code: 'ECANCEL');
         });
@@ -3179,29 +1883,26 @@ class Connection extends EventEmitter {
         }
       }
 
-      request.once('cancel', onCancel());
+      (request as Request).once('cancel', onCancel());
 
-      this.createRequestTimer();
+      createRequestTimer();
 
-      this
-          .messageIo
-          .outgoingMessageStream!
-          .write(message, 'utf-8', ([error]) {});
-      this.transitionTo(this.STATE['SENT_CLIENT_REQUEST']!);
+      messageIo.outgoingMessageStream!.write(message, 'utf-8', ([error]) {});
+      transitionTo(STATE['SENT_CLIENT_REQUEST']!);
 
       message.subscription.onDone(() {
         request.removeEventListener(
             EventListener('cancel', (val) {}, onCancel: onCancel));
-        request.once('cancel', this._cancelAfterRequestSent);
+        request.once('cancel', Function.apply(cancelAfterRequestSent, []));
 
-        this.resetConnectionOnNextRequest = false;
-        this.debug.payload(() {
+        resetConnectionOnNextRequest = false;
+        debug.payload(() {
           return payload.toString();
         });
       });
 
       payloadStream.onError((error) {
-        payloadStream.asFuture(message);
+        payloadStreamController.stream.drain(message);
 
         // Only set a request error if no error was set yet.
         request.error ??= error;
@@ -3209,28 +1910,30 @@ class Connection extends EventEmitter {
         message.ignore = true;
         message.subscription.cancel();
       });
-      payloadStream.asFuture(message);
+      payloadStreamController.stream.drain(message);
     }
   }
 
-  cancel() {
-    if (!this.request) {
+  ///* Cancel currently executed Request | BulkLoad.
+  bool cancel() {
+    if (request == null) {
       return false;
     }
-    if (this.request.canceled) {
+    if (request.canceled) {
       return false;
     }
-    this.request.cancel();
+    request.cancel();
     return true;
   }
 
-  reset(ResetCallback callback) {
+  /// Reset the connection to its initial state.
+  /// Can be useful for connection pool implementations.
+  void reset(ResetCallback callback) {
     var request = Request(
-        sqlTextOrProcedure: this.getInitialSql(),
-        callback: ({error, rowCount, rows}) {
-          if (TDSVERSIONS[this.config!.options!.tdsVersion]! <
-              TDSVERSIONS['7_2']!) {
-            this.inTransaction = false;
+        sqlTextOrProcedure: getInitialSql(),
+        callback: ([error, rowCount, rows]) {
+          if (TDSVERSIONS[config.options.tdsVersion]! < TDSVERSIONS['7_2']!) {
+            inTransaction = false;
           }
           callback(err: error);
         });
@@ -3238,10 +1941,12 @@ class Connection extends EventEmitter {
     execSqlBatch(request);
   }
 
-  currentTransactionDescriptor() {
+  @PrivateExposed()
+  Buffer currentTransactionDescriptor() {
     return transactionDescriptors[transactionDescriptors.length - 1];
   }
 
+  @Private()
   String getIsolationLevelText(num isolationLevel) {
     if (isolationLevel == ISOLATION_LEVEL['READ_UNCOMMITTED']!) {
       return 'read uncommitted';

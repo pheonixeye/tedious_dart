@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:node_interop/node_interop.dart';
-import 'package:tedious_dart/connection.dart' show ColumnNameReplacer;
+import 'package:tedious_dart/conn_const_typedef.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/token/colmetadata_token_parser.dart';

@@ -1,8 +1,8 @@
 import 'dart:io';
 
 class DuplexPair {
-  final SecureSocket? socket1;
-  final SecureSocket? socket2;
+  final RawSocket? socket1;
+  final RawSocket? socket2;
 
   DuplexPair({
     this.socket1,

@@ -63,7 +63,7 @@ readMoney(StreamParser parser, void Function(dynamic value) callback) {
 
 readBit(StreamParser parser, void Function(dynamic value) callback) {
   parser.readUInt8((value) {
-    callback(!!value); //TODO??
+    callback(value); //TODO ?? (!!value)
   });
 }
 
@@ -538,7 +538,8 @@ readChars(
   codepage ??= DEFAULT_ENCODING;
 
   return parser.readBuffer(dataLength, (data) {
-    callback(iconv.decode(data, codepage));
+    //TODO:callback(iconv.decode(data, codepage));
+    callback(utf8.decode(data.buffer));
   });
 }
 
@@ -568,7 +569,8 @@ readMaxChars(
 
   readMax(parser, (data) {
     if (data != null) {
-      callback(iconv.decode(data, codepage));
+      // TODO:callback(iconv.decode(data, codepage));
+      callback(utf8.decode(data.buffer));
     } else {
       callback(null);
     }
@@ -621,7 +623,7 @@ readMaxKnownLength(
   var offset = 0;
   next(dynamic done) {
     parser.readUInt32LE((chunkLength) {
-      if (!chunkLength) {
+      if (chunkLength == 0) {
         //TODO: figure out this negating int ??
         return done();
       }
@@ -654,7 +656,7 @@ readMaxUnknownLength(
   var length = 0;
   next(dynamic done) {
     parser.readUInt32LE((chunkLength) {
-      if (!chunkLength) {
+      if (chunkLength == 0) {
         return done();
       }
 

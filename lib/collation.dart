@@ -1,4 +1,4 @@
-// ignore_for_file: constant_identifier_names, prefer_initializing_formals, unnecessary_this, duplicate_ignore
+// ignore_for_file: constant_identifier_names, prefer_initializing_formals, duplicate_ignore
 
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
@@ -334,9 +334,9 @@ class Collation {
   int? sortId;
   String? codepage;
 
-  Buffer? buffer;
+  Buffer? _buffer;
 
-  static fromBuffer(Buffer buffer, {int offset = 0}) {
+  factory Collation.fromBuffer(Buffer buffer, {int offset = 0}) {
     var lcid = (buffer[offset + 2] & 0x0F) << 16;
     lcid |= buffer[offset + 1] << 8;
     lcid |= buffer[offset + 0];
@@ -351,39 +351,32 @@ class Collation {
     return Collation(lcid, flags, version, sortId);
   }
 
-  Collation(int lcid, int flags, int version, int sortId)
-      : buffer = null,
-        lcid = lcid,
-        flags = flags,
-        version = version,
-        sortId = sortId {
-    // ignore: unnecessary_this
-    if (this.flags != null && this.flags == flagsMap[Flags.UTF8]) {
-      this.codepage = 'utf-8';
-    } else if (this.sortId != null) {
-      this.codepage = codepageBySortId[this.sortId];
+  Collation(this.lcid, this.flags, this.version, this.sortId) {
+    if (flags != null && flags == flagsMap[Flags.UTF8]) {
+      codepage = 'utf-8';
+    } else if (sortId != null) {
+      codepage = codepageBySortId[sortId];
     } else {
       // The last 16 bits of the LCID are the language id.
       // The first 4 bits define additional sort orders.
-      var languageId = this.lcid & 0xFFFF;
-      this.codepage = codepageByLanguageId[languageId];
+      var languageId = lcid & 0xFFFF;
+      codepage = codepageByLanguageId[languageId];
     }
   }
 
   Buffer toBuffer() {
-    if (this.buffer != null) {
-      return this.buffer!;
+    if (_buffer != null) {
+      return _buffer!;
     }
 
-    this.buffer = Buffer.from([5]);
+    _buffer = Buffer.from([5]);
 
-    this.buffer![0] = this.lcid & 0xFF;
-    this.buffer![1] = (this.lcid >>> 8) & 0xFF;
-    this.buffer![2] = ((this.lcid >>> 16) & 0x0F) | ((this.flags! & 0x0F) << 4);
-    this.buffer![3] =
-        ((this.flags! & 0xF0) >>> 4) | ((this.version & 0x0F) << 4);
-    this.buffer![4] = this.sortId! & 0xFF;
+    _buffer![0] = lcid & 0xFF;
+    _buffer![1] = (lcid >>> 8) & 0xFF;
+    _buffer![2] = ((lcid >>> 16) & 0x0F) | ((flags! & 0x0F) << 4);
+    _buffer![3] = ((flags! & 0xF0) >>> 4) | ((version & 0x0F) << 4);
+    _buffer![4] = sortId! & 0xFF;
 
-    return this.buffer!;
+    return _buffer!;
   }
 }

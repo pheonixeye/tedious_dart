@@ -7,7 +7,7 @@ import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/message.dart';
 import 'package:tedious_dart/models/errors.dart';
-import 'package:tedious_dart/node/buffer_list.dart';
+// import 'package:tedious_dart/node/buffer_list.dart';
 import 'package:tedious_dart/packet.dart';
 
 class IncomingMessageStream extends Stream<Message>
@@ -19,7 +19,8 @@ class IncomingMessageStream extends Stream<Message>
   late final StreamController<Message> controller;
   IncomingMessageStream(this.debug) : super() {
     currentMessage = null;
-    bl = BufferList([]);
+    bl = List<Buffer>.empty();
+    // BufferList([]);
     sub = controller.stream.listen((event) {});
     controller = StreamController();
   }

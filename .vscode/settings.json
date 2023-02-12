@@ -1,3 +1,9 @@
 {
-    "dart.sdkPath": "c:/tools/dart-sdk"
+    "dart.sdkPaths": [
+        "c:/tools/dart-sdk",
+        "c:/flutter/bin/cache/dart-sdk",
+    ],
+    "dart.sdkPath": "c:/tools/dart-sdk",
+    "editor.cursorSmoothCaretAnimation": "on",
+    "editor.scrollPredominantAxis": true,
 }

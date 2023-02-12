@@ -2,9 +2,10 @@
 
 import 'dart:async';
 
+import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/message.dart';
-import 'package:tedious_dart/node/buffer_list.dart';
+// import 'package:tedious_dart/node/buffer_list.dart';
 import 'package:tedious_dart/packet.dart';
 
 class OutgoingMessageStream extends Stream<Message?> {
@@ -20,7 +21,8 @@ class OutgoingMessageStream extends Stream<Message?> {
   OutgoingMessageStream(this.debug, {required this.packetSize}) {
     this.packetSize = packetSize;
     this.debug = debug;
-    this.bl = BufferList([]);
+    this.bl = List<Buffer>.empty();
+    // BufferList([]);
 
     // When the writable side is ended, push `null`
     // to also end the readable side.

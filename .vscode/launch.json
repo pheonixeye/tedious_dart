@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "name": "Dart Example",
+            "type": "dart",
+            "request": "launch",
+            "program": "example/tedious_dart_example.dart"
+        },
+        {
+            "name": "Dart Tests",
+            "program": "test",
+            "request": "launch",
+            "type": "dart"
+        },
+    ]
+}

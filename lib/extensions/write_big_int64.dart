@@ -1,5 +1,3 @@
-// ignore_for_file: unnecessary_this
-
 import 'package:node_interop/buffer.dart';
 
 extension WriteBigInt64 on Buffer {

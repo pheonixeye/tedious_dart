@@ -404,7 +404,7 @@ class Login7TokenHandler implements TokenHandler {
         connection.transientErrorLookup.isTransientError(token.number as int);
     if (isLoginErrorTransient &&
         connection.curTransientRetryCount !=
-            connection.config!.options!.maxRetriesOnTransientErrors) {
+            connection.config.options.maxRetriesOnTransientErrors) {
       error.isTransient = true;
     }
 
@@ -413,7 +413,7 @@ class Login7TokenHandler implements TokenHandler {
 
   @override
   onFeatureExtAck(FeatureExtAckToken token) {
-    final authentication = connection.config!.authentication!;
+    final authentication = connection.config.authentication;
 
     if (authentication.type == 'azure-active-directory-password' ||
         authentication.type == 'azure-active-directory-access-token' ||
@@ -470,7 +470,7 @@ class Login7TokenHandler implements TokenHandler {
     }
 
     // use negotiated version
-    connection.config!.options!.tdsVersion = token.tdsVersion;
+    connection.config.options.tdsVersion = token.tdsVersion;
 
     loginAckReceived = true;
   }
@@ -560,7 +560,7 @@ class RequestTokenHandler implements TokenHandler {
   @override
   onColMetadata(ColMetadataToken token) {
     if (!(request as Request).canceled) {
-      if (connection.config!.options!.useColumnNames) {
+      if (connection.config.options.useColumnNames) {
         Map<String, ColumnMetadata> columns = {};
 
         for (int j = 0, len = token.columns.length; j < len; j++) {
@@ -611,7 +611,7 @@ class RequestTokenHandler implements TokenHandler {
             .setRowCount((request as Request).rowCount! + token.rowCount!);
       }
 
-      if (connection.config!.options!.rowCollectionOnDone) {
+      if (connection.config.options.rowCollectionOnDone) {
         (request as Request).rst = [];
       }
     }
@@ -628,7 +628,7 @@ class RequestTokenHandler implements TokenHandler {
             .setRowCount((request as Request).rowCount! + token.rowCount!);
       }
 
-      if (connection.config!.options!.rowCollectionOnDone) {
+      if (connection.config.options.rowCollectionOnDone) {
         request.rst = [];
       }
     }
@@ -654,7 +654,7 @@ class RequestTokenHandler implements TokenHandler {
             .setRowCount((request as Request).rowCount! + token.rowCount!);
       }
 
-      if (connection.config!.options!.rowCollectionOnDone) {
+      if (connection.config.options.rowCollectionOnDone) {
         request.rst = [];
       }
     }
@@ -710,11 +710,11 @@ class RequestTokenHandler implements TokenHandler {
   @override
   onNBCRow(NBCRowToken token) {
     if (!(request as Request).canceled) {
-      if (connection.config!.options!.rowCollectionOnRequestCompletion) {
+      if (connection.config.options.rowCollectionOnRequestCompletion) {
         (request as Request).rows!.add(token.columns);
       }
 
-      if (connection.config!.options!.rowCollectionOnDone) {
+      if (connection.config.options.rowCollectionOnDone) {
         (request as Request).rst!.add(token.columns);
       }
 
@@ -771,11 +771,11 @@ class RequestTokenHandler implements TokenHandler {
   @override
   onRow(RowToken token) {
     if (!(request as Request).canceled) {
-      if (connection.config!.options!.rowCollectionOnRequestCompletion) {
+      if (connection.config.options.rowCollectionOnRequestCompletion) {
         (request as Request).rows!.add(token.columns);
       }
 
-      if (connection.config!.options!.rowCollectionOnDone) {
+      if (connection.config.options.rowCollectionOnDone) {
         (request as Request).rst!.add(token.columns);
       }
 

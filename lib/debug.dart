@@ -67,24 +67,15 @@ class Debug extends EventEmitter {
 }
 
 class DebugOptions {
-  bool? data;
-  bool? payload;
-  bool? packet;
-  bool? token;
+  final bool? data;
+  final bool? payload;
+  final bool? packet;
+  final bool? token;
 
-  DebugOptions({
-    this.data,
-    this.payload,
-    this.packet,
-    this.token,
+  const DebugOptions({
+    this.data = false,
+    this.payload = false,
+    this.packet = false,
+    this.token = false,
   });
-
-  factory DebugOptions.allFalse() {
-    return DebugOptions(
-      data: false,
-      payload: false,
-      packet: false,
-      token: false,
-    );
-  }
 }

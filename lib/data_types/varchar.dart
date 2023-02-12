@@ -1,7 +1,9 @@
 // ignore_for_file: constant_identifier_names, non_constant_identifier_names
 
+import 'dart:convert';
+
 import 'package:node_interop/buffer.dart';
-import 'package:tedious_dart/connection.dart';
+import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
@@ -162,6 +164,10 @@ class VarChar extends DataType {
           'The collation set by the server has no associated encoding.');
     }
 
-    return iconv.encode(value, collation.codepage);
+    //TODO: check implementation
+    var res = Buffer.from(utf8.encode(value));
+
+    // return iconv.encode(value, collation.codepage);
+    return res;
   }
 }

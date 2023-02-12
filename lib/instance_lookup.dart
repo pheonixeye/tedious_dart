@@ -14,8 +14,10 @@ final RETRIES = 3;
 // There are three bytes at the start of the response, whose purpose is unknown.
 final MYSTERY_HEADER_LENGTH = 3;
 
-typedef LookupFunction = void Function(String hostname, dynamic options,
-    void Function(Error? error, List addresses) callback);
+// typedef LookupFunction = void Function(String hostname, dynamic options,
+//     void Function(Error? error, List addresses) callback);
+typedef LookupFunction = Future<List<InternetAddress>> Function(String host,
+    {InternetAddressType type});
 
 class InstanceLookUpOptions {
   String? server;
@@ -85,6 +87,7 @@ Future instanceLookup(InstanceLookUpOptions options) async {
           options.server!,
           port,
           //ignore:argument_type_not_assignable
+
           lookup,
           signal,
           request,

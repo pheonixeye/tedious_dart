@@ -53,11 +53,11 @@ parseToken(
       next(num rowCount) {
         return callback(
           DoneTokenData(
-            more: more,
-            sqlError: sqlError,
-            attention: attention,
-            serverError: serverError,
-            rowCount: rowCountValid ? rowCount : null,
+            more: more != 0,
+            sqlError: sqlError != 0,
+            attention: attention != 0,
+            serverError: serverError != 0,
+            rowCount: rowCountValid != 0 ? rowCount : null,
             curCmd: curCmd,
           ),
         );

@@ -23,7 +23,7 @@ void getParameterEncryptionMetadata(
 
   final metadataRequest = Request(
       sqlTextOrProcedure: 'sp_describe_parameter_encryption',
-      callback: ({error, rowCount, rows}) async {
+      callback: ([error, rowCount, rows]) async {
         if (error != null) {
           return callback(error: error);
         }
@@ -117,7 +117,7 @@ void getParameterEncryptionMetadata(
                 decryptSymmetricKeyPromises.add(decryptSymmetricKey(
                     request.parameters[paramIndex].cryptoMetadata
                         as CryptoMetadata,
-                    connection.config!.options! as ConnectionOptions));
+                    connection.config.options));
               } else if (request.parameters[paramIndex as int].forceEncrypt ==
                   true) {
                 return callback(
@@ -169,7 +169,7 @@ void getParameterEncryptionMetadata(
       procedure: metadataRequest.sqlTextOrProcedure!,
       parameters: metadataRequest.parameters,
       txnDescriptor: connection.currentTransactionDescriptor(),
-      options: connection.config!.options!,
+      options: connection.config.options,
       collation: connection.databaseCollation,
     ),
   );

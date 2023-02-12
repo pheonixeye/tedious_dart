@@ -6,6 +6,7 @@ import 'package:tedious_dart/always_encrypted/aead_aes_256_cbc_hmac_encryption_k
 import 'package:tedious_dart/always_encrypted/symmetric_key.dart';
 import 'package:tedious_dart/always_encrypted/symmetric_key_cache.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
+import 'package:tedious_dart/conn_config.dart';
 import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/errors.dart';
 

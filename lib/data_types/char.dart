@@ -1,6 +1,7 @@
 // ignore_for_file: non_constant_identifier_names, unnecessary_this
 
-import 'package:charset_converter/charset_converter.dart';
+import 'dart:convert';
+
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/data_types.dart';
@@ -128,7 +129,7 @@ class Char extends DataType {
           'The collation set by the server has no associated encoding.');
     }
 
-    final result = await CharsetConverter.encode(collation.codepage!, value);
+    final result = utf8.encode(value);
 
     return result;
   }

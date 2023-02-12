@@ -1,4 +1,4 @@
-import 'package:tedious_dart/connection.dart';
+import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/models/data_types.dart';

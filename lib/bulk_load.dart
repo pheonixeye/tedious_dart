@@ -6,6 +6,7 @@ import 'package:events_emitter/emitters/event_emitter.dart';
 import 'package:node_interop/node_interop.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
 import 'package:tedious_dart/collation.dart';
+import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
@@ -42,92 +43,53 @@ typedef Order = Map<String, String>;
 //   ASC('ASC'),
 //   DESC('DESC');
 
-class InternalOptions {
+class _BulkLoadInternalOptions {
   final bool? checkConstraints;
   final bool? fireTriggers;
   final bool? keepNulls;
   final bool? lockTable;
   final Order? order;
 
-  const InternalOptions({
-    this.checkConstraints,
-    this.fireTriggers,
-    this.keepNulls,
-    this.lockTable,
+  const _BulkLoadInternalOptions({
+    this.checkConstraints = false,
+    this.fireTriggers = false,
+    this.keepNulls = false,
+    this.lockTable = false,
     this.order,
   });
 }
 
-class BulkLoadOptions {
-  final InternalOptions? options;
-  bool? checkConstraints;
-  bool? fireTriggers;
-  bool? keepNulls;
-  bool? lockTable;
-  Order? order;
-
-  BulkLoadOptions({this.options})
-      : checkConstraints = options?.checkConstraints,
-        fireTriggers = options?.fireTriggers,
-        keepNulls = options?.keepNulls,
-        lockTable = options?.lockTable,
-        order = options?.order;
+class BulkLoadOptions extends _BulkLoadInternalOptions {
+  BulkLoadOptions({
+    super.checkConstraints,
+    super.fireTriggers,
+    super.keepNulls,
+    super.lockTable,
+    super.order,
+  });
 }
 
-typedef BulkLoadCallback = void Function(Error? err, num? rowCount);
+typedef BulkLoadCallback = void Function([Error? err, num? rowCount]);
 
-class Column implements Parameter {
+class Column extends Parameter {
   String objName;
   Collation? collation;
 
   Column(
       {required this.objName,
       this.collation,
-      this.cryptoMetadata,
-      this.encryptedVal,
-      this.forceEncrypt,
-      this.length,
-      this.name,
-      this.nullable,
-      this.output,
-      this.precision,
-      this.scale,
-      this.type,
-      this.value})
+      super.cryptoMetadata,
+      super.encryptedVal,
+      super.forceEncrypt,
+      super.length,
+      super.name,
+      super.nullable,
+      super.output,
+      super.precision,
+      super.scale,
+      super.type,
+      super.value})
       : super();
-
-  @override
-  CryptoMetadata? cryptoMetadata;
-
-  @override
-  Buffer? encryptedVal;
-
-  @override
-  bool? forceEncrypt;
-
-  @override
-  int? length;
-
-  @override
-  String? name;
-
-  @override
-  bool? nullable;
-
-  @override
-  bool? output;
-
-  @override
-  num? precision;
-
-  @override
-  num? scale;
-
-  @override
-  DataType? type;
-
-  @override
-  dynamic value;
 }
 
 class ColumnOptions {
@@ -270,18 +232,18 @@ class RowTransform<T> extends Stream {
 
 class BulkLoad extends EventEmitter {
   Error? error;
-  late bool canceled;
-  late bool executionStarted;
-  late bool streamingMode;
+  bool canceled = false;
+  bool executionStarted = false;
+  bool streamingMode = false;
   String table;
   num? timeout;
   InternalConnectionOptions options;
-  BulkLoadCallback callback;
-  late List<Column> columns;
-  late Map<String, Column> columnsByName;
-  late bool firstRowWritten;
+  BulkLoadCallback? callback;
+  List<Column> columns = [];
+  Map<String, Column> columnsByName = {};
+  bool firstRowWritten = false;
   late RowTransform<Buffer> rowToPacketTransform;
-  InternalOptions bulkOptions;
+  BulkLoadOptions bulkOptions;
   Connection? connection;
   List<dynamic>? rows;
   List<dynamic>? rst;
@@ -292,13 +254,7 @@ class BulkLoad extends EventEmitter {
     required this.table,
     required this.collation,
     required this.options,
-    this.bulkOptions = const InternalOptions(
-      checkConstraints: false,
-      fireTriggers: false,
-      keepNulls: false,
-      lockTable: false,
-      order: {},
-    ),
+    required this.bulkOptions,
     required this.callback,
   }) {
     if (bulkOptions.checkConstraints is! bool) {
@@ -333,19 +289,6 @@ class BulkLoad extends EventEmitter {
             'The value of the "${bulkOptions.order!.values[i]}" key in the "options.order" object must be either "ASC" or "DESC".');
       }
     }
-
-    error = undefined;
-    canceled = false;
-    executionStarted = false;
-
-    collation = collation;
-
-    table = table;
-    callback = callback;
-    columns = [];
-    columnsByName = {};
-    firstRowWritten = false;
-    streamingMode = false;
 
     rowToPacketTransform = RowTransform(bulkLoad: this);
   }
@@ -447,7 +390,7 @@ class BulkLoad extends EventEmitter {
   }
 
   getBulkInsertSql() {
-    var sql = 'insert bulk ${this.table}(';
+    var sql = 'insert bulk ${table}(';
     for (int i = 0, len = columns.length; i < len; i++) {
       var c = columns[i];
       if (i != 0) {

@@ -5,11 +5,11 @@ import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
 
-typedef CompletionCallback = void Function({
+typedef RequestCompletionCallback = void Function([
   Error? error,
   num? rowCount,
   dynamic rows,
-});
+]);
 
 class ParameterOptions {
   bool? output;
@@ -43,7 +43,7 @@ class Request extends EventEmitter {
 
   late bool paused;
 
-  late CompletionCallback userCallback;
+  late RequestCompletionCallback? userCallback;
 
   num? handle;
 
@@ -59,7 +59,7 @@ class Request extends EventEmitter {
 
   num? rowCount;
 
-  late CompletionCallback callback;
+  RequestCompletionCallback callback = ([error, rowCount, rows]) {};
 
   bool? shouldHonorAE;
 
@@ -72,7 +72,7 @@ class Request extends EventEmitter {
   //TODO!: should not need overriding the on & emit functions in the class but
   //TODO!:implement them in the call site ?????
   Request({
-    this.sqlTextOrProcedure,
+    required this.sqlTextOrProcedure,
     required this.callback,
     this.requestOptions,
   }) {
@@ -92,7 +92,7 @@ class Request extends EventEmitter {
         : SQLServerStatementColumnEncryptionSetting.UseConnectionSetting);
     cryptoMetadataLoaded = false;
 
-    callback = ({Error? error, num? rowCount, dynamic rows}) {
+    callback = ([Error? error, num? rowCount, dynamic rows]) {
       if (preparing) {
         preparing = false;
         if (error != null) {
@@ -101,10 +101,10 @@ class Request extends EventEmitter {
           emit('prepared');
         }
       } else {
-        userCallback(
-          error: error,
-          rowCount: rowCount,
-          rows: rows,
+        userCallback!(
+          error,
+          rowCount,
+          rows,
         );
         emit('requestCompleted');
       }

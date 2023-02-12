@@ -12,7 +12,7 @@ class AbortOptions {
   });
 }
 
-class AbortSignal {
+class AbortSignal<T> {
   late final EventEmitter eventEmitter;
   late bool aborted;
   dynamic onAbort;

@@ -3,7 +3,7 @@
 import 'package:node_interop/buffer.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
 import 'package:tedious_dart/collation.dart';
-import 'package:tedious_dart/connection.dart';
+import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/data_types/binary.dart';
 import 'package:tedious_dart/data_types/bit.dart';
 import 'package:tedious_dart/data_types/bitn.dart';
