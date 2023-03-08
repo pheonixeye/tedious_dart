@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/symmetric_key.dart';
 import 'package:tedious_dart/models/errors.dart';
 // import 'package:crypto/crypto.dart';
@@ -15,7 +15,7 @@ Buffer deriveKey(Buffer rootKey, String salt) {
   var hmac = Hmac(sha256, rootKey.buffer);
   var output = AccumulatorSink<Digest>();
   ByteConversionSink input = hmac.startChunkedConversion(output);
-  input.add(Buffer.from(salt, 'utf16le').buffer);
+  input.add(Buffer.from(salt, 0, 0, 'utf16le').buffer);
   input.close();
   Digest result = output.events.single;
   return Buffer.from(result);

@@ -1,6 +1,6 @@
 // ignore_for_file: constant_identifier_names, non_constant_identifier_names, unnecessary_this
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:sprintf/sprintf.dart';
 
 const HEADER_LENGTH = 8;

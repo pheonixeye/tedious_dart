@@ -35,13 +35,19 @@ fedAuthInfoParser(
 
         switch (fedauthInfoID) {
           case 0x01: //FEDAUTHINFOID['SPN']:
-            spn = data.toString('ucs2', fedAuthInfoDataOffset as int,
-                fedAuthInfoDataOffset + fedAuthInfoDataLen as int);
+            spn = data.toString_({
+              'encoding': 'ucs2',
+              'start': fedAuthInfoDataOffset,
+              'end': fedAuthInfoDataOffset + fedAuthInfoDataLen
+            });
             break;
 
           case 0x02: //FEDAUTHINFOID['STSURL']:
-            stsurl = data.toString('ucs2', fedAuthInfoDataOffset as int,
-                fedAuthInfoDataOffset + fedAuthInfoDataLen as int);
+            stsurl = data.toString_({
+              'encoding': 'ucs2',
+              'start': fedAuthInfoDataOffset,
+              'end': fedAuthInfoDataOffset + fedAuthInfoDataLen,
+            });
             break;
 
           // ignoring unknown fedauthinfo options

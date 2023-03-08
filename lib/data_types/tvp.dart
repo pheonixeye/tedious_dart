@@ -1,6 +1,6 @@
 // ignore_for_file: non_finalant_identifier_names, non_constant_identifier_names
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/data_types.dart';
@@ -98,11 +98,11 @@ class TVP extends DataType {
 
     var bufferLength = 1 +
         1 +
-        Buffer.byteLength(databaseName, 'ucs2').length +
+        Buffer.byteLength(databaseName, 'ucs2') +
         1 +
-        Buffer.byteLength(schema, 'ucs2').length +
+        Buffer.byteLength(schema, 'ucs2') +
         1 +
-        Buffer.byteLength(typeName, 'ucs2').length;
+        Buffer.byteLength(typeName, 'ucs2');
 
     final buffer =
         WritableTrackingBuffer(initialSize: bufferLength, encoding: 'ucs2');

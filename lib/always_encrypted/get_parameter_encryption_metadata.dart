@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/cek_entry.dart';
 import 'package:tedious_dart/always_encrypted/key_crypto.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';

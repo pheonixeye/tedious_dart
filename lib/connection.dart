@@ -4,7 +4,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:events_emitter/events_emitter.dart';
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/bulk_load.dart';
 import 'package:tedious_dart/bulk_load_payload.dart';
 import 'package:tedious_dart/collation.dart';
@@ -786,11 +786,11 @@ class Connection extends EventEmitter {
             message: 'Connection closed before request completed.',
             code: 'ECLOSE');
         request.callback(err);
-        this.request = undefined;
+        this.request = null;
       }
 
       closed = true;
-      loginError = undefined;
+      loginError = null;
     }
   }
 
@@ -933,7 +933,7 @@ class Connection extends EventEmitter {
     """;
     debug.log(message);
     emit('connect', ConnectionError(message, 'ETIMEOUT'));
-    connectTimer = undefined;
+    connectTimer = null;
     dispatchEvent('connectTimeout');
   }
 
@@ -956,7 +956,7 @@ class Connection extends EventEmitter {
   }
 
   retryTimeout() {
-    retryTimer = undefined;
+    retryTimer = null;
     emit('retry');
     transitionTo(STATE['CONNECTING']!);
   }
@@ -965,7 +965,7 @@ class Connection extends EventEmitter {
     if (connectTimer != null) {
       connectTimer!.cancel();
       // clearTimeout(this.connectTimer);
-      connectTimer = undefined;
+      connectTimer = null;
     }
   }
 
@@ -973,7 +973,7 @@ class Connection extends EventEmitter {
     if (cancelTimer != null) {
       cancelTimer!.cancel();
       // clearTimeout(this.cancelTimer);
-      cancelTimer = undefined;
+      cancelTimer = null;
     }
   }
 
@@ -981,7 +981,7 @@ class Connection extends EventEmitter {
     if (requestTimer != null) {
       requestTimer!.cancel();
       // clearTimeout(this.requestTimer);
-      requestTimer = undefined;
+      requestTimer = null;
     }
   }
 
@@ -989,7 +989,7 @@ class Connection extends EventEmitter {
     if (retryTimer != null) {
       retryTimer!.cancel();
       // clearTimeout(this.retryTimer);
-      retryTimer = undefined;
+      retryTimer = null;
     }
   }
 
@@ -1004,7 +1004,7 @@ class Connection extends EventEmitter {
     }
 
     debug.log(
-        'State change: ${state != null ? state!.name : 'undefined'} -> ${newState.name}');
+        'State change: ${state != null ? state!.name : 'null'} -> ${newState.name}');
     state = newState;
 
     if (state!.enter != null) {
@@ -1105,7 +1105,7 @@ class Connection extends EventEmitter {
           tdsVersion: TDSVERSIONS[config.options.tdsVersion],
           packetSize: config.options.packetSize,
           clientProgVer: 0,
-          clientPid: process.pid,
+          clientPid: Platform.environment['pid'],
           connectionId: 0,
           clientTimeZone: DateTime.now().timeZoneOffset.inMinutes,
           clientLcid: 0x00000409),
@@ -1158,7 +1158,7 @@ class Connection extends EventEmitter {
     payload.readOnlyIntent = config.options.readOnlyIntent;
     payload.initDbFatal = !config.options.fallbackToDefaultDb;
 
-    routingData = undefined;
+    routingData = null;
     messageIo.sendMessage(PACKETTYPE['LOGIN7']!, data: payload.toBuffer());
 
     debug.payload(() {
@@ -1168,11 +1168,11 @@ class Connection extends EventEmitter {
 
   sendFedAuthTokenMessage(String token) {
     final accessTokenLen = Buffer.byteLength(token, 'ucs2');
-    final data = Buffer.alloc(8 + accessTokenLen.length);
+    final data = Buffer.alloc(8 + accessTokenLen);
     var offset = 0;
-    offset = data.writeUInt32LE(accessTokenLen.length + 4, offset);
-    offset = data.writeUInt32LE(accessTokenLen.length, offset);
-    data.write(token, offset, 0, 'ucs2');
+    offset = data.writeUInt32LE(accessTokenLen + 4, offset);
+    offset = data.writeUInt32LE(accessTokenLen, offset);
+    data.write(token, offset: offset, length: 0, encoding: 'ucs2');
     messageIo.sendMessage(PACKETTYPE['FEDAUTH_TOKEN']!, data: data);
     // sent the fedAuth token message, the rest is similar to standard login 7
     //TODO:
@@ -1572,7 +1572,7 @@ class Connection extends EventEmitter {
     } catch (error) {
       request.error = RequestError(message: error.toString());
 
-      process.nextTick(() {
+      scheduleMicrotask(() {
         debug.log(error.toString());
         request.callback(MTypeError(error.toString()));
       });
@@ -1598,7 +1598,7 @@ class Connection extends EventEmitter {
     } catch (error) {
       request.error = RequestError(message: error.toString());
 
-      process.nextTick(() {
+      scheduleMicrotask(() {
         debug.log(error.toString());
         request.callback(
           MTypeError(error.toString()),

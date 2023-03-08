@@ -1,6 +1,6 @@
 // ignore_for_file: constant_identifier_names, curly_braces_in_flow_control_structures
 
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/all_headers.dart';
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';

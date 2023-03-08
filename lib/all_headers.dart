@@ -2,7 +2,7 @@
 
 import 'dart:typed_data';
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 
 const TXNDESCRIPTOR_HEADER_DATA_LEN = 4 + 8;

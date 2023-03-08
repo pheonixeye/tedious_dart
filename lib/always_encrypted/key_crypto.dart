@@ -1,13 +1,12 @@
 // ignore_for_file: non_constant_identifier_names
 
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/aead_aes_256_cbc_hmac_algorithm.dart';
 import 'package:tedious_dart/always_encrypted/aead_aes_256_cbc_hmac_encryption_key.dart';
 import 'package:tedious_dart/always_encrypted/symmetric_key.dart';
 import 'package:tedious_dart/always_encrypted/symmetric_key_cache.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
 import 'package:tedious_dart/conn_config.dart';
-import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/errors.dart';
 
 String validateAndGetEncryptionAlgorithmName(

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/conn_const_typedef.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/models/errors.dart';
@@ -9,8 +9,6 @@ import 'package:tedious_dart/token/colmetadata_token_parser.dart';
 import 'package:tedious_dart/token/nbcrow_token_parser.dart';
 import 'package:tedious_dart/token/row_token_parser.dart';
 import 'package:tedious_dart/token/token.dart';
-import 'package:tedious_dart/extensions/write_big_int64.dart';
-import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
 
 const Map<int, Function> tokenParsers = {};
 
@@ -40,7 +38,7 @@ class StreamBuffer {
   late StreamIterator<Buffer>? iterator;
   //AsyncIterator<Buffer, any, undefined> | Iterator<Buffer, any, undefined>;
   Buffer? buffer;
-  num? position;
+  int? position;
 
   StreamBuffer({
     this.buffer,
@@ -62,8 +60,8 @@ class StreamBuffer {
     if (position as int == buffer!.length) {
       buffer = iterator!.current;
     } else {
-      buffer =
-          Buffer.concat([buffer!.slice(position as int), iterator!.current]);
+      buffer = Buffer.concat(
+          [buffer!.slice(position as int, null), iterator!.current]);
     }
     position = 0;
   }
@@ -173,7 +171,7 @@ class StreamParser {
     return streamBuffer.buffer;
   }
 
-  num? get position {
+  int? get position {
     return streamBuffer.position;
   }
 
@@ -186,7 +184,7 @@ class StreamParser {
     this.next = next;
   }
 
-  awaitData(num length, void Function() callback) {
+  awaitData(int length, void Function() callback) {
     if (position! + length <= buffer!.length) {
       callback();
     } else {
@@ -196,7 +194,7 @@ class StreamParser {
     }
   }
 
-  readInt8(void Function(num data) callback) {
+  readInt8(void Function(int data) callback) {
     awaitData(1, () {
       final data = buffer!.readInt8(position as int);
       setPosition(position! + 1);
@@ -205,7 +203,7 @@ class StreamParser {
     });
   }
 
-  readUInt8(void Function(num data) callback) {
+  readUInt8(void Function(int data) callback) {
     awaitData(1, () {
       final data = buffer!.readUInt8(position as int);
       setPosition(position! + 1);
@@ -213,7 +211,7 @@ class StreamParser {
     });
   }
 
-  readInt16LE(void Function(num data) callback) {
+  readInt16LE(void Function(int data) callback) {
     awaitData(2, () {
       final data = buffer!.readInt16LE(position as int);
       setPosition(position! + 2);
@@ -221,7 +219,7 @@ class StreamParser {
     });
   }
 
-  readInt16BE(void Function(num data) callback) {
+  readInt16BE(void Function(int data) callback) {
     awaitData(2, () {
       final data = buffer!.readInt16BE(position as int);
       setPosition(position! + 2);
@@ -229,7 +227,7 @@ class StreamParser {
     });
   }
 
-  readUInt16LE(void Function(num data) callback) {
+  readUInt16LE(void Function(int data) callback) {
     awaitData(2, () {
       final data = buffer!.readUInt16LE(position as int);
       setPosition(position! + 2);
@@ -237,7 +235,7 @@ class StreamParser {
     });
   }
 
-  readUInt16BE(void Function(num data) callback) {
+  readUInt16BE(void Function(int data) callback) {
     awaitData(2, () {
       final data = buffer!.readUInt16BE(position as int);
       setPosition(position! + 2);
@@ -245,7 +243,7 @@ class StreamParser {
     });
   }
 
-  readInt32LE(void Function(num data) callback) {
+  readInt32LE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer!.readInt32LE(position as int);
       setPosition(position! + 4);
@@ -253,7 +251,7 @@ class StreamParser {
     });
   }
 
-  readInt32BE(void Function(num data) callback) {
+  readInt32BE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer!.readInt32BE(position as int);
       setPosition(position! + 4);
@@ -261,7 +259,7 @@ class StreamParser {
     });
   }
 
-  readUInt32LE(void Function(num data) callback) {
+  readUInt32LE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer!.readUInt32LE(position as int);
       setPosition(position! + 4);
@@ -269,7 +267,7 @@ class StreamParser {
     });
   }
 
-  readUInt32BE(void Function(num data) callback) {
+  readUInt32BE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer!.readUInt32BE(position as int);
       setPosition(position! + 4);
@@ -277,61 +275,61 @@ class StreamParser {
     });
   }
 
-  readBigInt64LE(void Function(num data) callback) {
+  readBigInt64LE(void Function(int data) callback) {
     awaitData(8, () {
       final data = buffer!.readBigInt64LE(position as int);
       setPosition(position! + 8);
-      callback(data);
+      callback(data.toInt());
     });
   }
 
-  readInt64LE(void Function(num data) callback) {
+  readInt64LE(void Function(int data) callback) {
     awaitData(8, () {
-      final data = pow(2, 32) * buffer!.readInt32LE(position! + 4 as int) +
-          ((buffer![position! + 4 as int] & 0x80) == 0x80 ? 1 : -1) *
+      final data = pow(2, 32) * buffer!.readInt32LE(position! + 4) +
+          ((buffer![position! + 4] & 0x80) == 0x80 ? 1 : -1) *
               buffer!.readUInt32LE(position as int);
       setPosition(position! + 8);
-      callback(data);
+      callback(data.toInt());
     });
   }
 
-  readInt64BE(void Function(num data) callback) {
+  readInt64BE(void Function(int data) callback) {
     awaitData(8, () {
       final data = pow(2, 32) * buffer!.readInt32BE(position as int) +
           ((buffer![position as int] & 0x80) == 0x80 ? 1 : -1) *
-              buffer!.readUInt32BE(position! + 4 as int);
+              buffer!.readUInt32BE(position! + 4);
       setPosition(position! + 8);
-      callback(data);
+      callback(data.toInt());
     });
   }
 
-  readBigUInt64LE(void Function(num data) callback) {
+  readBigUInt64LE(void Function(int data) callback) {
     awaitData(8, () {
       final data = buffer!.readBigUInt64LE(position as int);
       setPosition(position! + 8);
-      callback(data);
+      callback(data.toInt());
     });
   }
 
-  readUInt64LE(void Function(num data) callback) {
+  readUInt64LE(void Function(int data) callback) {
     awaitData(8, () {
-      final data = pow(2, 32) * buffer!.readUInt32LE(position! + 4 as int) +
+      final data = pow(2, 32) * buffer!.readUInt32LE(position! + 4) +
           buffer!.readUInt32LE(position as int);
       setPosition(position! + 8);
-      callback(data);
+      callback(data.toInt());
     });
   }
 
-  readUInt64BE(void Function(num data) callback) {
+  readUInt64BE(void Function(int data) callback) {
     awaitData(8, () {
       final data = pow(2, 32) * buffer!.readUInt32BE(position as int) +
-          buffer!.readUInt32BE(position! + 4 as int);
+          buffer!.readUInt32BE(position! + 4);
       setPosition(position! + 8);
-      callback(data);
+      callback(data.toInt());
     });
   }
 
-  readFloatLE(void Function(num data) callback) {
+  readFloatLE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer!.readFloatLE(position as int);
       setPosition(position! + 4);
@@ -339,7 +337,7 @@ class StreamParser {
     });
   }
 
-  readFloatBE(void Function(num data) callback) {
+  readFloatBE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer!.readFloatBE(position as int);
       setPosition(position! + 4);
@@ -347,7 +345,7 @@ class StreamParser {
     });
   }
 
-  readDoubleLE(void Function(num data) callback) {
+  readDoubleLE(void Function(int data) callback) {
     awaitData(8, () {
       final data = buffer!.readDoubleLE(position as int);
       setPosition(position! + 8);
@@ -355,7 +353,7 @@ class StreamParser {
     });
   }
 
-  readDoubleBE(void Function(num data) callback) {
+  readDoubleBE(void Function(int data) callback) {
     awaitData(8, () {
       final data = buffer!.readDoubleBE(position as int);
       setPosition(position! + 8);
@@ -363,38 +361,38 @@ class StreamParser {
     });
   }
 
-  readUInt24LE(void Function(num data) callback) {
+  readUInt24LE(void Function(int data) callback) {
     awaitData(3, () {
       final low = buffer!.readUInt16LE(position as int);
-      final high = buffer!.readUInt8(position! + 2 as int);
+      final high = buffer!.readUInt8(position! + 2);
       setPosition(position! + 3);
-      callback((low as int) | ((high as int) << 16));
+      callback((low) | ((high) << 16));
     });
   }
 
-  readUInt40LE(void Function(num data) callback) {
+  readUInt40LE(void Function(int data) callback) {
     awaitData(5, () {
       final low = buffer!.readUInt32LE(position as int);
-      final high = buffer!.readUInt8(position! + 4 as int);
+      final high = buffer!.readUInt8(position! + 4);
       setPosition(position! + 5);
       callback((0x100000000 * high) + low);
     });
   }
 
-  readUNumeric64LE(void Function(num data) callback) {
+  readUinteric64LE(void Function(int data) callback) {
     awaitData(8, () {
       final low = buffer!.readUInt32LE(position as int);
-      final high = buffer!.readUInt32LE(position! + 4 as int);
+      final high = buffer!.readUInt32LE(position! + 4);
       setPosition(position! + 8);
       callback((0x100000000 * high) + low);
     });
   }
 
-  readUNumeric96LE(void Function(num data) callback) {
+  readUinteric96LE(void Function(int data) callback) {
     awaitData(12, () {
       final dword1 = buffer!.readUInt32LE(position as int);
-      final dword2 = buffer!.readUInt32LE(position! + 4 as int);
-      final dword3 = buffer!.readUInt32LE(position! + 8 as int);
+      final dword2 = buffer!.readUInt32LE(position! + 4);
+      final dword3 = buffer!.readUInt32LE(position! + 8);
       setPosition(position! + 12);
       callback(dword1 +
           (0x100000000 * dword2) +
@@ -402,12 +400,12 @@ class StreamParser {
     });
   }
 
-  readUNumeric128LE(void Function(num data) callback) {
+  readUinteric128LE(void Function(int data) callback) {
     awaitData(16, () {
       final dword1 = buffer!.readUInt32LE(position as int);
-      final dword2 = buffer!.readUInt32LE(position! + 4 as int);
-      final dword3 = buffer!.readUInt32LE(position! + 8 as int);
-      final dword4 = buffer!.readUInt32LE(position! + 12 as int);
+      final dword2 = buffer!.readUInt32LE(position! + 4);
+      final dword3 = buffer!.readUInt32LE(position! + 8);
+      final dword4 = buffer!.readUInt32LE(position! + 12);
       setPosition(position! + 16);
       callback(dword1 +
           (0x100000000 * dword2) +
@@ -416,9 +414,9 @@ class StreamParser {
     });
   }
 
-  readBuffer(num length, void Function(Buffer data) callback) {
+  readBuffer(int length, void Function(Buffer data) callback) {
     awaitData(length, () {
-      final data = buffer!.slice(position as int, position! + length as int);
+      final data = buffer!.slice(position as int, position! + length);
       setPosition(position! + length);
       callback(data);
     });
@@ -427,7 +425,7 @@ class StreamParser {
   readBVarChar(void Function(String data) callback) {
     readUInt8((length) {
       readBuffer(length * 2, (data) {
-        callback(data.toString('ucs2'));
+        callback(data.toString_({'encoding': 'ucs2'}));
       });
     });
   }
@@ -435,7 +433,7 @@ class StreamParser {
   readUsVarChar(void Function(String data) callback) {
     readUInt16LE((length) {
       readBuffer(length * 2, (data) {
-        callback(data.toString('ucs2'));
+        callback(data.toString_({'encoding': 'ucs2'}));
       });
     });
   }

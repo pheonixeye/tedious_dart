@@ -1,6 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/data_types.dart';
@@ -20,7 +20,7 @@ class NText extends DataType {
     if (parameter.value == null) {
       return;
     }
-    yield Buffer.from(parameter.value.toString(), 'ucs2');
+    yield Buffer.from(parameter.value.toString(), 0, 0, 'ucs2');
   }
 
   @override
@@ -31,7 +31,7 @@ class NText extends DataType {
     }
 
     final buffer = Buffer.alloc(4);
-    buffer.writeInt32LE(Buffer.byteLength(parameter.value, 'ucs2').length, 0);
+    buffer.writeInt32LE(Buffer.byteLength(parameter.value, 'ucs2'), 0);
     return buffer;
   }
 

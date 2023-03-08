@@ -144,8 +144,11 @@ readNewAndOldValue(
           final port = routePacket.readUInt16LE(1);
           final serverLen = routePacket.readUInt16LE(3);
           // 2 bytes per char, starting at offset 5
-          final server =
-              routePacket.toString('ucs2', 5, 5 + (serverLen * 2).toInt());
+          final server = routePacket.toString_({
+            'encoding': 'ucs2',
+            'start': 5,
+            'end': 5 + (serverLen * 2).toInt()
+          });
 
           final newValue = RoutingEnvChange(
             protocol: protocol,
@@ -167,7 +170,7 @@ readNewAndOldValue(
     default:
       log('Tedious > Unsupported ENVCHANGE type ${type.name}');
       // skip unknown bytes
-      parser.readBuffer(length - 1, (_) {
+      parser.readBuffer(length - 1 as int, (_) {
         callback(null);
       });
   }

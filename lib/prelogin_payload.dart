@@ -1,8 +1,7 @@
 // ignore_for_file: non_constant_identifier_names, constant_identifier_names
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:sprintf/sprintf.dart';
-import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 
 const optionBufferSize = 20;

@@ -1,11 +1,9 @@
 // ignore_for_file: constant_identifier_names, non_constant_identifier_names, library_prefixes
 
 import 'dart:math' as Math;
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/models/buffer_encoding.dart';
 // ignore: unused_import
-import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
-import 'package:tedious_dart/extensions/write_big_int64.dart';
 
 const SHIFT_LEFT_32 = (1 << 16) * (1 << 16);
 const SHIFT_RIGHT_32 = 1 / SHIFT_LEFT_32;
@@ -42,7 +40,7 @@ class WritableTrackingBuffer {
   copyFrom(Buffer buffer) {
     var length = buffer.length;
     makeRoomFor(length);
-    buffer.copy(this.buffer, position);
+    buffer.copy(this.buffer!, position);
     position += length;
   }
 
@@ -195,12 +193,17 @@ class WritableTrackingBuffer {
   writeString(String value, String? encoding) {
     encoding ??= this.encoding;
 
-    final length = Buffer.byteLength(value, encoding).length;
+    final length = Buffer.byteLength(value, encoding!);
     makeRoomFor(length);
 
     // $FlowFixMe https://github.com/facebook/flow/pull/5398
     //!!!!!!!!!!!!!!!!!!!//TODO: CHECK IMPLEMENTATION
-    buffer!.write(value, position, length, encoding ?? 'utf-8');
+    buffer!.write(
+      value,
+      offset: position,
+      length: length,
+      encoding: encoding,
+    );
     position += length;
   }
 
@@ -231,7 +234,7 @@ class WritableTrackingBuffer {
       length = value.length;
     } else {
       value = value.toString();
-      length = Buffer.byteLength(value, encoding).length;
+      length = Buffer.byteLength(value, encoding!);
     }
     writeUInt16LE(length);
     //?
@@ -240,7 +243,8 @@ class WritableTrackingBuffer {
     } else {
       makeRoomFor(length);
       // $FlowFixMe https://github.com/facebook/flow/pull/5398
-      buffer!.write(value, position, length, encoding ?? 'utf-8');
+      buffer!.write(value,
+          offset: position, length: length, encoding: encoding ?? 'utf-8');
       position += length;
     }
   }
@@ -253,7 +257,7 @@ class WritableTrackingBuffer {
       length = value.length;
     } else {
       value = value.toString();
-      length = Buffer.byteLength(value, encoding).length;
+      length = Buffer.byteLength(value, encoding!);
     }
 
     // Length of all chunks.
@@ -269,7 +273,8 @@ class WritableTrackingBuffer {
         writeBuffer(value);
       } else {
         makeRoomFor(length);
-        buffer!.write(value, position, length, encoding ?? 'utf-8');
+        buffer!.write(value,
+            offset: position, length: length, encoding: encoding ?? 'utf-8');
         position += length;
       }
     }

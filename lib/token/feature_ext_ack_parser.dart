@@ -1,9 +1,8 @@
 // ignore_for_file: constant_identifier_names
 
-import 'package:node_interop/node_interop.dart' show Buffer;
 import 'package:tedious_dart/token/stream_parser.dart';
 import 'package:tedious_dart/token/token.dart';
-import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 
 const Map<String, int> FEATURE_ID = {
   'SESSIONRECOVERY': 0x01,

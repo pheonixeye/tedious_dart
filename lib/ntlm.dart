@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 
 const Map<String, int> NTLMFlags = {
   'NTLM_NegotiateUnicode': 0x00000001,
@@ -75,7 +75,8 @@ createNTLMRequest(NTLMrequestOption options) {
   var buffers = [fixedData];
   var offset = 0;
 
-  offset += fixedData.write('NTLMSSP', offset, 7, 'ascii');
+  offset += fixedData.write('NTLMSSP',
+      offset: offset, length: 7, encoding: 'ascii') as int;
   offset = fixedData.writeUInt8(0, offset);
   offset = fixedData.writeUInt32LE(1, offset);
   offset = fixedData.writeUInt32LE(type1flags, offset);
@@ -94,8 +95,8 @@ createNTLMRequest(NTLMrequestOption options) {
   offset = fixedData.writeUInt8(0, offset);
   fixedData.writeUInt8(15, offset);
 
-  buffers.add(Buffer.from(workstation, 'ascii'));
-  buffers.add(Buffer.from(domain, 'ascii'));
+  buffers.add(Buffer.from(workstation, 0, 0, 'ascii'));
+  buffers.add(Buffer.from(domain, 0, 0, 'ascii'));
 
   return Buffer.concat(buffers);
 }

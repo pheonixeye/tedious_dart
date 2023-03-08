@@ -3,7 +3,7 @@
 import 'dart:async';
 
 import 'package:events_emitter/emitters/event_emitter.dart';
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/conn_config_internal.dart';

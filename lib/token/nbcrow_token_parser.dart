@@ -1,7 +1,6 @@
 import 'package:tedious_dart/token/colmetadata_token_parser.dart';
 import 'package:tedious_dart/token/stream_parser.dart';
 import 'package:tedious_dart/token/token.dart';
-import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
 import 'package:tedious_dart/value_parser.dart';
 
 nullHandler(

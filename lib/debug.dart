@@ -1,7 +1,6 @@
 // ignore_for_file: unnecessary_this, constant_identifier_names
 
 import 'package:events_emitter/emitters/event_emitter.dart';
-import 'package:node_interop/util.dart';
 import 'package:tedious_dart/packet.dart';
 
 enum Direction {
@@ -43,16 +42,16 @@ class Debug extends EventEmitter {
 
   token(dynamic token) {
     if (this.haveListeners() && this.options.token == true) {
-      this.log(
-        util.inspect(
-          token,
-          {
-            'showHidden': false,
-            'depth': 5,
-            'colors': true,
-          },
-        ),
-      );
+      this.log(''
+          //   util.inspect(
+          //     token,
+          //     {
+          //       'showHidden': false,
+          //       'depth': 5,
+          //       'colors': true,
+          //     },
+          // ),
+          );
     }
   }
 

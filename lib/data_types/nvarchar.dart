@@ -1,6 +1,6 @@
 // ignore_for_file: non_constant_identifier_names, constant_identifier_names
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/data_types.dart';
@@ -57,7 +57,7 @@ class NVarChar extends DataType {
         yield value;
       } else {
         value = value.toString();
-        yield Buffer.from(value, 'ucs2');
+        yield Buffer.from(value, 0, 0, 'ucs2');
       }
     } else {
       if (value is Buffer) {
@@ -71,13 +71,13 @@ class NVarChar extends DataType {
         }
       } else {
         value = value.toString();
-        final length = Buffer.byteLength(value, 'ucs2').length;
+        final length = Buffer.byteLength(value, 'ucs2');
 
         if (length > 0) {
           final buffer = Buffer.alloc(4);
           buffer.writeUInt32LE(length, 0);
           yield buffer;
-          yield Buffer.from(value, 'ucs2');
+          yield Buffer.from(value, 0, 0, 'ucs2');
         }
       }
 
@@ -103,7 +103,7 @@ class NVarChar extends DataType {
         length = value.length;
       } else {
         value = value.toString();
-        length = Buffer.byteLength(value.toString(), 'ucs2').length;
+        length = Buffer.byteLength(value.toString(), 'ucs2');
       }
 
       final buffer = Buffer.alloc(2);

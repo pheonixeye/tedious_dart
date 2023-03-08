@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/bulk_load.dart';
 
 class BulkLoadPayload extends Stream<Buffer> {

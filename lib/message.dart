@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:node_interop/node.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 
 class Message extends Stream<Buffer> {
   int type;

@@ -3,7 +3,7 @@
 //TODO!
 import 'dart:async';
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/keystore_provider_azure_key_vault.dart';
 import 'package:tedious_dart/conn_const_typedef.dart';
 import 'package:tedious_dart/connection.dart';

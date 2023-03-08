@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
-import 'package:node_interop/node.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:pointycastle/digests/md4.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 
@@ -190,19 +190,19 @@ class NTLMResponsePayload {
   ntv2Hash(String domain, String user, String password) {
     final hash = ntHash(password);
     final identity =
-        Buffer.from(user.toUpperCase() + domain.toUpperCase(), 'ucs2');
+        Buffer.from(user.toUpperCase() + domain.toUpperCase(), 0, 0, 'ucs2');
     return hmacMD5(identity, hash);
   }
 
   ntHash(String text) {
-    final unicodeString = Buffer.from(text, 'ucs2');
+    final unicodeString = Buffer.from(text, 0, 0, 'ucs2');
     var m = MD4Digest().process(unicodeString.buffer);
     return Buffer.from(m);
     //TODO: REVISE
   }
 
   hmacMD5(Buffer data, Buffer key) {
-    var hmac = Hmac(md5, key.values().toList());
+    var hmac = Hmac(md5, key.buffer);
     var output = AccumulatorSink<Digest>();
     ByteConversionSink input = hmac.startChunkedConversion(output);
     input.add(data.buffer);

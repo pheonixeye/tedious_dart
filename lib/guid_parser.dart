@@ -1,7 +1,6 @@
 // ignore_for_file: constant_identifier_names, non_constant_identifier_names, prefer_interpolation_to_compose_strings
 
-import 'package:node_interop/node_interop.dart';
-import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/extensions/subscript_on_iterable.dart';
 
 // class GUIDParser {

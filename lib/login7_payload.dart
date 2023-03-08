@@ -1,10 +1,9 @@
 // ignore_for_file: constant_identifier_names
 
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:sprintf/sprintf.dart';
 import 'package:tedious_dart/extensions/subscript_on_iterable.dart';
 // ignore: unused_import
-import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
 import 'package:tedious_dart/tds_versions.dart';
 
 const Map<String, int> FLAGS_1 = {
@@ -204,7 +203,7 @@ class Login7Payload {
 
     // cchHostName: 2-byte
     if (hostname != null) {
-      var buffer = Buffer.from(hostname, 'ucs2');
+      var buffer = Buffer.from(hostname, 0, 0, 'ucs2');
 
       offset = fixedData.writeUInt16LE(buffer.length ~/ 2, offset);
       dataOffset += buffer.length;
@@ -219,7 +218,7 @@ class Login7Payload {
 
     // cchUserName: 2-byte
     if (userName != null) {
-      var buffer = Buffer.from(userName, 'ucs2');
+      var buffer = Buffer.from(userName, 0, 0, 'ucs2');
 
       offset = fixedData.writeUInt16LE(buffer.length ~/ 2, offset);
       dataOffset += buffer.length;
@@ -234,7 +233,7 @@ class Login7Payload {
 
     // cchPassword: 2-byte
     if (password != null) {
-      var buffer = Buffer.from(password, 'ucs2');
+      var buffer = Buffer.from(password, 0, 0, 'ucs2');
 
       offset = fixedData.writeUInt16LE(buffer.length ~/ 2, offset);
       dataOffset += buffer.length;
@@ -249,7 +248,7 @@ class Login7Payload {
 
     // cchAppName: 2-byte
     if (appName != null) {
-      var buffer = Buffer.from(appName, 'ucs2');
+      var buffer = Buffer.from(appName, 0, 0, 'ucs2');
 
       offset = fixedData.writeUInt16LE(buffer.length ~/ 2, offset);
       dataOffset += buffer.length;
@@ -264,7 +263,7 @@ class Login7Payload {
 
     // cchServerName: 2-byte
     if (serverName != null) {
-      var buffer = Buffer.from(serverName, 'ucs2');
+      var buffer = Buffer.from(serverName, 0, 0, 'ucs2');
 
       offset = fixedData.writeUInt16LE(buffer.length ~/ 2, offset);
       dataOffset += buffer.length;
@@ -291,7 +290,7 @@ class Login7Payload {
 
     // cchCltIntName: 2-byte
     if (libraryName != null) {
-      var buffer = Buffer.from(libraryName, 'ucs2');
+      var buffer = Buffer.from(libraryName, 0, 0, 'ucs2');
 
       offset = fixedData.writeUInt16LE(buffer.length ~/ 2, offset);
       dataOffset += buffer.length;
@@ -306,7 +305,7 @@ class Login7Payload {
 
     // cchLanguage: 2-byte
     if (language != null) {
-      var buffer = Buffer.from(language, 'ucs2');
+      var buffer = Buffer.from(language, 0, 0, 'ucs2');
 
       offset = fixedData.writeUInt16LE(buffer.length ~/ 2, offset);
       dataOffset += buffer.length;
@@ -321,7 +320,7 @@ class Login7Payload {
 
     // cchDatabase: 2-byte
     if (database != null) {
-      var buffer = Buffer.from(database, 'ucs2');
+      var buffer = Buffer.from(database, 0, 0, 'ucs2');
 
       offset = fixedData.writeUInt16LE(buffer.length ~/ 2, offset);
       dataOffset += buffer.length;
@@ -358,7 +357,7 @@ class Login7Payload {
 
     // cchAtchDBFile: 2-byte
     if (attachDbFile != null) {
-      var buffer = Buffer.from(attachDbFile, 'ucs2');
+      var buffer = Buffer.from(attachDbFile, 0, 0, 'ucs2');
 
       offset = fixedData.writeUInt16LE(buffer.length ~/ 2, offset);
       dataOffset += buffer.length;
@@ -373,7 +372,7 @@ class Login7Payload {
 
     // cchChangePassword: 2-byte
     if (changePassword != null) {
-      var buffer = Buffer.from(changePassword, 'ucs2');
+      var buffer = Buffer.from(changePassword, 0, 0, 'ucs2');
 
       offset = fixedData.writeUInt16LE(buffer.length ~/ 2, offset);
       dataOffset += buffer.length;
@@ -411,7 +410,7 @@ class Login7Payload {
   }
 
   Buffer buildFeatureExt() {
-    List buffers = [];
+    List<Buffer> buffers = [];
 
     final fedAuth = this.fedAuth;
     if (fedAuth != null) {
@@ -435,7 +434,7 @@ class Login7Payload {
           break;
 
         case 'SECURITYTOKEN':
-          var token = Buffer.from(fedAuth.fedAuthToken, 'ucs2');
+          var token = Buffer.from(fedAuth.fedAuthToken, 0, 0, 'ucs2');
           var buf = Buffer.alloc(10);
 
           var offset = 0;
@@ -501,7 +500,7 @@ class Login7Payload {
 
   scramblePassword(Buffer password) {
     for (int b = 0, len = password.length; b < len; b++) {
-      int byte = password.values()[b];
+      int byte = password[b];
       var lowNibble = byte & 0x0f;
       var highNibble = byte >> 4;
       byte = (lowNibble << 4) | highNibble;

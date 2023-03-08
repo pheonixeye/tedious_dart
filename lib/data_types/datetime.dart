@@ -1,9 +1,10 @@
 // ignore_for_file: non_constant_identifier_names
 
 import 'dart:core';
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/conn_config_internal.dart';
+import 'package:tedious_dart/data_types/date.dart';
 import 'package:tedious_dart/data_types/datetimen.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'dart:core' as core show DateTime;

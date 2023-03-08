@@ -1,6 +1,6 @@
 // ignore_for_file: unused_element
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/token/stream_parser.dart';
 import 'package:tedious_dart/token/token.dart';
 
@@ -41,7 +41,7 @@ class _Data {
 parseChallenge(Buffer buffer) {
   _Data challenge = _Data();
 
-  challenge.magic = buffer.slice(0, 8).toString('utf8');
+  challenge.magic = buffer.slice(0, 8).toString_({'encoding': 'utf8'});
   challenge.type = buffer.readInt32LE(8);
   challenge.domainLen = buffer.readInt16LE(12);
   challenge.domainMax = buffer.readInt16LE(14);
@@ -53,8 +53,9 @@ parseChallenge(Buffer buffer) {
   challenge.targetMax = buffer.readInt16LE(42);
   challenge.targetOffset = buffer.readInt32LE(44);
   challenge.oddData = buffer.slice(48, 56);
-  challenge.domain =
-      buffer.slice(56, 56 + challenge.domainLen! as int).toString('ucs2');
+  challenge.domain = buffer
+      .slice(56, 56 + challenge.domainLen! as int)
+      .toString_({'encoding': 'ucs2'});
   challenge.target = buffer.slice(56 + challenge.domainLen! as int,
       (56 + challenge.domainLen! + challenge.targetLen!) as int);
 

@@ -1,6 +1,6 @@
 // ignore_for_file: non_constant_identifier_names, constant_identifier_names
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/data_types.dart';
@@ -52,7 +52,7 @@ class VarBinary extends DataType {
       if (Buffer.isBuffer(value)) {
         yield value as Buffer;
       } else {
-        yield Buffer.from(value.toString(), 'ucs2');
+        yield Buffer.from(value.toString(), 0, 0, 'ucs2');
       }
     } else {
       // writePLPBody
@@ -60,7 +60,7 @@ class VarBinary extends DataType {
         value = value.toString();
       }
 
-      final length = Buffer.byteLength(value, 'ucs2').length;
+      final length = Buffer.byteLength(value, 'ucs2');
 
       if (length > 0) {
         final buffer = Buffer.alloc(4);
@@ -70,7 +70,7 @@ class VarBinary extends DataType {
         if (Buffer.isBuffer(value)) {
           yield value as Buffer;
         } else {
-          yield Buffer.from(value, 'ucs2');
+          yield Buffer.from(value, 0, 0, 'ucs2');
         }
       }
 
@@ -94,7 +94,7 @@ class VarBinary extends DataType {
       value = value.toString();
     }
 
-    final length = Buffer.byteLength(value, 'ucs2').length;
+    final length = Buffer.byteLength(value, 'ucs2');
 
     if (parameter.length! <= maximumLength) {
       final buffer = Buffer.alloc(2);

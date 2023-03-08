@@ -8,7 +8,7 @@
 
 import 'dart:async';
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/all_headers.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/conn_config_internal.dart';
@@ -73,8 +73,7 @@ class RpcRequestPayload extends Stream<Buffer> {
 
   generateParameterData(Parameter parameter) async* {
     final buffer = WritableTrackingBuffer(
-        initialSize:
-            1 + 2 + Buffer.byteLength(parameter.name, 'ucs-2').length + 1);
+        initialSize: 1 + 2 + Buffer.byteLength(parameter.name, 'ucs-2') + 1);
     buffer.writeBVarchar('@${parameter.name!}', 'ucs-2');
 
     var statusFlags = 0;

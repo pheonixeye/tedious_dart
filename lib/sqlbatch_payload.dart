@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 import 'package:tedious_dart/all_headers.dart';
 import 'package:tedious_dart/tds_versions.dart';
@@ -32,7 +32,7 @@ class SqlBatchPayload extends Stream<Buffer> {
       yield buffer.data;
     }
 
-    yield Buffer.from(sqlText, 'ucs2');
+    yield Buffer.from(sqlText, 0, 0, 'ucs2');
   }
 
   @override

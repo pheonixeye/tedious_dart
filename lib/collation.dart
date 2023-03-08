@@ -1,7 +1,6 @@
 // ignore_for_file: constant_identifier_names, prefer_initializing_formals, duplicate_ignore
 
-import 'package:node_interop/buffer.dart';
-import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 
 enum CollationEncoding {
   utf_8('utf-8'),

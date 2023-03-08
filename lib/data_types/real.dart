@@ -1,6 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/data_types/floatn.dart';
@@ -24,7 +24,7 @@ class Real extends DataType {
     }
 
     final buffer = Buffer.alloc(4);
-    buffer.writeFloatLE(double.tryParse(parameter.value) as num, 0);
+    buffer.writeFloatLE(double.parse(parameter.value), 0);
     yield buffer;
   }
 

@@ -3,7 +3,7 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:sprintf/sprintf.dart';
 import 'package:tedious_dart/guid_parser.dart';
 import 'package:tedious_dart/metadata_parser.dart';
@@ -399,11 +399,11 @@ readNumeric(
     if (dataLength == 5) {
       readValue = parser.readUInt32LE;
     } else if (dataLength == 9) {
-      readValue = parser.readUNumeric64LE;
+      readValue = parser.readUinteric64LE;
     } else if (dataLength == 13) {
-      readValue = parser.readUNumeric96LE;
+      readValue = parser.readUinteric96LE;
     } else if (dataLength == 17) {
-      readValue = parser.readUNumeric128LE;
+      readValue = parser.readUinteric128LE;
     } else {
       throw MTypeError(
           sprintf('Unsupported numeric dataLength %d', dataLength));
@@ -418,7 +418,7 @@ readNumeric(
 readVariant(
   StreamParser parser,
   ParserOptions options,
-  num dataLength,
+  int dataLength,
   void Function(dynamic value) callback,
 ) {
   return parser.readUInt8((baseType) {
@@ -523,7 +523,7 @@ readVariant(
 
 readBinary(
   StreamParser parser,
-  num dataLength,
+  int dataLength,
   void Function(dynamic value) callback,
 ) {
   return parser.readBuffer(dataLength, callback);
@@ -531,7 +531,7 @@ readBinary(
 
 readChars(
   StreamParser parser,
-  num dataLength,
+  int dataLength,
   String? codepage,
   void Function(dynamic value) callback,
 ) {
@@ -545,11 +545,11 @@ readChars(
 
 readNChars(
   StreamParser parser,
-  num dataLength,
+  int dataLength,
   void Function(dynamic value) callback,
 ) {
   parser.readBuffer(dataLength, (data) {
-    callback(data.toString('ucs2'));
+    callback(data.toString_({'encoding': 'ucs2'}));
   });
 }
 
@@ -583,7 +583,7 @@ readMaxNChars(
 ) {
   readMax(parser, (data) {
     if (data != null) {
-      callback(data.toString('ucs2'));
+      callback(data.toString_({'encoding': 'ucs2'}));
     } else {
       callback(null);
     }
@@ -615,10 +615,10 @@ readMax(
 
 readMaxKnownLength(
   StreamParser parser,
-  num totalLength,
+  int totalLength,
   void Function(Buffer? value) callback,
 ) {
-  final data = Buffer.alloc(totalLength as int, 0);
+  final data = Buffer.alloc(totalLength, 0);
 
   var offset = 0;
   next(dynamic done) {
@@ -630,7 +630,7 @@ readMaxKnownLength(
 
       parser.readBuffer(chunkLength, (chunk) {
         chunk.copy(data, offset);
-        offset += chunkLength as int;
+        offset += chunkLength;
 
         next(done);
       });
@@ -662,7 +662,7 @@ readMaxUnknownLength(
 
       parser.readBuffer(chunkLength, (chunk) {
         chunks.add(chunk);
-        length += chunkLength as int;
+        length += chunkLength;
 
         next(done);
       });
@@ -683,9 +683,9 @@ readSmallDateTime(
     parser.readUInt16LE((minutes) {
       dynamic value;
       if (useUTC) {
-        value = DateTime.utc(1900, 0, 1 + days as int, 0, minutes as int);
+        value = DateTime.utc(1900, 0, 1 + days, 0, minutes);
       } else {
-        value = DateTime(1900, 0, 1 + days as int, 0, minutes as int);
+        value = DateTime(1900, 0, 1 + days, 0, minutes);
       }
       callback(value);
     });
@@ -704,9 +704,9 @@ readDateTime(
 
       dynamic value;
       if (useUTC) {
-        value = DateTime.utc(1900, 0, 1 + days as int, 0, 0, 0, milliseconds);
+        value = DateTime.utc(1900, 0, 1 + days, 0, 0, 0, milliseconds);
       } else {
-        value = DateTime(1900, 0, 1 + days as int, 0, 0, 0, milliseconds);
+        value = DateTime(1900, 0, 1 + days, 0, 0, 0, milliseconds);
       }
 
       callback(value);
@@ -771,9 +771,9 @@ readDate(
 ) {
   parser.readUInt24LE((days) {
     if (useUTC) {
-      callback(DateTime.utc(2000, 0, days - 730118 as int));
+      callback(DateTime.utc(2000, 0, days - 730118));
     } else {
-      callback(DateTime(2000, 0, days - 730118 as int));
+      callback(DateTime(2000, 0, days - 730118));
     }
   });
 }
@@ -791,7 +791,7 @@ readDateTime2(
       dynamic date;
       if (useUTC) {
         date = DateWithNanosecondsDelta(
-          DateTime.utc(2000, 0, days - 730118 as int, 0, 0, 0),
+          DateTime.utc(2000, 0, days - 730118, 0, 0, 0),
           time.nanosecondsDelta,
         );
       } else {
@@ -799,7 +799,7 @@ readDateTime2(
           DateTime(
             2000,
             0,
-            days - 730118 as int,
+            days - 730118,
             time.dateTime.hour,
             time.dateTime.minute,
             time.dateTime.second,
@@ -825,8 +825,8 @@ readDateTimeOffset(
       // offset
       parser.readInt16LE((_) {
         final date = DateWithNanosecondsDelta(
-          DateTime.utc(2000, 0, days - 730118 as int, 0, 0, 0,
-              time.nanosecondsDelta as int),
+          DateTime.utc(
+              2000, 0, days - 730118, 0, 0, 0, time.nanosecondsDelta as int),
           time.nanosecondsDelta,
         );
 

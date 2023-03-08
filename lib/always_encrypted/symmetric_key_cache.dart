@@ -1,5 +1,5 @@
 import 'package:dcache/dcache.dart';
-import 'package:node_interop/node_interop.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/symmetric_key.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
 import 'package:tedious_dart/conn_config.dart';
@@ -16,7 +16,9 @@ Future<SymmetricKey> getKey(
   String serverName = options.trustedServerNameAE!;
 
   var keyLookupValue =
-      "$serverName:${Buffer.from(keyInfo.encryptedKey).toString('base64')}:${keyInfo.keyStoreName}";
+      "$serverName:${Buffer.from(keyInfo.encryptedKey).toString_({
+        'encoding': 'base64'
+      })}:${keyInfo.keyStoreName}";
 
   if (cache.containsKey(keyLookupValue)) {
     return cache.get(keyLookupValue) as SymmetricKey;

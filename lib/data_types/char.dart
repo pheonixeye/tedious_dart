@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/data_types.dart';
 
@@ -43,7 +43,7 @@ class Char extends DataType {
       return;
     }
 
-    yield Buffer.from(parameter.value, 'ascii');
+    yield Buffer.from(parameter.value, 0, 0, 'ascii');
   }
 
   @override

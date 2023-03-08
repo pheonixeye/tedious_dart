@@ -4,11 +4,10 @@ import 'dart:convert';
 
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
-import 'package:node_interop/buffer.dart';
+import 'package:magic_buffer/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/_keyvault_keys.dart';
 import 'package:tedious_dart/extensions/locale_compare_on_string.dart';
 import 'package:tedious_dart/models/errors.dart';
-import 'package:tedious_dart/extensions/bracket_on_buffer.dart';
 
 class CryptographyClient {
   dynamic masterKey;
@@ -108,9 +107,11 @@ class ColumnEncryptionAzureKeyVaultProvider {
       throw MTypeError(
           'Specified encrypted column encryption key contains an invalid encryption algorithm version ${Buffer.from([
             encryptedColumnEncryptionKey[0]
-          ]).toString('hex')}. Expected version is ${Buffer.from([
-            firstVersion[0]
-          ]).toString('hex')}.');
+          ]).toString_({
+            'encoding': 'hex'
+          })}. Expected version is ${Buffer.from([firstVersion[0]]).toString_({
+            'encoding': 'hex'
+          })}.');
     }
 
     int currentIndex = firstVersion.length;
@@ -204,7 +205,7 @@ class ColumnEncryptionAzureKeyVaultProvider {
     final version = Buffer.from([firstVersion[0]]);
 
     final Buffer masterKeyPathBytes =
-        Buffer.from(masterKeyPath!.toLowerCase(), 'utf8');
+        Buffer.from(masterKeyPath!.toLowerCase(), 0, 0, 'utf8');
 
     final Buffer keyPathLength = Buffer.alloc(2);
 
