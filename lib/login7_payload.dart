@@ -1,6 +1,6 @@
 // ignore_for_file: constant_identifier_names
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:sprintf/sprintf.dart';
 import 'package:tedious_dart/extensions/subscript_on_iterable.dart';
 // ignore: unused_import

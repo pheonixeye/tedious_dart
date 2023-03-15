@@ -1,6 +1,6 @@
 // ignore_for_file: constant_identifier_names, overridden_fields
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/metadata_parser.dart';
 import 'package:tedious_dart/token/colmetadata_token_parser.dart';

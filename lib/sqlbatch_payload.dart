@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 import 'package:tedious_dart/all_headers.dart';
 import 'package:tedious_dart/tds_versions.dart';

@@ -22,7 +22,9 @@ dependencies:
   # js:
   # ts_definition:
   events_emitter:
-  magic_buffer: ^0.0.11
+  # magic_buffer: ^0.0.15
+  magic_buffer_copy:
+    path: c:/users/kareemzaher/desktop/magic_buffer_copy
   
 dev_dependencies:
   lints: ^2.0.0

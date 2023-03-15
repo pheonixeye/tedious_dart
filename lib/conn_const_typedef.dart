@@ -1,6 +1,6 @@
 // ignore_for_file: constant_identifier_names
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/keystore_provider_azure_key_vault.dart';
 import 'package:tedious_dart/metadata_parser.dart';
 

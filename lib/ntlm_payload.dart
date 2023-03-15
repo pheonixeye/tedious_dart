@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:pointycastle/digests/md4.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 

@@ -2,7 +2,7 @@
 
 import 'package:tedious_dart/token/stream_parser.dart';
 import 'package:tedious_dart/token/token.dart';
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 
 const Map<String, int> FEATURE_ID = {
   'SESSIONRECOVERY': 0x01,

@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 
 const Map<String, int> NTLMFlags = {
   'NTLM_NegotiateUnicode': 0x00000001,

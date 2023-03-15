@@ -1,7 +1,8 @@
 // ignore_for_file: non_constant_identifier_names, constant_identifier_names
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:sprintf/sprintf.dart';
+import 'package:tedious_dart/meta/annotations.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 
 const optionBufferSize = 20;
@@ -38,10 +39,10 @@ final Map<int, String> marsByValue =
     MARS.map((key, value) => MapEntry(value, key));
 
 class PreloginPayloadVersion {
-  final num major;
-  final num minor;
-  final num build;
-  final num subbuild;
+  final int major;
+  final int minor;
+  final int build;
+  final int subbuild;
 
   PreloginPayloadVersion({
     required this.major,
@@ -52,58 +53,58 @@ class PreloginPayloadVersion {
 }
 
 class PreloginPayloadOptions {
-  bool? encrypt;
-  PreloginPayloadVersion? version;
+  bool encrypt;
+  PreloginPayloadVersion version;
 
   PreloginPayloadOptions({
-    this.encrypt,
-    this.version,
+    required this.encrypt,
+    required this.version,
   });
 }
 
+class _OptionData {
+  final int token;
+  final Buffer data;
+
+  const _OptionData(this.token, this.data);
+}
+
 class PreloginPayload {
-  Buffer? data;
-  PreloginPayloadOptions? options;
+  late Buffer data;
+  late PreloginPayloadOptions options;
 
-  PreloginPayloadVersion? version;
+  late PreloginPayloadVersion version;
+  late int encryption;
+  late String encryptionString;
+  late int instance;
+  late int threadId;
+  late int mars;
+  late String marsString;
+  late int fedAuthRequired;
 
-  num? encryption;
-  String? encryptionString;
-
-  num? instance;
-
-  num? threadId;
-
-  num? mars;
-  String? marsString;
-  num? fedAuthRequired;
-
-  PreloginPayload({
-    this.data,
-    this.encryption,
-    this.encryptionString,
-    this.fedAuthRequired,
-    this.instance,
-    this.mars,
-    this.marsString,
-    this.options,
-    this.threadId,
-    this.version,
-  }) {
-    if (data == null) {
+  @DynamicParameterType('bufferOrOptions', 'Buffer | PreloginPayloadOptions')
+  PreloginPayload(dynamic bufferOrOptions) {
+    if (bufferOrOptions is Buffer) {
+      // ignore: unnecessary_cast
+      data = bufferOrOptions as Buffer;
       options = PreloginPayloadOptions(
         encrypt: false,
-        version:
-            PreloginPayloadVersion(major: 0, minor: 0, build: 0, subbuild: 0),
+        version: PreloginPayloadVersion(
+          major: 0,
+          minor: 0,
+          build: 0,
+          subbuild: 0,
+        ),
       );
     } else {
+      options = bufferOrOptions as PreloginPayloadOptions;
       createOptions();
     }
     extractOptions();
   }
 
   createOptions() {
-    var options = [
+    var options = <_OptionData>[
       createVersionOption(),
       createEncryptionOption(),
       createInstanceOption(),
@@ -115,7 +116,7 @@ class PreloginPayload {
     var length = 0;
     for (var i = 0, len = options.length; i < len; i++) {
       var option = options[i];
-      length += 5 + option.data.length as int;
+      length += 5 + option.data.length;
     }
     length++; // terminator
     data = Buffer.alloc(length, 0);
@@ -124,86 +125,92 @@ class PreloginPayload {
 
     for (var j = 0, len = options.length; j < len; j++) {
       var option = options[j];
-      data!.writeUInt8(option.token, optionOffset + 0);
-      data!.writeUInt16BE(optionDataOffset, optionOffset + 1);
-      data!.writeUInt16BE(option.data.length, optionOffset + 3);
+      data.writeUInt8(option.token, optionOffset + 0);
+      data.writeUInt16BE(optionDataOffset, optionOffset + 1);
+      data.writeUInt16BE(option.data.length, optionOffset + 3);
       optionOffset += 5;
       option.data.copy(data, optionDataOffset);
-      optionDataOffset += option.data.length as int;
+      optionDataOffset += option.data.length;
     }
 
-    data!.writeUInt8(TOKEN.TERMINATOR, optionOffset);
+    data.writeUInt8(TOKEN.TERMINATOR, optionOffset);
   }
 
   createVersionOption() {
-    var buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
-    buffer.writeUInt8(options!.version!.major.toInt());
-    buffer.writeUInt8(options!.version!.minor.toInt());
-    buffer.writeUInt16BE(options!.version!.build.toInt());
-    buffer.writeUInt16BE(options!.version!.subbuild.toInt());
-    return {
-      'token': TOKEN.VERSION,
-      'data': buffer.data,
-    };
+    final buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
+    buffer.writeUInt8(options.version.major.toInt());
+    buffer.writeUInt8(options.version.minor.toInt());
+    buffer.writeUInt16BE(options.version.build.toInt());
+    buffer.writeUInt16BE(options.version.subbuild.toInt());
+    print(buffer.data?.buffer);
+    return _OptionData(
+      TOKEN.VERSION,
+      buffer.data!,
+    );
   }
 
   createEncryptionOption() {
-    var buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
-    if (options!.encrypt != null) {
+    final buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
+    if (options.encrypt) {
       buffer.writeUInt8(ENCRYPT['ON']!);
     } else {
       buffer.writeUInt8(ENCRYPT['NOT_SUP']!);
     }
-    return {
-      'token': TOKEN.ENCRYPTION,
-      'data': buffer.data,
-    };
+    print('encryption ==>>');
+    print(buffer.data?.buffer);
+    return _OptionData(
+      TOKEN.ENCRYPTION,
+      buffer.data!,
+    );
   }
 
   createInstanceOption() {
-    var buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
+    final buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
     buffer.writeUInt8(0x00);
-    return {
-      'token': TOKEN.INSTOPT,
-      'data': buffer.data,
-    };
+    print(buffer.data?.buffer);
+    return _OptionData(
+      TOKEN.INSTOPT,
+      buffer.data!,
+    );
   }
 
   createThreadIdOption() {
-    var buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
+    final buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
     buffer.writeUInt32BE(0x00);
-    return {
-      'token': TOKEN.THREADID,
-      'data': buffer.data,
-    };
+    print(buffer.data?.buffer);
+    return _OptionData(
+      TOKEN.THREADID,
+      buffer.data!,
+    );
   }
 
   createMarsOption() {
-    var buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
+    final buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
     buffer.writeUInt8(MARS['OFF']!);
-    return {
-      'token': TOKEN.MARS,
-      'data': buffer.data,
-    };
+    print(buffer.data?.buffer);
+    return _OptionData(
+      TOKEN.MARS,
+      buffer.data!,
+    );
   }
 
   createFedAuthOption() {
-    var buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
+    final buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
     buffer.writeUInt8(0x01);
-    return {
-      'token': TOKEN.FEDAUTHREQUIRED,
-      'data': buffer.data,
-    };
+    print(buffer.data?.buffer);
+    return _OptionData(
+      TOKEN.FEDAUTHREQUIRED,
+      buffer.data!,
+    );
   }
 
   extractOptions() {
-    var offset = 0;
-    while (data![offset] != TOKEN.TERMINATOR) {
-      var dataOffset =
-          data!.readUInt16BE(offset + 1) as int; //type casting num to int
-      var dataLength =
-          data!.readUInt16BE(offset + 3) as int; //type casting num to int
-      switch (data![offset]) {
+    int offset = 0;
+    while (data[offset] != TOKEN.TERMINATOR) {
+      var dataOffset = data.readUInt16BE(offset + 1);
+      final dataLength = data.readUInt16BE(offset + 3);
+
+      switch (data[offset]) {
         case TOKEN.VERSION:
           extractVersion(dataOffset);
           break;
@@ -225,54 +232,54 @@ class PreloginPayload {
           extractFedAuth(dataOffset);
           break;
       }
-      offset += 5;
-      dataOffset += dataLength;
+      offset = offset + 5;
+      dataOffset = dataLength + dataOffset;
     }
   }
 
   extractVersion(int offset) {
     version = PreloginPayloadVersion(
-        major: data!.readUInt8(offset + 0),
-        minor: data!.readUInt8(offset + 1),
-        build: data!.readUInt16BE(offset + 2),
-        subbuild: data!.readUInt16BE(offset + 4));
+        major: data.readUInt8(offset + 0),
+        minor: data.readUInt8(offset + 1),
+        build: data.readUInt16BE(offset + 2),
+        subbuild: data.readUInt16BE(offset + 4));
   }
 
   extractEncryption(int offset) {
-    encryption = data!.readUInt8(offset);
-    encryptionString = encryptByValue[encryption];
+    encryption = data.readUInt8(offset);
+    encryptionString = encryptByValue[encryption]!;
   }
 
   extractInstance(int offset) {
-    instance = data!.readUInt8(offset);
+    instance = data.readUInt8(offset);
   }
 
   extractThreadId(int offset) {
-    threadId = data!.readUInt32BE(offset);
+    threadId = data.readUInt32BE(offset);
   }
 
   extractMars(int offset) {
-    mars = data!.readUInt8(offset);
-    marsString = marsByValue[mars];
+    mars = data.readUInt8(offset);
+    marsString = marsByValue[mars]!;
   }
 
   extractFedAuth(int offset) {
-    fedAuthRequired = data!.readUInt8(offset);
+    fedAuthRequired = data.readUInt8(offset);
   }
 
   @override
   toString({String indent = ''}) {
     return '${indent}PreLogin - ${sprintf('version:%d.%d.%d.%d, encryption:0x%02X(%s), instopt:0x%02X, threadId:0x%08X, mars:0x%02X(%s)', [
-          version!.major,
-          version!.minor,
-          version!.build,
-          version!.subbuild,
-          encryption ?? 0,
-          encryptionString ?? '',
-          instance ?? 0,
-          threadId ?? 0,
-          mars ?? 0,
-          marsString ?? '',
+          version.major,
+          version.minor,
+          version.build,
+          version.subbuild,
+          encryption,
+          encryptionString,
+          instance,
+          threadId,
+          mars,
+          marsString,
         ])}';
   }
 }

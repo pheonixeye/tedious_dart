@@ -4,7 +4,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:events_emitter/events_emitter.dart';
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/bulk_load.dart';
 import 'package:tedious_dart/bulk_load_payload.dart';
 import 'package:tedious_dart/collation.dart';
@@ -1082,13 +1082,13 @@ class Connection extends EventEmitter {
     final build = '0';
     final subbuild = '0';
     final payload = PreloginPayload(
-      options: PreloginPayloadOptions(
+      PreloginPayloadOptions(
         encrypt: config.options.encrypt,
         version: PreloginPayloadVersion(
-          major: num.parse(major),
-          minor: num.parse(minor),
-          build: num.parse(build),
-          subbuild: num.parse(subbuild),
+          major: int.parse(major),
+          minor: int.parse(minor),
+          build: int.parse(build),
+          subbuild: int.parse(subbuild),
         ),
       ),
     );

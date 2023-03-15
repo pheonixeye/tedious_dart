@@ -2,7 +2,7 @@
 
 import 'dart:async';
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/message.dart';
 // import 'package:tedious_dart/node/buffer_list.dart';

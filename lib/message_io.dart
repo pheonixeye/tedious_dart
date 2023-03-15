@@ -6,7 +6,7 @@ import 'dart:typed_data';
 // import 'dart:typed_data';
 
 import 'package:events_emitter/emitters/event_emitter.dart';
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/incoming_message_stream.dart';
 import 'package:tedious_dart/message.dart';

@@ -1,7 +1,8 @@
 // ignore_for_file: constant_identifier_names, non_constant_identifier_names, unnecessary_this
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:sprintf/sprintf.dart';
+import 'package:tedious_dart/meta/annotations.dart';
 
 const HEADER_LENGTH = 8;
 
@@ -50,100 +51,106 @@ const DEFAULT_WINDOW = 0;
 const NL = '\n';
 
 class Packet {
-  dynamic buffer;
+  late Buffer buffer;
 
-  Packet(this.buffer) {
-    if (buffer.runtimeType == Buffer) {
-      this.buffer = buffer;
+  @DynamicParameterType('bufferOrType', 'Buffer | int')
+  Packet(dynamic bufferOrType) {
+    if (bufferOrType is Buffer) {
+      this.buffer = bufferOrType;
     } else {
+      final type = bufferOrType as int;
       this.buffer = Buffer.alloc(HEADER_LENGTH, 0);
-      this.buffer!.writeUInt8(buffer as int, OFFSET.Type.value);
-      this.buffer!.writeUInt8(STATUS['NORMAL']!, OFFSET.Status.value);
-      this.buffer!.writeUInt16BE(DEFAULT_SPID, OFFSET.SPID.value);
-      this.buffer!.writeUInt8(DEFAULT_PACKETID, OFFSET.PacketID.value);
-      this.buffer!.writeUInt8(DEFAULT_WINDOW, OFFSET.Window.value);
+      this.buffer.writeUInt8(type, OFFSET.Type.value);
+      this.buffer.writeUInt8(STATUS['NORMAL']!, OFFSET.Status.value);
+      //todo: change eom according to message / packet size
+      this.buffer.writeUInt16BE(DEFAULT_SPID, OFFSET.SPID.value);
+      this.buffer.writeUInt8(DEFAULT_PACKETID, OFFSET.PacketID.value);
+      this.buffer.writeUInt8(DEFAULT_WINDOW, OFFSET.Window.value);
       this.setLength();
+      print('packet header ==>>');
+      print(buffer.buffer);
     }
   }
 
   setLength() {
-    this.buffer!.writeUInt16BE(this.buffer!.length, OFFSET.Length.value);
+    this.buffer.writeUInt16BE(this.buffer.length, OFFSET.Length.value);
   }
 
   length() {
-    return this.buffer!.readUInt16BE(OFFSET.Length.value);
+    return this.buffer.readUInt16BE(OFFSET.Length.value);
   }
 
   resetConnection(bool reset) {
-    var status = this.buffer!.readUInt8(OFFSET.Status.value).toInt();
+    var status = this.buffer.readUInt8(OFFSET.Status.value).toInt();
     if (reset) {
       status |= STATUS['RESETCONNECTION']!;
     } else {
       status &= 0xFF - STATUS['RESETCONNECTION']!;
     }
-    this.buffer!.writeUInt8(status, OFFSET.Status.value);
+    this.buffer.writeUInt8(status, OFFSET.Status.value);
   }
 
   last(bool? last) {
-    var status = this.buffer!.readUInt8(OFFSET.Status.value).toInt();
+    var status = this.buffer.readUInt8(OFFSET.Status.value);
     if (last != null) {
       if (last) {
         status |= STATUS['EOM']!;
       } else {
         status &= 0xFF - STATUS['EOM']!;
       }
-      this.buffer!.writeUInt8(status, OFFSET.Status.value);
+      this.buffer.writeUInt8(status, OFFSET.Status.value);
     }
     return this.isLast();
   }
 
   ignore(bool last) {
-    var status = this.buffer!.readUInt8(OFFSET.Status.value).toInt();
+    var status = this.buffer.readUInt8(OFFSET.Status.value).toInt();
     if (last) {
       status |= STATUS['IGNORE']!;
     } else {
       status &= 0xFF - STATUS['IGNORE']!;
     }
-    this.buffer!.writeUInt8(status, OFFSET.Status.value);
+    this.buffer.writeUInt8(status, OFFSET.Status.value);
   }
 
   //identify return type ==>> bool
   bool isLast() {
-    return (this.buffer!.readUInt8(OFFSET.Status.value).toInt() &
+    return (this.buffer.readUInt8(OFFSET.Status.value).toInt() &
             // ignore: unnecessary_null_comparison
             STATUS['EOM']!) !=
         null;
   }
 
-  packetId(int? packetId) {
+  packetId([int? packetId]) {
     if (packetId != null) {
-      this.buffer!.writeUInt8(packetId % 256, OFFSET.PacketID.value);
+      this.buffer.writeUInt8(packetId % 256, OFFSET.PacketID.value);
     }
-    return this.buffer!.readUInt8(OFFSET.PacketID.value);
+    return this.buffer.readUInt8(OFFSET.PacketID.value);
   }
 
   addData(Buffer data) {
     this.buffer = Buffer.concat([this.buffer, data]);
+    print('packet data after concat ==>>');
+    print(buffer.buffer);
     this.setLength();
     return this;
   }
 
-  data() {
-    return this.buffer!.slice(HEADER_LENGTH);
+  Buffer data() {
+    return this.buffer.slice(HEADER_LENGTH);
   }
 
   type() {
-    return this.buffer!.readUInt8(OFFSET.Type.value);
+    return this.buffer.readUInt8(OFFSET.Type.value);
   }
 
   statusAsString() {
-    final status = this.buffer?.readUInt8(OFFSET.Status.value);
+    final status = this.buffer.readUInt8(OFFSET.Status.value);
     List statuses = [];
 
     for (var name in STATUS.entries) {
       final value = STATUS[name];
 
-      //TODO: implement better algorithm
       if (value != null && status != null) {
         statuses.add(name);
       } else {
@@ -158,14 +165,14 @@ class Packet {
     final text = sprintf(
         'type:0x%02X(%s), status:0x%02X(%s), length:0x%04X, spid:0x%04X, packetId:0x%02X, window:0x%02X',
         [
-          this.buffer!.readUInt8(OFFSET.Type.value),
-          packetTypeByValue[this.buffer!.readUInt8(OFFSET.Type.value)],
-          this.buffer!.readUInt8(OFFSET.Status.value),
+          this.buffer.readUInt8(OFFSET.Type.value),
+          packetTypeByValue[this.buffer.readUInt8(OFFSET.Type.value)],
+          this.buffer.readUInt8(OFFSET.Status.value),
           this.statusAsString(),
-          this.buffer!.readUInt16BE(OFFSET.Length.value),
-          this.buffer!.readUInt16BE(OFFSET.SPID.value),
-          this.buffer!.readUInt8(OFFSET.PacketID.value),
-          this.buffer!.readUInt8(OFFSET.Window.value),
+          this.buffer.readUInt16BE(OFFSET.Length.value),
+          this.buffer.readUInt16BE(OFFSET.SPID.value),
+          this.buffer.readUInt8(OFFSET.PacketID.value),
+          this.buffer.readUInt8(OFFSET.Window.value),
         ]);
     return indent + text;
   }
@@ -182,7 +189,7 @@ class Packet {
     for (var offset = 0; offset < data.length; offset++) {
       if (offset % BYTES_PER_LINE == 0) {
         dataDump += indent;
-        dataDump += sprintf('%04X  ', offset);
+        dataDump += sprintf('%04X  ', [offset]);
       }
 
       if (data[offset] < 0x20 || data[offset] > 0x7E) {
@@ -196,7 +203,7 @@ class Packet {
       }
 
       if (data[offset] != null) {
-        dataDump += sprintf('%02X', data[offset]);
+        dataDump += sprintf('%02X', [data[offset]]);
       }
 
       if (((offset + 1) % BYTES_PER_GROUP == 0) &&

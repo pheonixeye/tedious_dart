@@ -3,7 +3,7 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:sprintf/sprintf.dart';
 import 'package:tedious_dart/guid_parser.dart';
 import 'package:tedious_dart/metadata_parser.dart';

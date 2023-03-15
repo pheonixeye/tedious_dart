@@ -1,6 +1,6 @@
 // ignore_for_file: unnecessary_this
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/types.dart';
 
 class CEKEntry {

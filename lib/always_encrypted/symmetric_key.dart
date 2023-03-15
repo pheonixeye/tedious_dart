@@ -1,4 +1,4 @@
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 
 class SymmetricKey {
   Buffer? rootKey;

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/instance_lookup.dart';
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/node/abort_controller.dart';

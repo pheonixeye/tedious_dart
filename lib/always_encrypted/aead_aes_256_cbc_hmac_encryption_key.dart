@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/symmetric_key.dart';
 import 'package:tedious_dart/models/errors.dart';
 // import 'package:crypto/crypto.dart';

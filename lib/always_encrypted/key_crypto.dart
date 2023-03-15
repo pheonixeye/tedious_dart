@@ -1,6 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/aead_aes_256_cbc_hmac_algorithm.dart';
 import 'package:tedious_dart/always_encrypted/aead_aes_256_cbc_hmac_encryption_key.dart';
 import 'package:tedious_dart/always_encrypted/symmetric_key.dart';

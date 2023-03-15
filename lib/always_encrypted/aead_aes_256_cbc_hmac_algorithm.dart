@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
-import 'package:magic_buffer/magic_buffer.dart';
+import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:pointycastle/api.dart' as pcapi;
 import 'package:pointycastle/block/modes/cbc.dart' as pcp;
 import 'package:tedious_dart/always_encrypted/aead_aes_256_cbc_hmac_encryption_key.dart';
