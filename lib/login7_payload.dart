@@ -1,8 +1,10 @@
 // ignore_for_file: constant_identifier_names
 
+import 'dart:io';
+
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:sprintf/sprintf.dart';
-import 'package:tedious_dart/extensions/subscript_on_iterable.dart';
+import 'package:tedious_dart/conn_const_typedef.dart';
 // ignore: unused_import
 import 'package:tedious_dart/tds_versions.dart';
 
@@ -70,23 +72,22 @@ const Map<String, int> FEDAUTH_OPTIONS = {
 const FEATURE_EXT_TERMINATOR = 0xFF;
 
 class Login7Options {
-  num? tdsVersion;
-  num? packetSize;
-  num? clientProgVer;
-  num? clientPid;
-  num? connectionId;
-  num? clientTimeZone;
-  num? clientLcid;
+  int tdsVersion;
+  int packetSize;
+  int clientProgVer;
+  int clientPid;
+  int connectionId;
+  int clientTimeZone;
+  int clientLcid;
 
   Login7Options({
-    clientLcid,
-    clientPid,
-    clientProgVer,
-    clientTimeZone,
-    connectionId,
-    packetSize,
-    tdsVersion,
-  });
+    this.clientLcid = 0x00000409, //LCID for english //default
+    this.clientProgVer = 0,
+    this.connectionId = 0,
+    this.packetSize = DEFAULT_PACKET_SIZE,
+    this.tdsVersion = 0x74000004,
+  })  : clientPid = pid,
+        clientTimeZone = DateTime.now().timeZoneOffset.inMinutes;
 }
 
 abstract class _FedAuth {
@@ -113,7 +114,7 @@ class FedAuth extends _FedAuth {
 }
 
 class Login7Payload {
-  Login7Options? login7Options;
+  Login7Options login7Options;
 
   bool readOnlyIntent;
   bool initDbFatal;
@@ -134,7 +135,7 @@ class Login7Payload {
   FedAuth? fedAuth;
 
   Login7Payload({
-    this.login7Options,
+    required this.login7Options,
     this.readOnlyIntent = false,
     this.initDbFatal = false,
     this.fedAuth,
@@ -152,7 +153,7 @@ class Login7Payload {
     this.changePassword,
   });
 
-  toBuffer() {
+  Buffer toBuffer() {
     var fixedData = Buffer.alloc(94);
     var buffers = [fixedData];
 
@@ -163,21 +164,19 @@ class Login7Payload {
     offset = fixedData.writeUInt32LE(0, offset);
 
     // TDSVersion: 4-byte
-    offset = fixedData.writeUInt32LE(login7Options!.tdsVersion as int, offset);
+    offset = fixedData.writeUInt32LE(login7Options.tdsVersion, offset);
 
     // PacketSize: 4-byte
-    offset = fixedData.writeUInt32LE(login7Options!.packetSize as int, offset);
+    offset = fixedData.writeUInt32LE(login7Options.packetSize, offset);
 
     // ClientProgVer: 4-byte
-    offset =
-        fixedData.writeUInt32LE(login7Options!.clientProgVer as int, offset);
+    offset = fixedData.writeUInt32LE(login7Options.clientProgVer, offset);
 
     // ClientPID: 4-byte
-    offset = fixedData.writeUInt32LE(login7Options!.clientPid as int, offset);
+    offset = fixedData.writeUInt32LE(login7Options.clientPid, offset);
 
     // ConnectionID: 4-byte
-    offset =
-        fixedData.writeUInt32LE(login7Options!.connectionId as int, offset);
+    offset = fixedData.writeUInt32LE(login7Options.connectionId, offset);
 
     // OptionFlags1: 1-byte
     offset = fixedData.writeUInt8(buildOptionFlags1(), offset);
@@ -192,11 +191,10 @@ class Login7Payload {
     offset = fixedData.writeUInt8(buildOptionFlags3(), offset);
 
     // ClientTimZone: 4-byte
-    offset =
-        fixedData.writeInt32LE(login7Options!.clientTimeZone as int, offset);
+    offset = fixedData.writeInt32LE(login7Options.clientTimeZone, offset);
 
     // ClientLCID: 4-byte
-    offset = fixedData.writeUInt32LE(login7Options!.clientLcid as int, offset);
+    offset = fixedData.writeUInt32LE(login7Options.clientLcid, offset);
 
     // ibHostName: 2-byte
     offset = fixedData.writeUInt16LE(dataOffset, offset);
@@ -455,7 +453,7 @@ class Login7Payload {
       }
     }
 
-    if (TDSVERSIONS[login7Options!.tdsVersion]! >= TDSVERSIONS['7_4']!) {
+    if (login7Options.tdsVersion >= TDSVERSIONS['7_4']!) {
       // Signal UTF-8 support: Value 0x0A, bit 0 must be set to 1. Added in TDS 7.4.
       const UTF8_SUPPORT_FEATURE_ID = 0x0a;
       const UTF8_SUPPORT_CLIENT_SUPPORTS_UTF8 = 0x01;
@@ -518,11 +516,11 @@ class Login7Payload {
         sprintf(
             'TDS:0x%08X, PacketSize:0x%08X, ClientProgVer:0x%08X, ClientPID:0x%08X, ConnectionID:0x%08X',
             [
-              login7Options?.tdsVersion,
-              login7Options?.packetSize,
-              login7Options?.clientProgVer,
-              login7Options?.clientPid,
-              login7Options?.connectionId
+              login7Options.tdsVersion,
+              login7Options.packetSize,
+              login7Options.clientProgVer,
+              login7Options.clientPid,
+              login7Options.connectionId
             ]) +
         '\n' +
         indent +
@@ -534,8 +532,8 @@ class Login7Payload {
               buildOptionFlags2(),
               buildTypeFlags(),
               buildOptionFlags3(),
-              login7Options?.clientTimeZone,
-              login7Options?.clientLcid,
+              login7Options.clientTimeZone,
+              login7Options.clientLcid,
             ]) +
         '\n' +
         indent +

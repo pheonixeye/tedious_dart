@@ -1102,12 +1102,12 @@ class Connection extends EventEmitter {
   sendLogin7Packet() {
     final payload = Login7Payload(
       login7Options: Login7Options(
-          tdsVersion: TDSVERSIONS[config.options.tdsVersion],
+          tdsVersion: TDSVERSIONS[config.options.tdsVersion]!,
           packetSize: config.options.packetSize,
           clientProgVer: 0,
-          clientPid: Platform.environment['pid'],
+          // clientPid: int.parse(Platform.environment['pid']!),
           connectionId: 0,
-          clientTimeZone: DateTime.now().timeZoneOffset.inMinutes,
+          // clientTimeZone: DateTime.now().timeZoneOffset.inMinutes,
           clientLcid: 0x00000409),
     );
 

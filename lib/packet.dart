@@ -72,15 +72,15 @@ class Packet {
     }
   }
 
-  setLength() {
+  void setLength() {
     this.buffer.writeUInt16BE(this.buffer.length, OFFSET.Length.value);
   }
 
-  length() {
+  int length() {
     return this.buffer.readUInt16BE(OFFSET.Length.value);
   }
 
-  resetConnection(bool reset) {
+  void resetConnection(bool reset) {
     var status = this.buffer.readUInt8(OFFSET.Status.value).toInt();
     if (reset) {
       status |= STATUS['RESETCONNECTION']!;
@@ -90,7 +90,7 @@ class Packet {
     this.buffer.writeUInt8(status, OFFSET.Status.value);
   }
 
-  last(bool? last) {
+  bool? last(bool? last) {
     var status = this.buffer.readUInt8(OFFSET.Status.value);
     if (last != null) {
       if (last) {
@@ -103,8 +103,8 @@ class Packet {
     return this.isLast();
   }
 
-  ignore(bool last) {
-    var status = this.buffer.readUInt8(OFFSET.Status.value).toInt();
+  void ignore(bool last) {
+    var status = this.buffer.readUInt8(OFFSET.Status.value);
     if (last) {
       status |= STATUS['IGNORE']!;
     } else {
@@ -113,22 +113,18 @@ class Packet {
     this.buffer.writeUInt8(status, OFFSET.Status.value);
   }
 
-  //identify return type ==>> bool
   bool isLast() {
-    return (this.buffer.readUInt8(OFFSET.Status.value).toInt() &
-            // ignore: unnecessary_null_comparison
-            STATUS['EOM']!) !=
-        null;
+    return this.buffer.readUInt8(OFFSET.Status.value) == STATUS['EOM']!;
   }
 
-  packetId([int? packetId]) {
+  int? packetId([int? packetId]) {
     if (packetId != null) {
       this.buffer.writeUInt8(packetId % 256, OFFSET.PacketID.value);
     }
     return this.buffer.readUInt8(OFFSET.PacketID.value);
   }
 
-  addData(Buffer data) {
+  Packet addData(Buffer data) {
     this.buffer = Buffer.concat([this.buffer, data]);
     print('packet data after concat ==>>');
     print(buffer.buffer);
@@ -140,28 +136,26 @@ class Packet {
     return this.buffer.slice(HEADER_LENGTH);
   }
 
-  type() {
+  int type() {
     return this.buffer.readUInt8(OFFSET.Type.value);
   }
 
-  statusAsString() {
-    final status = this.buffer.readUInt8(OFFSET.Status.value);
+  String statusAsString() {
+    final int status = this.buffer.readUInt8(OFFSET.Status.value);
     List statuses = [];
 
-    for (var name in STATUS.entries) {
+    for (String name in STATUS.keys) {
       final value = STATUS[name];
 
-      if (value != null && status != null) {
+      if (value == status) {
         statuses.add(name);
-      } else {
-        statuses.add(null);
       }
     }
 
     return statuses.join(' ').trim();
   }
 
-  headerToString({String indent = ''}) {
+  String headerToString({String indent = ''}) {
     final text = sprintf(
         'type:0x%02X(%s), status:0x%02X(%s), length:0x%04X, spid:0x%04X, packetId:0x%02X, window:0x%02X',
         [
@@ -177,7 +171,7 @@ class Packet {
     return indent + text;
   }
 
-  dataToString({String indent = ''}) {
+  String dataToString({String indent = ''}) {
     const BYTES_PER_GROUP = 0x04;
     const CHARS_PER_GROUP = 0x08;
     const BYTES_PER_LINE = 0x20;
@@ -228,18 +222,18 @@ class Packet {
   }
 
   @override
-  toString({String indent = ''}) {
+  String toString({String indent = ''}) {
     return this.headerToString(indent: indent) +
         '\n' +
         this.dataToString(indent: indent + indent);
   }
 
-  payloadString() {
+  String payloadString() {
     return '';
   }
 }
 
-isPacketComplete(Buffer potentialPacketBuffer) {
+bool isPacketComplete(Buffer potentialPacketBuffer) {
   if (potentialPacketBuffer.length < HEADER_LENGTH) {
     return false;
   } else {
@@ -248,6 +242,6 @@ isPacketComplete(Buffer potentialPacketBuffer) {
   }
 }
 
-packetLength(Buffer potentialPacketBuffer) {
+int packetLength(Buffer potentialPacketBuffer) {
   return potentialPacketBuffer.readUInt16BE(OFFSET.Length.value);
 }
