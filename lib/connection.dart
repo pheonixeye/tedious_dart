@@ -16,6 +16,7 @@ import 'package:tedious_dart/connector.dart';
 import 'package:tedious_dart/data_types/int.dart';
 import 'package:tedious_dart/data_types/nvarchar.dart';
 import 'package:tedious_dart/debug.dart';
+import 'package:tedious_dart/extensions/to_iterable_on_stream.dart';
 import 'package:tedious_dart/instance_lookup.dart';
 import 'package:tedious_dart/library.dart';
 import 'package:tedious_dart/login7_payload.dart';
@@ -843,7 +844,7 @@ class Connection extends EventEmitter {
         //
         messageIo = MessageIO(
           socket,
-          config.options.packetSize as int,
+          config.options.packetSize,
           debug,
         );
         messageIo.on('secure', (cleartext) => {emit('secure', cleartext)});
@@ -869,7 +870,7 @@ class Connection extends EventEmitter {
     final controller = AbortController();
     connectTimer = Timer(
       Duration(
-        seconds: config.options.connectTimeout as int,
+        seconds: config.options.connectTimeout,
       ),
       () {
         controller.abort();
@@ -884,7 +885,7 @@ class Connection extends EventEmitter {
     final timeout = config.options.cancelTimeout;
     if (timeout > 0) {
       cancelTimer = Timer(
-        Duration(seconds: timeout as int),
+        Duration(seconds: timeout),
         () {
           cancelTimeout();
         },
@@ -914,7 +915,7 @@ class Connection extends EventEmitter {
   createRetryTimer() {
     clearRetryTimer();
     retryTimer = Timer(
-      Duration(seconds: config.options.connectionRetryInterval as int),
+      Duration(seconds: config.options.connectionRetryInterval),
       () {
         retryTimeout();
       },
@@ -1193,7 +1194,7 @@ class Connection extends EventEmitter {
     messageIo.outgoingMessageStream!.write(message, 'usc-2', (([error]) {}));
     //TODO* Readable.from(payload).pipe(message);
     final _controller = StreamController.broadcast();
-    _controller.addStream(payload);
+    // _controller.addStream(payload);
     _controller.add(message);
   }
 
@@ -1448,7 +1449,7 @@ class Connection extends EventEmitter {
             return;
           }
 
-          makeRequest(bulkLoad, PACKETTYPE['BULK_LOAD']!, payload);
+          makeRequest(bulkLoad, PACKETTYPE['BULK_LOAD']!, payload.toIterable());
         });
 
     bulkLoad.once('cancel', (_) {
@@ -1622,7 +1623,7 @@ class Connection extends EventEmitter {
   beginTransaction(
       {required BeginTransactionCallback callback,
       String name = '',
-      num? isolationLevel}) {
+      int? isolationLevel}) {
     isolationLevel = config.options.isolationLevel;
     assertValidIsolationLevel(isolationLevel, 'isolationLevel');
 
@@ -1740,7 +1741,7 @@ class Connection extends EventEmitter {
       List<CallbackParameters>? args,
     })?
         cb,
-    num? isolationLevel,
+    int? isolationLevel,
   ) {
     if (cb is! Function) {
       throw MTypeError('cb must be a function');
@@ -1830,7 +1831,7 @@ class Connection extends EventEmitter {
 
   @PrivateExposed('Used in get_parameter_encryption_metadata.dart')
   @DynamicParameterType('request', 'Request || BulkLoad')
-  makeRequest(dynamic request, num packetType, Stream<Buffer> payload,
+  makeRequest(dynamic request, num packetType, Iterable<Buffer> payload,
       {String Function(String indent)? toString}) async {
     if (state != STATE['LOGGED_IN']) {
       final message =
@@ -1856,8 +1857,8 @@ class Connection extends EventEmitter {
       //TODO: redo message & IO implementation
 
       StreamController<Buffer> payloadStreamController = StreamController();
-      payloadStreamController.addStream(payload);
-      StreamSubscription<Buffer> payloadStream = payload.listen((event) {});
+      // payloadStreamController.addStream(payload);
+      // StreamSubscription<Buffer> payloadStream = payload.listen((event) {});
 
       this.request = request;
       request.connection = this;
@@ -1868,10 +1869,10 @@ class Connection extends EventEmitter {
       onCancel() {
         payloadStreamController.stream
             .drain(message); //payloadStream.unpipe(message);
-        payloadStream.cancel();
-        payloadStream.onError((e) {
-          throw RequestError(message: 'Canceled.', code: 'ECANCEL');
-        });
+        // payloadStream.cancel();
+        // payloadStream.onError((e) {
+        //   throw RequestError(message: 'Canceled.', code: 'ECANCEL');
+        // });
 
         // set the ignore bit and end the message.
         message.ignore = true;
@@ -1901,15 +1902,15 @@ class Connection extends EventEmitter {
         });
       });
 
-      payloadStream.onError((error) {
-        payloadStreamController.stream.drain(message);
+      // payloadStream.onError((error) {
+      //   payloadStreamController.stream.drain(message);
 
-        // Only set a request error if no error was set yet.
-        request.error ??= error;
+      //   // Only set a request error if no error was set yet.
+      //   request.error ??= error;
 
-        message.ignore = true;
-        message.subscription.cancel();
-      });
+      //   message.ignore = true;
+      //   message.subscription.cancel();
+      // });
       payloadStreamController.stream.drain(message);
     }
   }

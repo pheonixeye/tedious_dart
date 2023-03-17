@@ -142,10 +142,10 @@ class PreloginPayload {
     buffer.writeUInt8(options.version.minor.toInt());
     buffer.writeUInt16BE(options.version.build.toInt());
     buffer.writeUInt16BE(options.version.subbuild.toInt());
-    print(buffer.data?.buffer);
+    print(buffer.data.buffer);
     return _OptionData(
       TOKEN.VERSION,
-      buffer.data!,
+      buffer.data,
     );
   }
 
@@ -157,50 +157,50 @@ class PreloginPayload {
       buffer.writeUInt8(ENCRYPT['NOT_SUP']!);
     }
     print('encryption ==>>');
-    print(buffer.data?.buffer);
+    print(buffer.data.buffer);
     return _OptionData(
       TOKEN.ENCRYPTION,
-      buffer.data!,
+      buffer.data,
     );
   }
 
   createInstanceOption() {
     final buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
     buffer.writeUInt8(0x00);
-    print(buffer.data?.buffer);
+    print(buffer.data.buffer);
     return _OptionData(
       TOKEN.INSTOPT,
-      buffer.data!,
+      buffer.data,
     );
   }
 
   createThreadIdOption() {
     final buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
     buffer.writeUInt32BE(0x00);
-    print(buffer.data?.buffer);
+    print(buffer.data.buffer);
     return _OptionData(
       TOKEN.THREADID,
-      buffer.data!,
+      buffer.data,
     );
   }
 
   createMarsOption() {
     final buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
     buffer.writeUInt8(MARS['OFF']!);
-    print(buffer.data?.buffer);
+    print(buffer.data.buffer);
     return _OptionData(
       TOKEN.MARS,
-      buffer.data!,
+      buffer.data,
     );
   }
 
   createFedAuthOption() {
     final buffer = WritableTrackingBuffer(initialSize: optionBufferSize);
     buffer.writeUInt8(0x01);
-    print(buffer.data?.buffer);
+    print(buffer.data.buffer);
     return _OptionData(
       TOKEN.FEDAUTHREQUIRED,
-      buffer.data!,
+      buffer.data,
     );
   }
 

@@ -12,6 +12,7 @@ import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/all_headers.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/conn_config_internal.dart';
+import 'package:tedious_dart/meta/annotations.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 
@@ -21,7 +22,7 @@ const Map<String, int> STATUS = {
 };
 
 //TODO: Iterable<Buffer>
-class RpcRequestPayload extends Stream<Buffer> {
+class RpcRequestPayload extends Iterable<Buffer> {
   dynamic procedure;
   // string | number;
   List<Parameter> parameters;
@@ -37,14 +38,14 @@ class RpcRequestPayload extends Stream<Buffer> {
     required this.parameters,
     required this.txnDescriptor,
   });
-
-  generateData() async* {
+  @DynamicReturnType('Buffer | Stream<Buffer>')
+  Stream<dynamic> generateData() async* {
     final buffer = WritableTrackingBuffer(initialSize: 500);
     if (options.tdsVersion != '7_2') {
       const outstandingRequestCount = 1;
       writeToTrackingBuffer(
         buffer: buffer,
-        txnDescriptor: txnDescriptor.buffer,
+        txnDescriptor: txnDescriptor,
         outstandingRequestCount: outstandingRequestCount,
       );
     }
@@ -71,7 +72,7 @@ class RpcRequestPayload extends Stream<Buffer> {
     return indent + ('RPC Request - $procedure');
   }
 
-  generateParameterData(Parameter parameter) async* {
+  Stream<Buffer> generateParameterData(Parameter parameter) async* {
     final buffer = WritableTrackingBuffer(
         initialSize: 1 + 2 + Buffer.byteLength(parameter.name, 'ucs-2') + 1);
     buffer.writeBVarchar('@${parameter.name!}', 'ucs-2');
@@ -118,9 +119,6 @@ class RpcRequestPayload extends Stream<Buffer> {
   }
 
   @override
-  StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
-      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    // TODO: implement listen
-    throw UnimplementedError();
-  }
+  // TODO: implement iterator
+  Iterator<Buffer> get iterator => throw UnimplementedError();
 }

@@ -114,7 +114,7 @@ class NTLMResponsePayload {
     data.writeUInt32LE(0x0000);
     data.copyFrom(serverData);
     data.writeUInt32LE(0x0000);
-    return data.data!;
+    return data.data;
   }
 
   createClientNonce() {

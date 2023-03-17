@@ -25,7 +25,7 @@ class WritableTrackingBuffer {
   })  : buffer = Buffer.alloc(initialSize, 0),
         compositeBuffer = ZERO_LENGTH_BUFFER;
 
-  Buffer? get data {
+  Buffer get data {
     newBuffer(0);
     return compositeBuffer;
   }
@@ -58,32 +58,32 @@ class WritableTrackingBuffer {
     position = 0;
   }
 
-  writeUInt8(int value) {
+  void writeUInt8(int value) {
     const length = 1;
     makeRoomFor(length);
     buffer.writeUInt8(value, position);
     position += length;
   }
 
-  writeUInt16LE(int value) {
+  void writeUInt16LE(int value) {
     const length = 2;
     makeRoomFor(length);
     buffer.writeUInt16LE(value, position);
     position += length;
   }
 
-  writeUShort(int value) {
+  void writeUShort(int value) {
     writeUInt16LE(value);
   }
 
-  writeUInt16BE(int value) {
+  void writeUInt16BE(int value) {
     const length = 2;
     makeRoomFor(length);
     buffer.writeUInt16BE(value, position);
     position += length;
   }
 
-  writeUInt24LE(int value) {
+  void writeUInt24LE(int value) {
     const length = 3;
     makeRoomFor(length);
     buffer[position + 2] = (value >>> 16) & 0xff;
@@ -92,98 +92,98 @@ class WritableTrackingBuffer {
     position += length;
   }
 
-  writeUInt32LE(int value) {
+  void writeUInt32LE(int value) {
     const length = 4;
     makeRoomFor(length);
     buffer.writeUInt32LE(value, position);
     position += length;
   }
 
-  writeBigInt64LE(int value) {
+  void writeBigInt64LE(int value) {
     const length = 8;
     makeRoomFor(length);
     buffer.writeBigInt64LE(value, position);
     position += length;
   }
 
-  writeInt64LE(int value) {
+  void writeInt64LE(int value) {
     writeBigInt64LE(value);
   }
 
-  writeUInt64LE(int value) {
+  void writeUInt64LE(int value) {
     writeBigUInt64LE(value);
   }
 
-  writeBigUInt64LE(int value) {
+  void writeBigUInt64LE(int value) {
     const length = 8;
     makeRoomFor(length);
     buffer.writeBigUInt64LE(value, position);
     position += length;
   }
 
-  writeUInt32BE(int value) {
+  void writeUInt32BE(int value) {
     const length = 4;
     makeRoomFor(length);
     buffer.writeUInt32BE(value, position);
     position += length;
   }
 
-  writeUInt40LE(int value) {
+  void writeUInt40LE(int value) {
     // inspired by https://github.com/dpw/node-buffer-more-ints
     writeInt32LE(value & -1);
     writeUInt8((value * SHIFT_RIGHT_32).floor());
   }
 
-  writeInt8(int value) {
+  void writeInt8(int value) {
     const length = 1;
     makeRoomFor(length);
     buffer.writeInt8(value, position);
     position += length;
   }
 
-  writeInt16LE(int value) {
+  void writeInt16LE(int value) {
     const length = 2;
     makeRoomFor(length);
     buffer.writeInt16LE(value, position);
     position += length;
   }
 
-  writeInt16BE(int value) {
+  void writeInt16BE(int value) {
     const length = 2;
     makeRoomFor(length);
     buffer.writeInt16BE(value, position);
     position += length;
   }
 
-  writeInt32LE(int value) {
+  void writeInt32LE(int value) {
     const length = 4;
     makeRoomFor(length);
     buffer.writeInt32LE(value, position);
     position += length;
   }
 
-  writeInt32BE(int value) {
+  void writeInt32BE(int value) {
     const length = 4;
     makeRoomFor(length);
     buffer.writeInt32BE(value, position);
     position += length;
   }
 
-  writeFloatLE(double value) {
+  void writeFloatLE(double value) {
     const length = 4;
     makeRoomFor(length);
     buffer.writeFloatLE(value, position);
     position += length;
   }
 
-  writeDoubleLE(double value) {
+  void writeDoubleLE(double value) {
     const length = 8;
     makeRoomFor(length);
     buffer.writeDoubleLE(value, position);
     position += length;
   }
 
-  writeString(String value, String? encoding) {
+  void writeString(String value, String? encoding) {
     encoding ??= this.encoding;
 
     final length = Buffer.byteLength(value, encoding);
@@ -198,17 +198,17 @@ class WritableTrackingBuffer {
     position += length;
   }
 
-  writeBVarchar(String value, String? encoding) {
+  void writeBVarchar(String value, String? encoding) {
     writeUInt8(value.length);
     writeString(value, encoding);
   }
 
-  writeUsVarchar(String value, String? encoding) {
+  void writeUsVarchar(String value, String? encoding) {
     writeUInt16LE(value.length);
     writeString(value, encoding);
   }
 
-  writeBuffer(Buffer value) {
+  void writeBuffer(Buffer value) {
     final length = value.length;
     makeRoomFor(length);
     value.copy(buffer, position);
@@ -216,7 +216,7 @@ class WritableTrackingBuffer {
   }
 
   // TODO: Figure out what types are passed in other than `Buffer`
-  writeUsVarbyte(dynamic value, String? encoding) {
+  void writeUsVarbyte(dynamic value, String? encoding) {
     encoding ??= this.encoding;
 
     int length;
@@ -240,7 +240,7 @@ class WritableTrackingBuffer {
     }
   }
 
-  writePLPBody(dynamic value, String? encoding) {
+  void writePLPBody(dynamic value, String? encoding) {
     encoding ??= this.encoding;
 
     late int length;
@@ -272,7 +272,7 @@ class WritableTrackingBuffer {
     writeUInt32LE(0);
   }
 
-  writeMoney(int value) {
+  void writeMoney(int value) {
     writeInt32LE((value * SHIFT_RIGHT_32).floor());
     writeInt32LE(value & -1);
   }

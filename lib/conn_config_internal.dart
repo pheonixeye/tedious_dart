@@ -110,9 +110,9 @@ class InternalConnectionOptions {
 }
 
 class InternalConnectionConfig {
-  String? server;
-  InternalConnectionOptions? options;
-  AuthenticationType? authentication;
+  String server;
+  InternalConnectionOptions options;
+  AuthenticationType authentication;
 
   InternalConnectionConfig({
     required this.server,

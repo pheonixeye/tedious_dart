@@ -23,7 +23,3 @@ class BulkLoadPayload extends Stream<Buffer> {
     return '$indent BulkLoad';
   }
 }
-
-// //! ?? !//
-// typedef AsyncIterator<T> = Iterator<Future<T>>;
-// typedef AsyncIterable<T> = Iterable<Future<T>>;

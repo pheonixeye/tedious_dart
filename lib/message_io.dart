@@ -140,11 +140,11 @@ class MessageIO extends EventEmitter {
           await for (var data in response) {
             // We feed the server's handshake response back into the
             // encrypted end of the secure pair.
-            securePair.encrypted!.write(data);
+            securePair.encrypted!.write(data.buffer);
           }
         }).catchError((e) {
-          securePair.cleartext.destroy();
-          securePair.encrypted!.destroy();
+          securePair.cleartext.close();
+          securePair.encrypted!.close();
           throw e;
         });
       });

@@ -2,11 +2,15 @@ import 'dart:io';
 
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/conn_authentication.dart';
+// import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/conn_const_typedef.dart';
+import 'package:tedious_dart/extensions/to_iterable_on_stream.dart';
+// import 'package:tedious_dart/functions/get_initial_sql.dart';
 import 'package:tedious_dart/library.dart';
 import 'package:tedious_dart/login7_payload.dart';
 import 'package:tedious_dart/packet.dart';
 import 'package:tedious_dart/prelogin_payload.dart';
+import 'package:tedious_dart/sqlbatch_payload.dart';
 import 'package:tedious_dart/tds_versions.dart';
 
 void main(List<String> args) async {
@@ -38,6 +42,15 @@ void main(List<String> args) async {
   print('login7');
   final login7ResponsePacket = Packet(Buffer(login7Response));
   print(login7ResponsePacket.toString());
+  await Future.delayed(duration);
+  print('sqlbatchpayload ==>> sent');
+  print(sqlBatchPacket.toString());
+  socket.write(sqlBatchPacket.buffer.buffer);
+  await Future.delayed(duration);
+
+  final sqlResponse = socket.read();
+  print('sqlResponse');
+  print(Packet(Buffer(sqlResponse)).toString());
 }
 
 const duration = Duration(milliseconds: 100);
@@ -55,14 +68,14 @@ final preloginPayload = PreloginPayload(
 );
 
 Packet applyPacketHeader(
-  int type, //eg: PACKETTYPE['PRELOGIN']
-  Buffer data,
-) {
+    int type, //eg: PACKETTYPE['PRELOGIN']
+    Buffer data,
+    [bool isLast = true]) {
   final packet = Packet(type);
   int packetId = 0;
   // packetId++;
   packet.packetId(packetId);
-  packet.last(true);
+  packet.last(isLast);
   packet.ignore(false);
   packet.addData(data);
   return packet;
@@ -93,3 +106,16 @@ final login7Payload = Login7Payload(
   serverName: 'kareemzaher',
   clientId: Buffer.from([1, 2, 3, 4, 5, 6]),
 );
+
+const sqltext = 'USE test';
+
+final sqlbatchpayload = SqlBatchPayload(
+  sqlText: sqltext,
+  txnDescriptor: Buffer.from([0, 0, 0, 0, 0, 0, 0, 0]),
+  tdsVersion: '7_4',
+);
+
+final sqlBatchPacket = applyPacketHeader(
+    PACKETTYPE['SQL_BATCH']!,
+    Buffer.from(Buffer.concat(sqlbatchpayload.iterate().toIterable().toList()),
+        0, 0, 'ucs2'));

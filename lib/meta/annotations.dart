@@ -12,3 +12,9 @@ class DynamicParameterType {
     String type = '',
   ]);
 }
+
+class DynamicReturnType {
+  const DynamicReturnType([
+    String type = '',
+  ]);
+}
