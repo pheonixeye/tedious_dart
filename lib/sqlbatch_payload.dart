@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:magic_buffer_copy/magic_buffer.dart';
-import 'package:tedious_dart/extensions/to_iterable_on_stream.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 import 'package:tedious_dart/all_headers.dart';
 import 'package:tedious_dart/tds_versions.dart';
@@ -17,7 +16,7 @@ class SqlBatchPayload extends Iterable<Buffer> {
     required this.tdsVersion,
   });
 
-  Stream<Buffer> iterate() async* {
+  Stream<Buffer> get stream async* {
     if (TDSVERSIONS[tdsVersion]! >= TDSVERSIONS['7_2']!) {
       var buffer = WritableTrackingBuffer(initialSize: 18, encoding: 'ucs2');
       const outstandingRequestCount = 1;
@@ -42,7 +41,7 @@ class SqlBatchPayload extends Iterable<Buffer> {
   @override
   Iterator<Buffer> get iterator {
     late Iterator<Buffer> i;
-    iterate().toList().then((value) => i = value.iterator);
+    stream.toList().then((value) => i = value.iterator);
     return i;
   }
 }

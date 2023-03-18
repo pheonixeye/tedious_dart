@@ -14,6 +14,7 @@ import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/meta/annotations.dart';
 import 'package:tedious_dart/models/data_types.dart';
+import 'package:tedious_dart/tds_versions.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 
 const Map<String, int> STATUS = {
@@ -21,10 +22,9 @@ const Map<String, int> STATUS = {
   'DEFAULT_VALUE': 0x02,
 };
 
-//TODO: Iterable<Buffer>
 class RpcRequestPayload extends Iterable<Buffer> {
+  @DynamicParameterType('procedure', 'String | int')
   dynamic procedure;
-  // string | number;
   List<Parameter> parameters;
 
   InternalConnectionOptions options;
@@ -41,7 +41,7 @@ class RpcRequestPayload extends Iterable<Buffer> {
   @DynamicReturnType('Buffer | Stream<Buffer>')
   Stream<dynamic> generateData() async* {
     final buffer = WritableTrackingBuffer(initialSize: 500);
-    if (options.tdsVersion != '7_2') {
+    if (TDSVERSIONS[options.tdsVersion]! >= TDSVERSIONS['7_2']!) {
       const outstandingRequestCount = 1;
       writeToTrackingBuffer(
         buffer: buffer,
@@ -119,6 +119,5 @@ class RpcRequestPayload extends Iterable<Buffer> {
   }
 
   @override
-  // TODO: implement iterator
   Iterator<Buffer> get iterator => throw UnimplementedError();
 }

@@ -45,16 +45,14 @@ void main(List<String> args) async {
   print(login7ResponsePacket.toString());
   await Future.delayed(duration);
   print('sqlbatchpayload ==>> to be sent');
-  // print(sqlBatchPacket.toString());
-  // socket.write(sqlBatchPacket.buffer.buffer);
-  // await Future.delayed(duration);
 
   List<Buffer> sqlPayloadList = [];
-  sqlbatchpayload.iterate().listen((event) {
+  sqlbatchpayload.stream.listen((event) {
     sqlPayloadList.add(event);
   }, onDone: () {
     final buffer = Buffer.concat(sqlPayloadList);
     final packet = applyPacketHeader(PACKETTYPE['SQL_BATCH']!, buffer);
+    print(packet.toString());
     socket.write(packet.buffer.buffer);
   });
   await Future.delayed(duration);
@@ -64,17 +62,19 @@ void main(List<String> args) async {
   //-------------------------------------------------------//
   await Future.delayed(duration);
   List<Buffer> sqlPayloadList2 = [];
-  sqlbatchpayload2.iterate().listen((event) {
+  sqlbatchpayload2.stream.listen((event) {
     sqlPayloadList2.add(event);
   }, onDone: () {
     final buffer = Buffer.concat(sqlPayloadList2);
     final packet = applyPacketHeader(PACKETTYPE['SQL_BATCH']!, buffer);
+    print(packet.toString());
     socket.write(packet.buffer.buffer);
   });
   await Future.delayed(duration);
   final sqlResponse2 = socket.read();
   print('sqlResponse2');
   print(Packet(Buffer(sqlResponse2)).toString());
+  //TODO: execute an RpcRequestPayload...
 }
 
 const duration = Duration(milliseconds: 100);
