@@ -5,6 +5,7 @@ import 'package:tedious_dart/conn_authentication.dart';
 // import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/conn_const_typedef.dart';
 import 'package:tedious_dart/extensions/to_iterable_on_stream.dart';
+import 'package:tedious_dart/functions/get_initial_sql.dart';
 // import 'package:tedious_dart/functions/get_initial_sql.dart';
 import 'package:tedious_dart/library.dart';
 import 'package:tedious_dart/login7_payload.dart';
@@ -43,14 +44,37 @@ void main(List<String> args) async {
   final login7ResponsePacket = Packet(Buffer(login7Response));
   print(login7ResponsePacket.toString());
   await Future.delayed(duration);
-  print('sqlbatchpayload ==>> sent');
-  print(sqlBatchPacket.toString());
-  socket.write(sqlBatchPacket.buffer.buffer);
-  await Future.delayed(duration);
+  print('sqlbatchpayload ==>> to be sent');
+  // print(sqlBatchPacket.toString());
+  // socket.write(sqlBatchPacket.buffer.buffer);
+  // await Future.delayed(duration);
 
+  List<Buffer> sqlPayloadList = [];
+  sqlbatchpayload.iterate().listen((event) {
+    sqlPayloadList.add(event);
+  }, onDone: () {
+    final buffer = Buffer.concat(sqlPayloadList);
+    final packet = applyPacketHeader(PACKETTYPE['SQL_BATCH']!, buffer);
+    socket.write(packet.buffer.buffer);
+  });
+  await Future.delayed(duration);
   final sqlResponse = socket.read();
   print('sqlResponse');
   print(Packet(Buffer(sqlResponse)).toString());
+  //-------------------------------------------------------//
+  await Future.delayed(duration);
+  List<Buffer> sqlPayloadList2 = [];
+  sqlbatchpayload2.iterate().listen((event) {
+    sqlPayloadList2.add(event);
+  }, onDone: () {
+    final buffer = Buffer.concat(sqlPayloadList2);
+    final packet = applyPacketHeader(PACKETTYPE['SQL_BATCH']!, buffer);
+    socket.write(packet.buffer.buffer);
+  });
+  await Future.delayed(duration);
+  final sqlResponse2 = socket.read();
+  print('sqlResponse2');
+  print(Packet(Buffer(sqlResponse2)).toString());
 }
 
 const duration = Duration(milliseconds: 100);
@@ -110,12 +134,13 @@ final login7Payload = Login7Payload(
 const sqltext = 'USE test';
 
 final sqlbatchpayload = SqlBatchPayload(
-  sqlText: sqltext,
+  sqlText: getInitialSql(),
   txnDescriptor: Buffer.from([0, 0, 0, 0, 0, 0, 0, 0]),
   tdsVersion: '7_4',
 );
 
-final sqlBatchPacket = applyPacketHeader(
-    PACKETTYPE['SQL_BATCH']!,
-    Buffer.from(Buffer.concat(sqlbatchpayload.iterate().toIterable().toList()),
-        0, 0, 'ucs2'));
+final sqlbatchpayload2 = SqlBatchPayload(
+  sqlText: sqltext,
+  txnDescriptor: Buffer.from([0, 0, 0, 0, 0, 0, 0, 1]),
+  tdsVersion: '7_4',
+);

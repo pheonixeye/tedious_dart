@@ -40,7 +40,11 @@ class SqlBatchPayload extends Iterable<Buffer> {
   }
 
   @override
-  Iterator<Buffer> get iterator => iterate().toIterable().iterator;
+  Iterator<Buffer> get iterator {
+    late Iterator<Buffer> i;
+    iterate().toList().then((value) => i = value.iterator);
+    return i;
+  }
 }
 
 
