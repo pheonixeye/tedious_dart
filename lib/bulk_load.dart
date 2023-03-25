@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:events_emitter/emitters/event_emitter.dart';
 import 'package:magic_buffer_copy/magic_buffer.dart';
-import 'package:tedious_dart/always_encrypted/types.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/connection.dart';
@@ -39,23 +38,21 @@ const Map<String, int> DONE_STATUS = {
   'SRVERROR': 0x100
 };
 
-typedef Order = Map<String, String>;
-//   ASC('ASC'),
-//   DESC('DESC');
+typedef Order = Map<String, String>; //*{colName : ASC | DESC}
 
 class _BulkLoadInternalOptions {
-  final bool? checkConstraints;
-  final bool? fireTriggers;
-  final bool? keepNulls;
-  final bool? lockTable;
-  final Order? order;
+  final bool checkConstraints;
+  final bool fireTriggers;
+  final bool keepNulls;
+  final bool lockTable;
+  final Order order;
 
   const _BulkLoadInternalOptions({
     this.checkConstraints = false,
     this.fireTriggers = false,
     this.keepNulls = false,
     this.lockTable = false,
-    this.order,
+    this.order = const {},
   });
 }
 
@@ -110,7 +107,8 @@ class ColumnOptions {
   });
 }
 
-final rowTokenBuffer = Buffer.from([TOKEN_TYPE['ROW']]);
+final rowTokenBuffer = Buffer.from([TOKEN_TYPE['ROW']!]);
+
 final textPointerAndTimestampBuffer = Buffer.from([
   0x10,
   0x00,
@@ -143,14 +141,13 @@ final textPointerNullBuffer = Buffer.from([0x00]);
 
 //TODO!
 class RowTransform<T> extends Stream {
-  bool columnMetadataWritten;
-  BulkLoad bulkLoad;
-  InternalConnectionOptions mainOptions;
-  List<Column> columns;
+  bool columnMetadataWritten = false;
+  final BulkLoad bulkLoad;
+  late InternalConnectionOptions mainOptions;
+  late List<Column> columns;
   final StreamController controller = StreamController();
 
   RowTransform({
-    this.columnMetadataWritten = false,
     required this.bulkLoad,
   })  : mainOptions = bulkLoad.options,
         columns = bulkLoad.columns {
@@ -164,9 +161,9 @@ class RowTransform<T> extends Stream {
     throw UnimplementedError();
   }
 
-  _transform(
+  void _transform(
+    //row = List<dynamic> | Map<String,dynamic>
     dynamic row,
-    //row = Array<unknown> | { [colName: string]: unknown }
     String? _encoding,
     void Function([Error? error])? callback,
   ) {
@@ -178,12 +175,7 @@ class RowTransform<T> extends Stream {
 
     for (int i = 0; i < columns.length; i++) {
       var c = columns[i];
-      dynamic value;
-      if (row is List) {
-        value = row[i];
-      } else if (row is Map) {
-        value = row[c.objName];
-      }
+      dynamic value = row is List ? row[i] : row[c.objName];
 
       if (!bulkLoad.firstRowWritten) {
         try {
@@ -257,36 +249,11 @@ class BulkLoad extends EventEmitter {
     required this.bulkOptions,
     required this.callback,
   }) {
-    if (bulkOptions.checkConstraints is! bool) {
-      throw MTypeError(
-          'The "options.checkConstraints" property must be of type boolean.');
-    }
-
-    if (bulkOptions.fireTriggers is! bool) {
-      throw MTypeError(
-          'The "options.fireTriggers" property must be of type boolean.');
-    }
-
-    if (bulkOptions.keepNulls is! bool) {
-      throw MTypeError(
-          'The "options.keepNulls" property must be of type boolean.');
-    }
-
-    if (bulkOptions.lockTable is! bool) {
-      throw MTypeError(
-          'The "options.lockTable" property must be of type boolean.');
-    }
-
-    if (bulkOptions.order is! Map<String, String> ||
-        bulkOptions.order == null) {
-      throw MTypeError('The "options.order" property must be of type object.');
-    }
-
-    for (int i = 0; i < bulkOptions.order!.length; i++) {
-      if (bulkOptions.order!.values[i] != 'ASC' ||
-          bulkOptions.order!.values[i] != 'DESC') {
+    for (int i = 0; i < bulkOptions.order.length; i++) {
+      if (bulkOptions.order.values[i] != 'ASC' ||
+          bulkOptions.order.values[i] != 'DESC') {
         throw MTypeError(
-            'The value of the "${bulkOptions.order!.values[i]}" key in the "options.order" object must be either "ASC" or "DESC".');
+            'The value of the "${bulkOptions.order.values[i]}" key in the "options.order" object must be either "ASC" or "DESC".');
       }
     }
 
@@ -370,11 +337,11 @@ class BulkLoad extends EventEmitter {
       addOptions.add('TABLOCK');
     }
 
-    if (bulkOptions.order != null && bulkOptions.order!.isNotEmpty) {
+    if (bulkOptions.order != null && bulkOptions.order.isNotEmpty) {
       List orderColumns = [];
-      for (int i = 0; i < bulkOptions.order!.length; i++) {
-        orderColumns.add(
-            '${bulkOptions.order!.keys[i]} ${bulkOptions.order!.values[i]}');
+      for (int i = 0; i < bulkOptions.order.length; i++) {
+        orderColumns
+            .add('${bulkOptions.order.keys[i]} ${bulkOptions.order.values[i]}');
       }
 
       if (orderColumns.isNotEmpty) {

@@ -74,7 +74,7 @@ void main(List<String> args) async {
   final sqlResponse2 = socket.read();
   print('sqlResponse2');
   print(Packet(Buffer(sqlResponse2)).toString());
-  //TODO: execute an RpcRequestPayload...
+  //TODO: execute a BulkLoadPayload...
 }
 
 const duration = Duration(milliseconds: 100);
@@ -131,7 +131,7 @@ final login7Payload = Login7Payload(
   clientId: Buffer.from([1, 2, 3, 4, 5, 6]),
 );
 
-const sqltext = 'USE test';
+const sqltext = 'SELECT * FROM [dbo].[test_transact]';
 
 final sqlbatchpayload = SqlBatchPayload(
   sqlText: getInitialSql(),
@@ -141,6 +141,6 @@ final sqlbatchpayload = SqlBatchPayload(
 
 final sqlbatchpayload2 = SqlBatchPayload(
   sqlText: sqltext,
-  txnDescriptor: Buffer.from([0, 0, 0, 0, 0, 0, 0, 1]),
+  txnDescriptor: Buffer.from([0, 0, 0, 0, 0, 0, 0, 0]),
   tdsVersion: '7_4',
 );
