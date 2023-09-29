@@ -24,7 +24,8 @@ dependencies:
   events_emitter:
   # magic_buffer: ^0.0.15
   magic_buffer_copy:
-    path: c:/users/kareemzaher/desktop/magic_buffer_copy
+    path: c:/users/kareemzaher/desktop/darTedious/magic_buffer_copy
+  rxdart:  
   
 dev_dependencies:
   lints: ^2.0.0

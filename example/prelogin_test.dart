@@ -73,8 +73,41 @@ void main(List<String> args) async {
   await Future.delayed(duration);
   final sqlResponse2 = socket.read();
   print('sqlResponse2');
-  print(Packet(Buffer(sqlResponse2)).toString());
+  print(Packet(Buffer(sqlResponse2)).headerToString());
+  print(Packet(Buffer(sqlResponse2)).dataToString());
   //TODO: execute a BulkLoadPayload...
+  //----------------------------------------------------//
+  // await Future.delayed(duration);
+  // List<Buffer> sqlPayloadList3 = [];
+  // sqlbatchpayload3.stream.listen((event) {
+  //   sqlPayloadList3.add(event);
+  // }, onDone: () {
+  //   final buffer = Buffer.concat(sqlPayloadList3);
+  //   final packet = applyPacketHeader(PACKETTYPE['SQL_BATCH']!, buffer);
+  //   print(packet.toString());
+  //   socket.write(packet.buffer.buffer);
+  // });
+  // await Future.delayed(duration);
+  // final sqlResponse3 = socket.read();
+  // print('sqlResponse3');
+  // print(Packet(Buffer(sqlResponse3)).headerToString());
+  // print(Packet(Buffer(sqlResponse3)).dataToString());
+  //----------------------------------------------------//
+  await Future.delayed(duration);
+  List<Buffer> sqlPayloadList4 = [];
+  sqlbatchpayload4.stream.listen((event) {
+    sqlPayloadList4.add(event);
+  }, onDone: () {
+    final buffer = Buffer.concat(sqlPayloadList4);
+    final packet = applyPacketHeader(PACKETTYPE['SQL_BATCH']!, buffer);
+    print(packet.toString());
+    socket.write(packet.buffer.buffer);
+  });
+  await Future.delayed(duration);
+  final sqlResponse4 = socket.read();
+  print('sqlResponse4');
+  print(Packet(Buffer(sqlResponse4)).headerToString());
+  print(Packet(Buffer(sqlResponse4)).dataToString());
 }
 
 const duration = Duration(milliseconds: 100);
@@ -131,7 +164,16 @@ final login7Payload = Login7Payload(
   clientId: Buffer.from([1, 2, 3, 4, 5, 6]),
 );
 
-const sqltext = 'SELECT * FROM [dbo].[test_transact]';
+const sqltext = 'SELECT * FROM [dbo].[test_transact];';
+
+const sqlTextCreateDb = 'USE test;';
+
+//** WORKING QUERY INSERT INTO TABLE
+const sqlInsertIntoTable = '''
+INSERT INTO dbo.abdo VALUES ('ahmed hamdy', 25, 1);''';
+
+const sqlSelectFromTable = '''
+SELECT * FROM dbo.abdo;''';
 
 final sqlbatchpayload = SqlBatchPayload(
   sqlText: getInitialSql(),
@@ -140,7 +182,19 @@ final sqlbatchpayload = SqlBatchPayload(
 );
 
 final sqlbatchpayload2 = SqlBatchPayload(
-  sqlText: sqltext,
+  sqlText: sqlTextCreateDb,
+  txnDescriptor: Buffer.from([0, 0, 0, 0, 0, 0, 0, 0]),
+  tdsVersion: '7_4',
+);
+
+final sqlbatchpayload3 = SqlBatchPayload(
+  sqlText: sqlInsertIntoTable,
+  txnDescriptor: Buffer.from([0, 0, 0, 0, 0, 0, 0, 0]),
+  tdsVersion: '7_4',
+);
+
+final sqlbatchpayload4 = SqlBatchPayload(
+  sqlText: sqlSelectFromTable,
   txnDescriptor: Buffer.from([0, 0, 0, 0, 0, 0, 0, 0]),
   tdsVersion: '7_4',
 );

@@ -1739,8 +1739,7 @@ class Connection extends EventEmitter {
       Error? error,
       TransactionDoneCallback? txDone,
       List<CallbackParameters>? args,
-    })?
-        cb,
+    })? cb,
     int? isolationLevel,
   ) {
     if (cb is! Function) {
