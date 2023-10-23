@@ -67,7 +67,7 @@ class DateTimeOffset extends DataType {
 
     final offset = -value.timeZoneOffset;
     buffer.writeInt16LE(offset.inMinutes);
-    yield buffer.data!;
+    yield buffer.data;
   }
 
   @override

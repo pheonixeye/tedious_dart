@@ -59,7 +59,7 @@ class Time extends DataType {
         buffer.writeUInt40LE(timestamp);
     }
 
-    yield buffer.data!;
+    yield buffer.data;
   }
 
   @override

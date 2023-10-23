@@ -10,33 +10,35 @@ import 'package:tedious_dart/models/errors.dart';
 // import 'package:tedious_dart/node/buffer_list.dart';
 import 'package:tedious_dart/packet.dart';
 
-class IncomingMessageStream extends Stream<Message>
+class IncomingMessageStream extends Stream<Buffer>
     implements StreamConsumer<Uint8List> {
   Debug debug;
   dynamic bl;
   Message? currentMessage;
-  late final StreamSubscription<Message> sub;
-  late final StreamController<Message> controller;
+  late final StreamController<Buffer> controller;
+
   IncomingMessageStream(this.debug) : super() {
     currentMessage = null;
+    //TODO: re-implement bufferList class;
     bl = List<Buffer>.empty();
+    controller = StreamController<Buffer>.broadcast();
+    controller.sink.addStream(this);
+
     // BufferList([]);
-    sub = controller.stream.listen((event) {});
-    controller = StreamController();
   }
   pause() {
+    // super.pause();
     if (this.currentMessage != null) {
-      this.currentMessage!.subscription.pause();
+      this.currentMessage!.controller.stream.listen((event) {}).pause();
     }
-
     return this;
   }
 
   resume() {
+    // super.resume();
     if (this.currentMessage != null) {
-      this.currentMessage!.subscription.resume();
+      this.currentMessage!.controller.stream.listen((event) {}).resume();
     }
-
     return this;
   }
 
@@ -64,7 +66,7 @@ class IncomingMessageStream extends Stream<Message>
             type: packet.type(),
             resetConnection: false,
           );
-          controller.sink.add(message);
+          controller.sink.add(await message.controller.stream.first);
           // this.add(message);
         }
 
@@ -78,10 +80,11 @@ class IncomingMessageStream extends Stream<Message>
           message.controller.add(packet.data());
           message.controller.close();
           return;
-        } else if (await message.subscription.asFuture(packet.data())) {
+        } else if (await message.controller.sink.done) {
+          //!message.write(packet.data())
           // If too much data is buffering up in the
           // current message, wait for it to drain.
-          this.processBufferedData(callback);
+          message.drain(this.processBufferedData(callback));
           // message.once('drain', () {
           // });
           return;
@@ -102,18 +105,23 @@ class IncomingMessageStream extends Stream<Message>
   }
 
   @override
-  StreamSubscription<Message> listen(void Function(Message event)? onData,
+  StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return this.controller.stream.listen((event) {});
+    return controller.stream.listen(onData,
+        onDone: onDone, onError: onError, cancelOnError: cancelOnError);
   }
 
   @override
-  Future addStream(Stream<Uint8List> stream) async {
-    this.addStream(stream);
+  Future addStream(Stream<Uint8List> stream) {
+    final streamTransformer =
+        StreamTransformer<Uint8List, Buffer>.fromBind((p0) {
+      return p0.asBroadcastStream().map((event) => Buffer.from(event));
+    });
+    return controller.addStream(stream.transform<Buffer>(streamTransformer));
   }
 
   @override
-  Future close() async {
-    this.close();
+  Future close() {
+    return controller.close();
   }
 }

@@ -76,7 +76,7 @@ class DateTime2 extends DataType {
 
     final days = EPOCH_DATE.difference(date).inDays;
     buffer.writeUInt24LE(days);
-    yield buffer.data!;
+    yield buffer.data;
   }
 
   @override

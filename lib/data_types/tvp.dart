@@ -61,10 +61,11 @@ class TVP extends DataType {
         final value = row[k];
 
         final param = ParameterData(
-            value: column.type.validate(value, parameter.collation),
-            length: column.length,
-            scale: column.scale,
-            precision: column.precision);
+          value: column.type.validate(value, parameter.collation),
+          length: column.length,
+          scale: column.scale,
+          precision: column.precision,
+        );
 
         // TvpColumnData
         yield column.type.generateParameterLength(param, options) as Buffer;
@@ -111,7 +112,7 @@ class TVP extends DataType {
     buffer.writeBVarchar(schema, 'ucs2');
     buffer.writeBVarchar(typeName, 'ucs2');
 
-    return buffer.data!;
+    return buffer.data;
   }
 
   @override

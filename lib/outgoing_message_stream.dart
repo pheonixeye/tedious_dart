@@ -8,21 +8,24 @@ import 'package:tedious_dart/message.dart';
 // import 'package:tedious_dart/node/buffer_list.dart';
 import 'package:tedious_dart/packet.dart';
 
-class OutgoingMessageStream extends Stream<Message?> {
+class OutgoingMessageStream extends Stream<Buffer?> {
   int packetSize;
   Debug debug;
   dynamic bl;
 
   Message? currentMessage;
 
-  late final StreamController<Message?> controller;
-  late final StreamSubscription<Message?> subscription;
+  late final StreamController<Buffer?> controller;
+  StreamSubscription<Buffer?> get subscription =>
+      controller.stream.asBroadcastStream().listen((event) {});
 
   OutgoingMessageStream(this.debug, {required this.packetSize}) {
     this.packetSize = packetSize;
     this.debug = debug;
     this.bl = List<Buffer>.empty();
     // BufferList([]);
+    controller = StreamController<Buffer?>.broadcast();
+    controller.sink.addStream(this);
 
     // When the writable side is ended, push `null`
     // to also end the readable side.
@@ -99,8 +102,9 @@ class OutgoingMessageStream extends Stream<Message?> {
   }
 
   @override
-  StreamSubscription<Message?> listen(void Function(Message? event)? onData,
+  StreamSubscription<Buffer?> listen(void Function(Buffer? event)? onData,
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return subscription;
+    return controller.stream.listen(onData,
+        onDone: onDone, onError: onError, cancelOnError: cancelOnError);
   }
 }

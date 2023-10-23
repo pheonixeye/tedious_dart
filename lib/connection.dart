@@ -114,7 +114,7 @@ class Connection extends EventEmitter {
   Connection(this.config) : super() {
     STATE = STATES(this);
     //
-    if (config.runtimeType != Object || config == null) {
+    if (config == null) {
       throw MTypeError(
           'The "config" argument is required and must be of type Object.');
     }
@@ -128,8 +128,7 @@ class Connection extends EventEmitter {
 
     AuthenticationType authentication;
     if (config.authentication != null) {
-      if (config.authentication.runtimeType != Object ||
-          config.authentication == null) {
+      if (config.authentication == null) {
         throw MTypeError(
             'The "config.authentication" property must be of type Object.');
       }
@@ -153,7 +152,7 @@ class Connection extends EventEmitter {
         throw MTypeError(
             'The "type" property must one of "default", "ntlm", "azure-active-directory-password", "azure-active-directory-access-token", "azure-active-directory-default", "azure-active-directory-msi-vm" or "azure-active-directory-msi-app-service" or "azure-active-directory-service-principal-secret".');
       }
-      if (options.runtimeType != Object || options == null) {
+      if (options == null) {
         throw MTypeError(
             'The "config.authentication.options" property must be of type object.');
       }
@@ -1009,12 +1008,13 @@ class Connection extends EventEmitter {
     state = newState;
 
     if (state!.enter != null) {
-      Function.apply(state!.enter!, [this]);
+      // Function.apply(state!.enter!, [this]);
+      state!.enter!(this);
     }
   }
 
   getEventHandler(String eventName) {
-    final handler = State.eventsMap[eventName];
+    final handler = state?.eventsMap[eventName];
     if (handler == null) {
       throw MTypeError("No event '$eventName' in state '${state!.name}'");
     }
@@ -1022,7 +1022,7 @@ class Connection extends EventEmitter {
   }
 
   dispatchEvent(String eventName, [dynamic args]) {
-    final handler = State.eventsMap[eventName] as void Function(
+    final handler = state?.eventsMap[eventName] as void Function(
         Connection? connection, dynamic args)?;
     if (handler != null) {
       Function.apply(handler, [this, args]);

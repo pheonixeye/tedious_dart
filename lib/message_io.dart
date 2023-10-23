@@ -17,8 +17,8 @@ import 'package:tedious_dart/packet.dart';
 
 //!manufactured class
 class SecurePair {
-  RawSecureSocket cleartext;
-  RawSecureSocket? encrypted;
+  Socket cleartext;
+  SecureSocket? encrypted;
 
   SecurePair({
     required this.cleartext,
@@ -38,7 +38,7 @@ class MessageIO extends EventEmitter {
 
   SecurePair? securePair;
 
-  late StreamIterator<Message> incomingMessageIterator;
+  late StreamIterator<Buffer> incomingMessageIterator;
 
   MessageIO(this.socket, this._packetSize, this.debug) : super() {
     tlsNegotiationComplete = false;
@@ -51,7 +51,7 @@ class MessageIO extends EventEmitter {
 
     socket.pipe(_incomingMessageStream!);
     //TODO: wrong type
-    outgoingMessageStream?.pipe(socket as StreamConsumer<Message>);
+    outgoingMessageStream?.pipe(socket as StreamConsumer<Buffer>);
   }
 
   packetSize(List<int> args) {
@@ -76,106 +76,106 @@ class MessageIO extends EventEmitter {
     return this.outgoingMessageStream!.packetSize;
   }
 
-  startTls(SecurityContext credentialsDetails, String hostname, int port,
-      bool trustServerCertificate) {
-    // if (!credentialsDetails.maxVersion ||
-    //     !['TLSv1.2', 'TLSv1.1', 'TLSv1']
-    //         .includes(credentialsDetails.maxVersion)) {
-    //   credentialsDetails.maxVersion = 'TLSv1.2';
-    // }
+  // startTls(SecurityContext credentialsDetails, String hostname, int port,
+  //     bool trustServerCertificate) {
+  //   // if (!credentialsDetails.maxVersion ||
+  //   //     !['TLSv1.2', 'TLSv1.1', 'TLSv1']
+  //   //         .includes(credentialsDetails.maxVersion)) {
+  //   //   credentialsDetails.maxVersion = 'TLSv1.2';
+  //   // }
 
-    final secureContext = SecurityContext.defaultContext
-      ..allowLegacyUnsafeRenegotiation = true;
-    // tls.createSecureContext(credentialsDetails);
+  //   final secureContext = SecurityContext.defaultContext
+  //     ..allowLegacyUnsafeRenegotiation = true;
+  //   // tls.createSecureContext(credentialsDetails);
 
-    return Future<void>(() async {
-      final duplexpair = DuplexPair(
-        socket1: await RawSecureSocket.connect(
-          hostname,
-          port,
-          context: secureContext,
-        ),
-      );
-      final securePair = this.securePair = SecurePair(
-        cleartext: duplexpair.socket1!,
-        encrypted: duplexpair.socket2,
-      );
-      final _socket = securePair.cleartext;
-      // final controller = StreamController();
-      // controller.addStream(_socket);
-      final StreamSubscription<Uint8List> _subscription =
-          _socket.listen((event) {});
-      final consumer = SocketConsumer(_socket);
-      // this.outgoingMessageStream!.unpipe(this.socket);
-      // this.socket.unpipe(this.incomingMessageStream);
+  //   return Future<void>(() async {
+  //     final duplexpair = DuplexPair(
+  //       socket1: await SecureSocket.connect(
+  //         hostname,
+  //         port,
+  //         context: secureContext,
+  //       ),
+  //     );
+  //     final securePair = this.securePair = SecurePair(
+  //       cleartext: duplexpair.socket1!,
+  //       encrypted: duplexpair.socket2,
+  //     );
+  //     final _socket = securePair.cleartext;
+  //     // final controller = StreamController();
+  //     // controller.addStream(_socket);
+  //     final StreamSubscription<Uint8List> _subscription =
+  //         _socket.listen((event) {});
+  //     final consumer = SocketConsumer(_socket);
+  //     // this.outgoingMessageStream!.unpipe(this.socket);
+  //     // this.socket.unpipe(this.incomingMessageStream);
 
-      _subscription.onData((data) async {
-        this.socket.pipe(consumer);
-        securePair.encrypted!.pipe(consumer);
+  //     _subscription.onData((data) async {
+  //       this.socket.pipe(consumer);
+  //       securePair.encrypted!.pipe(consumer);
 
-        securePair.cleartext.pipe(_incomingMessageStream!);
-        this
-            .outgoingMessageStream!
-            //TODO: wrong type
-            .pipe(securePair.cleartext as StreamConsumer<Message?>);
+  //       securePair.cleartext.pipe(_incomingMessageStream!);
+  //       this
+  //           .outgoingMessageStream!
+  //           //TODO: wrong type
+  //           .pipe(securePair.cleartext as StreamConsumer<Message?>);
 
-        this.tlsNegotiationComplete = true;
+  //       this.tlsNegotiationComplete = true;
 
-        final message =
-            Message(type: PACKETTYPE['PRELOGIN']!, resetConnection: false);
+  //       final message =
+  //           Message(type: PACKETTYPE['PRELOGIN']!, resetConnection: false);
 
-        dynamic chunk;
-        while (chunk == await securePair.encrypted!.first) {
-          message.controller.add(chunk);
-        }
-        this.outgoingMessageStream!.write(message, '', (e) {});
-        message.controller.close();
+  //       dynamic chunk;
+  //       while (chunk == await securePair.encrypted!.first) {
+  //         message.controller.add(chunk);
+  //       }
+  //       this.outgoingMessageStream!.write(message, '', (e) {});
+  //       message.controller.close();
 
-        this.readMessage().then((response) async {
-          // Setup readable handler for the next round of handshaking.
-          // If we encounter a `secureConnect` on the cleartext side
-          // of the secure pair, the `readable` handler is cleared
-          // and no further handshake handling will happen.
+  //       this.readMessage().then((response) async {
+  //         // Setup readable handler for the next round of handshaking.
+  //         // If we encounter a `secureConnect` on the cleartext side
+  //         // of the secure pair, the `readable` handler is cleared
+  //         // and no further handshake handling will happen.
 
-          await for (var data in response) {
-            // We feed the server's handshake response back into the
-            // encrypted end of the secure pair.
-            securePair.encrypted!.write(data.buffer);
-          }
-        }).catchError((e) {
-          securePair.cleartext.close();
-          securePair.encrypted!.close();
-          throw e;
-        });
-      });
+  //         await for (var data in response) {
+  //           // We feed the server's handshake response back into the
+  //           // encrypted end of the secure pair.
+  //           securePair.encrypted!.write(data.buffer);
+  //         }
+  //       }).catchError((e) {
+  //         securePair.cleartext.close();
+  //         securePair.encrypted!.close();
+  //         throw e;
+  //       });
+  //     });
 
-      _subscription.onError((e) {});
+  //     _subscription.onError((e) {});
 
-      // void onError(Error? err) {
-      //   securePair.encrypted.removeListener('readable', onReadable);
-      //   securePair.cleartext.removeListener('error', onError);
-      //   securePair.cleartext.removeListener('secureConnect', onSecureConnect);
+  //     // void onError(Error? err) {
+  //     //   securePair.encrypted.removeListener('readable', onReadable);
+  //     //   securePair.cleartext.removeListener('error', onError);
+  //     //   securePair.cleartext.removeListener('secureConnect', onSecureConnect);
 
-      //   securePair.cleartext.destroy();
-      //   securePair.encrypted.destroy();
+  //     //   securePair.cleartext.destroy();
+  //     //   securePair.encrypted.destroy();
 
-      //   reject(err);
-      // }
+  //     //   reject(err);
+  //     // }
 
-      // void onReadable() {
-      //   // When there is handshake data on the encryped stream of the secure pair,
-      //   // we wrap it into a `PRELOGIN` message and send it to the server.
-      //   //
-      //   // For each `PRELOGIN` message we sent we get back exactly one response message
-      //   // that contains the server's handshake response data.
+  //     // void onReadable() {
+  //     //   // When there is handshake data on the encryped stream of the secure pair,
+  //     //   // we wrap it into a `PRELOGIN` message and send it to the server.
+  //     //   //
+  //     //   // For each `PRELOGIN` message we sent we get back exactly one response message
+  //     //   // that contains the server's handshake response data.
 
-      // }
+  //     // }
 
-      // securePair.cleartext.once('error', onError);
-      // securePair.cleartext.once('secureConnect', onSecureConnect);
-      // securePair.encrypted.once('readable', onReadable);
-    });
-  }
+  //     // securePair.cleartext.once('error', onError);
+  //     // securePair.cleartext.once('secureConnect', onSecureConnect);
+  //     // securePair.encrypted.once('readable', onReadable);
+  //   });
+  // }
 
   // todo listen for 'drain' event when socket.write returns false.
   // todo implement incomplete request cancelation (2.2.1.6)
@@ -188,7 +188,7 @@ class MessageIO extends EventEmitter {
     return message;
   }
 
-  Future<Message> readMessage() async {
+  readMessage() async {
     var result = this.incomingMessageIterator;
 
     if (!await result.moveNext()) {
@@ -198,7 +198,7 @@ class MessageIO extends EventEmitter {
   }
 }
 
-class SocketConsumer extends StreamConsumer<Uint8List> {
+class SocketConsumer extends StreamConsumer<Buffer> {
   late final SecureSocket socket;
   SocketConsumer(this.socket);
   @override

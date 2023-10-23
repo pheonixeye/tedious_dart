@@ -39,20 +39,20 @@ class Decimal extends DataType {
       final buffer = WritableTrackingBuffer(initialSize: 9);
       buffer.writeUInt8(sign);
       buffer.writeUInt64LE(value);
-      yield buffer.data!;
+      yield buffer.data;
     } else if (precision <= 28) {
       final buffer = WritableTrackingBuffer(initialSize: 13);
       buffer.writeUInt8(sign);
       buffer.writeUInt64LE(value);
       buffer.writeUInt32LE(0x00000000);
-      yield buffer.data!;
+      yield buffer.data;
     } else {
       final buffer = WritableTrackingBuffer(initialSize: 17);
       buffer.writeUInt8(sign);
       buffer.writeUInt64LE(value);
       buffer.writeUInt32LE(0x00000000);
       buffer.writeUInt32LE(0x00000000);
-      yield buffer.data!;
+      yield buffer.data;
     }
   }
 

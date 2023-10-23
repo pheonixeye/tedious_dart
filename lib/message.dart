@@ -6,20 +6,21 @@ class Message extends Stream<Buffer> {
   int type;
   bool resetConnection;
   bool? ignore;
-  late final StreamController controller;
-  late final StreamSubscription<Buffer> subscription;
+  late final StreamController<Buffer> controller;
   Message({
     required this.type,
     required this.resetConnection,
     this.ignore = false,
   }) : super() {
-    controller.addStream(this);
-    subscription = listen((event) {});
+    controller = StreamController<Buffer>.broadcast();
+    controller.sink.addStream(this);
   }
+  StreamSubscription<Buffer> get subscription => listen((event) {});
 
   @override
   StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return subscription;
+    return controller.stream.listen(onData,
+        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
 }

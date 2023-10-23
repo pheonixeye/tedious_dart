@@ -32,7 +32,7 @@ class BigInt extends DataType {
 
     var buffer = WritableTrackingBuffer(initialSize: 8);
     buffer.writeInt64LE(int.tryParse(parameter.value)!);
-    yield buffer.data!;
+    yield buffer.data;
   }
 
   @override

@@ -50,7 +50,6 @@ abstract class _State {
 }
 
 class State extends _State {
-  static late final Map<String, Function?> eventsMap;
   State(
     super.name, {
     super.connectionTimeout,
@@ -60,17 +59,17 @@ class State extends _State {
     super.reconnect,
     super.retry,
     super.socketError,
-  }) {
-    eventsMap = {
-      'enter': enter,
-      'exit': exit,
-      'socketError': socketError,
-      'connectionTimeout': connectionTimeout,
-      'message': message,
-      'retry': retry,
-      'reconnect': reconnect,
-    };
-  }
+  }) : eventsMap = {
+          'enter': enter,
+          'exit': exit,
+          'socketError': socketError,
+          'connectionTimeout': connectionTimeout,
+          'message': message,
+          'retry': retry,
+          'reconnect': reconnect,
+        };
+
+  late final Map<String, Function?> eventsMap;
 }
 
 //TODO: ??
@@ -128,11 +127,11 @@ Map<String, State> STATES(Connection c) {
 
             try {
               c.transitionTo(c.STATE['SENT_TLSSSLNEGOTIATION']!);
-              await c.messageIo.startTls(
-                  c.secureContextOptions,
-                  c.routingData?.server ?? c.config.server,
-                  c.routingData?.port as int,
-                  c.config.options.trustServerCertificate);
+              // await c.messageIo.startTls(
+              //     c.secureContextOptions,
+              //     c.routingData?.server ?? c.config.server,
+              //     c.routingData?.port as int,
+              //     c.config.options.trustServerCertificate);
             } on Error catch (e) {
               return c.socketError(e);
             }
