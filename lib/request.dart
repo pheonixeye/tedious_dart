@@ -4,6 +4,7 @@ import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 
 typedef RequestCompletionCallback = void Function([
   Error? error,
@@ -117,8 +118,10 @@ class Request extends EventEmitter {
     rowCount = value;
   }
 
-  addParameter(String name, DataType type, dynamic value,
+  void addParameter(String name, DataType type, dynamic value,
       [ParameterOptions? options]) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     Parameter parameter = Parameter(
         type: type,
         name: name,
@@ -132,12 +135,16 @@ class Request extends EventEmitter {
     parametersByName[name] = parameter;
   }
 
-  addOutputParameter(
+  void addOutputParameter(
       String name, DataType type, dynamic value, ParameterOptions? options) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     addParameter(name, type, value, ParameterOptions(output: true));
   }
 
-  makeParamsParameter(List<Parameter> parameters) {
+  String makeParamsParameter(List<Parameter> parameters) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     var paramsParameter = '';
     for (var i = 0, len = parameters.length; i < len; i++) {
       var parameter = parameters[i];
@@ -153,7 +160,9 @@ class Request extends EventEmitter {
     return paramsParameter;
   }
 
-  validateParameters(Collation? collation) {
+  void validateParameters(Collation? collation) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     for (var i = 0, len = parameters.length; i < len; i++) {
       var parameter = parameters[i];
 

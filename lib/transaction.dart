@@ -3,6 +3,7 @@
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/all_headers.dart';
 import 'package:tedious_dart/models/errors.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 
 const Map<String, int> OPERATION_TYPE = {
@@ -29,6 +30,8 @@ final Map<num, String> isolationLevelByValue =
 
 void assertValidIsolationLevel(dynamic isolationLevel, String name) {
   // ignore: no_leading_underscores_for_local_identifiers
+  print(LoggerStackTrace.from(StackTrace.current).toString());
+
   const _assertionList = [0, 1, 2, 3, 4, 5];
   if (isolationLevel.runtimeType != int) {
     throw MTypeError(
@@ -53,6 +56,8 @@ class Transaction {
   });
 
   beginPayload(Buffer txnDescriptor) async* {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     var buffer = WritableTrackingBuffer(initialSize: 100, encoding: 'ucs2');
     writeToTrackingBuffer(
         buffer: buffer,
@@ -72,6 +77,8 @@ class Transaction {
   }
 
   commitPayload(Buffer txnDescriptor) async* {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     var buffer = WritableTrackingBuffer(initialSize: 100, encoding: 'ascii');
     writeToTrackingBuffer(
       buffer: buffer,
@@ -92,6 +99,8 @@ class Transaction {
   }
 
   rollbackPayload(Buffer txnDescriptor) async* {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     var buffer = WritableTrackingBuffer(
       initialSize: 100,
       encoding: 'ascii',
@@ -114,6 +123,8 @@ class Transaction {
   }
 
   savePayload(Buffer txnDescriptor) async* {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     var buffer = WritableTrackingBuffer(initialSize: 100, encoding: 'ascii');
     writeToTrackingBuffer(
       buffer: buffer,

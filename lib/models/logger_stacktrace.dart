@@ -1,3 +1,6 @@
+import 'package:chalkdart/chalk.dart';
+import 'package:chalkdart/chalk_x11.dart';
+
 class LoggerStackTrace {
   const LoggerStackTrace._({
     required this.functionName,
@@ -48,10 +51,23 @@ class LoggerStackTrace {
   @override
   String toString() {
     return 'LoggerStackTrace('
-        'functionName: $functionName, '
-        'callerFunctionName: $callerFunctionName, '
-        'fileName: $fileName, '
-        'lineNumber: $lineNumber, '
-        'columnNumber: $columnNumber)';
+        'functionName: ${chalk.green(functionName)}, '
+        'callerFunctionName: ${chalk.green(callerFunctionName)}, '
+        'fileName: ${chalk.green(fileName)}, '
+        'lineNumber: ${chalk.green(lineNumber)}, '
+        'columnNumber: ${chalk.green(columnNumber)}\n';
   }
 }
+
+class Console {
+  Console();
+  final color = chalk.greenX11;
+  final sb = StringBuffer();
+  void log(List<dynamic> args) {
+    args.map((e) => sb.write(color("$e, "))).toList();
+    print(sb.toString());
+    sb.clear();
+  }
+}
+
+final console = Console();

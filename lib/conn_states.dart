@@ -3,6 +3,7 @@
 //TODO!
 import 'dart:async';
 
+import 'package:equatable/equatable.dart';
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/always_encrypted/keystore_provider_azure_key_vault.dart';
 import 'package:tedious_dart/conn_const_typedef.dart';
@@ -10,6 +11,7 @@ import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/conn_authentication.dart';
 import 'package:tedious_dart/message.dart';
 import 'package:tedious_dart/models/errors.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/node/connection_m_classes.dart';
 import 'package:tedious_dart/ntlm_payload.dart';
 import 'package:tedious_dart/packet.dart';
@@ -34,6 +36,14 @@ abstract class _StateEvents {
   void Function([Connection? connection, Message? message])? get message;
   void Function([Connection? connection])? get retry;
   void Function([Connection? connection])? get reconnect;
+
+  Map<String, dynamic> eventsMap() => {
+        "socketError": socketError,
+        "connectionTimeout": connectionTimeout,
+        "message": message,
+        "retry": retry,
+        "reconnect": reconnect,
+      };
 }
 
 class StateEvents extends _StateEvents {
@@ -70,20 +80,20 @@ abstract class _State {
   });
 }
 
-class State extends _State {
+// ignore: must_be_immutable
+class State extends _State implements Equatable {
   State(
     super.name, {
     super.enter,
     super.exit,
     super.events,
   });
-  Map<String, dynamic> eventsMap() => {
-        "socketError": events?.socketError,
-        "connectionTimeout": events?.connectionTimeout,
-        "message": events?.message,
-        "retry": events?.retry,
-        "reconnect": events?.reconnect,
-      };
+
+  @override
+  List<Object?> get props => [name];
+
+  @override
+  bool? get stringify => throw UnimplementedError();
 }
 
 //TODO: ??
@@ -95,14 +105,16 @@ Map<String, State> STATES() {
       'Connecting',
       enter: ([c]) {
         c?.initialiseConnection();
-        print('called initialiseConnection()');
+        print(LoggerStackTrace.from(StackTrace.current).toString());
       },
       events: StateEvents(
         socketError: ([c, e]) {
           c?.transitionTo(c.STATE['FINAL']!);
+          print(LoggerStackTrace.from(StackTrace.current).toString());
         },
         connectionTimeout: ([c]) {
           c?.transitionTo(c.STATE['FINAL']!);
+          print(LoggerStackTrace.from(StackTrace.current).toString());
         },
       ),
     ),

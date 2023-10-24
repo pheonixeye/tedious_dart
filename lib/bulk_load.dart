@@ -7,6 +7,7 @@ import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/connection.dart';
+import 'package:tedious_dart/meta/annotations.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
@@ -161,8 +162,8 @@ class RowTransform<T> extends Stream {
     throw UnimplementedError();
   }
 
+  @DynamicParameterType('row', 'List<dynamic> | Map<String,dynamic>')
   void _transform(
-    //row = List<dynamic> | Map<String,dynamic>
     dynamic row,
     String? _encoding,
     void Function([Error? error])? callback,

@@ -11,6 +11,7 @@ import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/incoming_message_stream.dart';
 import 'package:tedious_dart/message.dart';
 import 'package:tedious_dart/models/duplex.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 // import 'package:tedious_dart/models/duplex.dart';
 import 'package:tedious_dart/outgoing_message_stream.dart';
 import 'package:tedious_dart/packet.dart';
@@ -41,6 +42,7 @@ class MessageIO extends EventEmitter {
   late StreamIterator<Buffer> incomingMessageIterator;
 
   MessageIO(this.socket, this._packetSize, this.debug) : super() {
+    console.log(['defined MessageIo class']);
     tlsNegotiationComplete = false;
 
     _incomingMessageStream = IncomingMessageStream(debug);

@@ -23,13 +23,13 @@ abstract class Authentication {
 }
 
 class AuthOptions {
-  String? clientId;
-  String? token;
-  String? userName;
-  String? password;
-  String? tenantId;
-  String? clientSecret;
-  String? domain;
+  final String? clientId;
+  final String? token;
+  final String? userName;
+  final String? password;
+  final String? tenantId;
+  final String? clientSecret;
+  final String? domain;
   AuthOptions({
     this.clientId,
     this.clientSecret,
@@ -236,11 +236,6 @@ class AuthenticationType {
           password: options.password,
         );
         break;
-      default:
-        _auth = DefaultAuthentication(
-          userName: null,
-          password: null,
-        );
     }
   }
 }

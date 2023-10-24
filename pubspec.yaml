@@ -23,6 +23,9 @@ dependencies:
   # ts_definition:
   events_emitter:
   # magic_buffer: ^0.0.15
+  bloc:
+  chalkdart: ^2.0.9
+  equatable:
   magic_buffer_copy:
     path: c:/users/kareemzaher/desktop/darTedious/magic_buffer_copy
   rxdart:  

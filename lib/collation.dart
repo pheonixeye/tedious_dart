@@ -307,24 +307,27 @@ const Map<int, String> codepageBySortId = {
 };
 
 enum Flags {
-  IGNORE_CASE,
-  IGNORE_ACCENT,
-  IGNORE_KANA,
-  IGNORE_WIDTH,
-  BINARY,
-  BINARY2,
-  UTF8
+  IGNORE_CASE(1 << 0),
+  IGNORE_ACCENT(1 << 1),
+  IGNORE_KANA(1 << 2),
+  IGNORE_WIDTH(1 << 3),
+  BINARY(1 << 4),
+  BINARY2(1 << 5),
+  UTF8(1 << 6);
+
+  final int val;
+  const Flags(this.val);
 }
 
-final Map<Flags, int> flagsMap = {
-  Flags.IGNORE_CASE: 1 << 0,
-  Flags.IGNORE_ACCENT: 1 << 1,
-  Flags.IGNORE_KANA: 1 << 2,
-  Flags.IGNORE_WIDTH: 1 << 3,
-  Flags.BINARY: 1 << 4,
-  Flags.BINARY2: 1 << 5,
-  Flags.UTF8: 1 << 6,
-};
+// final Map<Flags, int> flagsMap = {
+//   Flags.IGNORE_CASE: 1 << 0,
+//   Flags.IGNORE_ACCENT: 1 << 1,
+//   Flags.IGNORE_KANA: 1 << 2,
+//   Flags.IGNORE_WIDTH: 1 << 3,
+//   Flags.BINARY: 1 << 4,
+//   Flags.BINARY2: 1 << 5,
+//   Flags.UTF8: 1 << 6,
+// };
 
 class Collation {
   int lcid;
@@ -351,7 +354,7 @@ class Collation {
   }
 
   Collation(this.lcid, this.flags, this.version, this.sortId) {
-    if (flags != null && flags == flagsMap[Flags.UTF8]) {
+    if (flags != null && flags == Flags.UTF8.val) {
       codepage = 'utf-8';
     } else if (sortId != null) {
       codepage = codepageBySortId[sortId];
@@ -368,8 +371,7 @@ class Collation {
       return _buffer!;
     }
 
-    _buffer = Buffer.from([5]);
-
+    _buffer = Buffer.from([0, 0, 0, 0, 0]);
     _buffer![0] = lcid & 0xFF;
     _buffer![1] = (lcid >>> 8) & 0xFF;
     _buffer![2] = ((lcid >>> 16) & 0x0F) | ((flags! & 0x0F) << 4);

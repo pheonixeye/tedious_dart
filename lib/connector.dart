@@ -36,11 +36,11 @@ Future<Socket> connectInParallel(
   );
 }
 
-Future<Socket> connectInSequence(
+Future<Socket?> connectInSequence(
   Map<String, dynamic> options,
   AbortSignal signal,
 ) async {
-  Future<Socket>? socket;
+  Socket? socket;
   print(LoggerStackTrace.from(StackTrace.current).toString());
 
   if (signal.aborted) {
@@ -51,8 +51,9 @@ Future<Socket> connectInSequence(
     signal,
   );
   for (InternetAddress address in await addresses) {
+    console.log([...await addresses]);
     try {
-      socket = Socket.connect(
+      socket = await Socket.connect(
         address.address,
         options['port']!,
       );
@@ -62,7 +63,7 @@ Future<Socket> connectInSequence(
     }
   }
 
-  return socket ?? Socket.connect('127.0.0.1', 1433);
+  return socket;
 }
 
 Future<List<InternetAddress>> lookupAllAddresses(
@@ -76,7 +77,7 @@ Future<List<InternetAddress>> lookupAllAddresses(
   }
 
   if (InternetAddress.tryParse(host) != null) {
-    print(("tryParse(host)", InternetAddress.tryParse(host)));
+    console.log(["tryParse(host)", InternetAddress.tryParse(host)]);
     return Future.value([InternetAddress.tryParse(host)!]);
   } else {
     Future<List<InternetAddress>> adresses;

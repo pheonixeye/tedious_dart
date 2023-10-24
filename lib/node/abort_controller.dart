@@ -1,3 +1,4 @@
+import 'dart:mirrors';
 import 'package:events_emitter/events_emitter.dart';
 
 class AbortOptions {
@@ -33,11 +34,20 @@ class AbortSignal<T> {
 
   dispatchEvent(String type) {
     final event = Event(type, this);
+
     final handlerName = 'on$type';
 
     //TODO:
-    // if (this[handlerName] is Function) this[handlerName](event);
 
+    //! if (this[handlerName] is Function) this[handlerName](event);
+    InstanceMirror im = reflect(this);
+    print(im.type.simpleName);
+    try {
+      im.invoke(Symbol(handlerName), [event]);
+    } catch (e) {
+      rethrow;
+    }
+    // mirror.invoke(#bar, []).reflectee;
     eventEmitter.emit(type, event);
   }
 
@@ -50,7 +60,7 @@ class AbortController {
 
   AbortController() : signal = AbortSignal();
 
-  abort() {
+  void abort() {
     if (signal.aborted) return;
 
     signal.aborted = true;

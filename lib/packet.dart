@@ -223,9 +223,7 @@ class Packet {
 
   @override
   String toString({String indent = ''}) {
-    return this.headerToString(indent: indent) +
-        '\n' +
-        this.dataToString(indent: indent + indent);
+    return '${this.headerToString(indent: indent)}\n${this.dataToString(indent: indent + indent)}';
   }
 
   String payloadString() {

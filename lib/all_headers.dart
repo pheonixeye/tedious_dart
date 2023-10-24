@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names, non_constant_identifier_names
 
 import 'package:magic_buffer_copy/magic_buffer.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/tracking_buffer/writable_tracking_buffer.dart';
 
 const TXNDESCRIPTOR_HEADER_DATA_LEN = 4 + 8;
@@ -18,6 +19,8 @@ WritableTrackingBuffer writeToTrackingBuffer({
   required Buffer txnDescriptor,
   required int outstandingRequestCount,
 }) {
+  print(LoggerStackTrace.from(StackTrace.current).toString());
+
   buffer.writeUInt32LE(0);
   buffer.writeUInt32LE(TXNDESCRIPTOR_HEADER_LEN);
   buffer.writeUInt16LE(HEADERTYPE['TXN_DESCRIPTOR']!);

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/instance_lookup.dart';
 import 'package:tedious_dart/models/errors.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/node/abort_controller.dart';
 
 void clearSockets({
@@ -15,11 +17,13 @@ void clearSockets({
 }
 
 Future<Buffer?> sendInParallel(
-  List addresses,
+  List<InternetAddress> addresses,
   num port,
   Buffer request,
   AbortSignal signal,
 ) async {
+  print(LoggerStackTrace.from(StackTrace.current).toString());
+
   if (signal.aborted) {
     throw AbortError();
   }
@@ -31,34 +35,37 @@ Future<Buffer?> sendInParallel(
   late Buffer? result;
 
   for (int j = 0; j < addresses.length; j++) {
-    var socket = await Socket.connect(
-        InternetAddress.tryParse(addresses[j]), port as int);
+    var socket = await Socket.connect(addresses[j], port as int);
     sockets.add(socket);
     socket.listen((event) {
       result = Buffer.from(event);
     }, onError: (error) {
       errorCount++;
-      clearSockets(
-        sockets: sockets,
-      );
+      for (var socket in sockets) {
+        socket.close();
+      }
+      sockets.clear();
     });
-    socket.writeAll([request, 0, request.length, port, addresses[j].address]);
+    // socket.writeAll([request, 0, request.length, port, addresses[j].address]);
+    socket.add(request.buffer);
   }
-  return result;
+  return Future.value(result);
 }
 
-sendMessage(
+Future<Buffer?> sendMessage(
   String host,
   num port,
   LookupFunction lookup,
   AbortSignal signal,
   Buffer request,
 ) async {
+  print(LoggerStackTrace.from(StackTrace.current).toString());
+
   if (signal.aborted) {
     throw AbortError();
   }
 
-  List addresses = [];
+  List<InternetAddress> addresses = [];
 
   if (InternetAddress.tryParse(host) != null) {
     addresses = [

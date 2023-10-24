@@ -802,8 +802,8 @@ class Connection extends EventEmitter {
         });
       }
 
-      final request = this.request as Request;
-      if (request == null) {
+      final request = this.request as Request?;
+      if (request != null) {
         final err = RequestError(
             message: 'Connection closed before request completed.',
             code: 'ECLOSE');
@@ -857,18 +857,12 @@ class Connection extends EventEmitter {
 
     // print(connectOpts.toString());
 
-    Future<Socket> Function(Map<String, dynamic>, AbortSignal<dynamic>)
+    Future<Socket?> Function(Map<String, dynamic>, AbortSignal<dynamic>)
         connect = multiSubnetFailover ? connectInParallel : connectInSequence;
 
     await connect(connectOpts, signal).then((socket) {
-      // print(LoggerStackTrace.from(StackTrace.current).toString());
-      print(socket.address);
-      print(socket.remotePort);
-
       scheduleMicrotask(() async {
-        // print(LoggerStackTrace.from(StackTrace.current).toString());
-
-        final sub = socket.listen((event) {});
+        final sub = socket!.listen((event) {});
         sub.onDone(() {
           socketEnd();
         });
@@ -884,7 +878,8 @@ class Connection extends EventEmitter {
           config.options.packetSize,
           debug,
         );
-        messageIo.on('secure', (cleartext) => {emit('secure', cleartext)});
+        messageIo.on(
+            'secure', (Socket cleartext) => {emit('secure', cleartext)});
 
         this.socket = socket;
         closed = false;
@@ -1062,6 +1057,7 @@ class Connection extends EventEmitter {
 
   void transitionTo(State newState) {
     print(LoggerStackTrace.from(StackTrace.current).toString());
+    console.log(["newState", newState.name]);
 
     if (state == newState) {
       debug.log('State is already ${newState.name}');
@@ -1085,17 +1081,18 @@ class Connection extends EventEmitter {
   Function getEventHandler(String eventName) {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
-    final handler = state?.eventsMap()[eventName];
+    final handler = state?.events?.eventsMap()[eventName]();
     if (handler == null) {
       throw MTypeError("No event '$eventName' in state '${state!.name}'");
     }
+    console.log([handler.runtimeType]);
     return handler;
   }
 
   void dispatchEvent(String eventName, [dynamic args]) {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
-    final handler = state?.eventsMap()[eventName];
+    final handler = state?.events?.eventsMap()[eventName]();
     if (handler != null) {
       // Function.apply(handler, [this, args]);
       handler(this, args);
