@@ -28,10 +28,13 @@ final Map<num, String> isolationLevelByValue =
     ISOLATION_LEVEL.map((key, value) => MapEntry(value, key));
 
 void assertValidIsolationLevel(dynamic isolationLevel, String name) {
+  // ignore: no_leading_underscores_for_local_identifiers
+  const _assertionList = [0, 1, 2, 3, 4, 5];
   if (isolationLevel.runtimeType != int) {
     throw MTypeError(
         "The $name ${name.contains('.') ? 'property' : 'argument'} must be of type number. Received type ${isolationLevel.runtimeType} ($isolationLevel)");
   }
+  assert(_assertionList.contains(isolationLevel));
 
   if (!(isolationLevel >= 0 && isolationLevel <= 5)) {
     throw RangeError(

@@ -5,7 +5,7 @@ import 'package:tedious_dart/instance_lookup.dart';
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/node/abort_controller.dart';
 
-clearSockets({
+void clearSockets({
   required List<Socket> sockets,
 }) {
   for (var socket in sockets) {

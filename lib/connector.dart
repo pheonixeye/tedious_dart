@@ -2,19 +2,20 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:tedious_dart/models/errors.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/node/abort_controller.dart';
 
 Future<Socket> connectInParallel(
   Map<String, dynamic> options,
-  // LookupFunction lookup,
   AbortSignal signal,
 ) async {
+  print(LoggerStackTrace.from(StackTrace.current).toString());
+
   if (signal.aborted) {
     throw AbortError();
   }
   final addresses = await lookupAllAddresses(
     options['host']!,
-    // lookup,
     signal,
   );
 
@@ -37,48 +38,50 @@ Future<Socket> connectInParallel(
 
 Future<Socket> connectInSequence(
   Map<String, dynamic> options,
-  // LookupFunction lookup,
   AbortSignal signal,
 ) async {
+  Future<Socket>? socket;
+  print(LoggerStackTrace.from(StackTrace.current).toString());
+
   if (signal.aborted) {
     throw AbortError();
   }
-  List<InternetAddress> addresses = await lookupAllAddresses(
+  Future<List<InternetAddress>> addresses = lookupAllAddresses(
     options['host']!,
-    // lookup,
     signal,
   );
-  late Socket _s;
-  for (InternetAddress address in addresses) {
+  for (InternetAddress address in await addresses) {
     try {
-      final socket = await Socket.connect(
+      socket = Socket.connect(
         address.address,
         options['port']!,
       );
-      _s = socket;
-      return Future.value(socket);
+      return socket;
     } catch (e) {
       throw AbortError();
     }
   }
-  return Future.value(_s);
+
+  return socket ?? Socket.connect('127.0.0.1', 1433);
 }
 
 Future<List<InternetAddress>> lookupAllAddresses(
   String host,
-  // LookupFunction lookup,
   AbortSignal signal,
-) async {
+) {
+  print(LoggerStackTrace.from(StackTrace.current).toString());
+
   if (signal.aborted) {
     throw AbortError();
   }
 
   if (InternetAddress.tryParse(host) != null) {
-    return [InternetAddress.tryParse(host)!];
+    print(("tryParse(host)", InternetAddress.tryParse(host)));
+    return Future.value([InternetAddress.tryParse(host)!]);
   } else {
-    List<InternetAddress> adresses = [];
+    Future<List<InternetAddress>> adresses;
     try {
-      adresses = await InternetAddress.lookup(host);
+      adresses = InternetAddress.lookup(host);
       return adresses;
     } catch (e) {
       rethrow;

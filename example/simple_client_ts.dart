@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:tedious_dart/conn_authentication.dart';
 import 'package:tedious_dart/conn_config.dart';
 import 'package:tedious_dart/connection.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/request.dart';
 import 'dart:developer' show log;
 
@@ -8,7 +11,7 @@ final config = ConnectionConfiguration(
   server: '127.0.0.1',
   options: ConnectionOptions(),
   authentication: AuthenticationType(
-    type: 'default',
+    type: AuthType.default_,
     options: AuthOptions(
       userName: 'sa',
       password: 'admin',
@@ -19,10 +22,11 @@ final conn = Connection(config);
 
 executeStatement() {
   final request = Request(
-    sqlTextOrProcedure: 'select * from MyTable',
+    sqlTextOrProcedure: 'select * from [dbo].[abdo]',
     callback: ([_, __, ___]) {
       log('DONE!');
       conn.close();
+      print('called conn.close()');
     },
   );
   request.on('row', (Iterable columns) {
@@ -43,7 +47,8 @@ executeStatement() {
   conn.execSql(request);
 }
 
-void main() {
+void main() async {
+  print(LoggerStackTrace.from(StackTrace.current).toString());
   try {
     conn.connect((error) {
       conn.on('connect', (_) {
@@ -53,4 +58,5 @@ void main() {
   } catch (e) {
     rethrow;
   }
+  // print(await InternetAddress.lookup('127.0.0.1'));
 }

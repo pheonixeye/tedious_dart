@@ -732,7 +732,7 @@ readTime(
   void Function(DateWithNanosecondsDelta value) callback,
 ) {
   dynamic readValue;
-  switch (dataLength) {
+  switch (dataLength.toDouble()) {
     case 3:
       readValue = parser.readUInt24LE;
       break;

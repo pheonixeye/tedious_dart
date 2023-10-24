@@ -198,16 +198,23 @@ class MessageIO extends EventEmitter {
   }
 }
 
-class SocketConsumer extends StreamConsumer<Buffer> {
+class SocketConsumer extends Stream<Buffer> {
   late final SecureSocket socket;
   SocketConsumer(this.socket);
-  @override
-  Future addStream(Stream stream) async {
-    this.addStream(socket);
-  }
+  // @override
+  // Future addStream(Stream stream) async {
+  //   this.addStream(socket);
+  // }
+
+  // @override
+  // Future close() async {
+  //   this.close();
+  // }
 
   @override
-  Future close() async {
-    this.close();
+  StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
+      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
+    // TODO: implement listen
+    throw UnimplementedError();
   }
 }

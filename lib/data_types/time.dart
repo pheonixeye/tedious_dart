@@ -43,7 +43,7 @@ class Time extends DataType {
         (time.nanosecondsDelta ?? 0) * pow(10, parameter.scale!) as int;
     timestamp = timestamp.round();
 
-    switch (parameter.scale) {
+    switch (parameter.scale!.toDouble()) {
       case 0:
       case 1:
       case 2:

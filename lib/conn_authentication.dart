@@ -1,3 +1,22 @@
+// ignore_for_file: constant_identifier_names
+
+enum AuthType {
+  default_('default'),
+  azure_active_directory_msi_app_service_(
+      "azure-active-directory-msi-app-service"),
+  azure_active_directory_msi_vm_("azure-active-directory-msi-vm"),
+  azure_active_directory_default_("azure-active-directory-default"),
+  azure_active_directory_access_token_("azure-active-directory-access-token"),
+  azure_active_directory_password_("azure-active-directory-password"),
+  azure_active_directory_service_principal_secret_(
+      "azure-active-directory-service-principal-secret"),
+  ntlm_("ntlm");
+
+  final String value;
+
+  const AuthType(this.value);
+}
+
 abstract class Authentication {
   String get type;
   AuthOptions? get options;
@@ -160,7 +179,7 @@ class DefaultAuthentication extends Authentication {
 
 class AuthenticationType {
   late Authentication _auth;
-  final String type;
+  final AuthType type;
   final AuthOptions options;
 
   Authentication get auth => _auth;
@@ -169,14 +188,14 @@ class AuthenticationType {
     required this.options,
   }) {
     switch (type) {
-      case 'ntlm':
+      case AuthType.ntlm_:
         _auth = NtlmAuthentication(
           userName: options.userName,
           password: options.password,
           domain: options.domain,
         );
         break;
-      case 'azure-active-directory-password':
+      case AuthType.azure_active_directory_password_:
         _auth = AzureActiveDirectoryPasswordAuthentication(
           userName: options.userName,
           password: options.password,
@@ -184,34 +203,34 @@ class AuthenticationType {
           tenantId: options.tenantId,
         );
         break;
-      case 'azure-active-directory-msi-app-service':
+      case AuthType.azure_active_directory_msi_app_service_:
         _auth = AzureActiveDirectoryMsiAppServiceAuthentication(
           clientId: options.clientId,
         );
         break;
-      case 'azure-active-directory-msi-vm':
+      case AuthType.azure_active_directory_msi_vm_:
         _auth = AzureActiveDirectoryMsiVmAuthentication(
           clientId: options.clientId,
         );
         break;
-      case 'azure-active-directory-access-token':
+      case AuthType.azure_active_directory_access_token_:
         _auth = AzureActiveDirectoryAccessTokenAuthentication(
           token: options.token,
         );
         break;
-      case 'azure-active-directory-service-principal-secret':
+      case AuthType.azure_active_directory_service_principal_secret_:
         _auth = AzureActiveDirectoryServicePrincipalSecret(
           clientId: options.clientId,
           clientSecret: options.clientSecret,
           tenantId: options.tenantId,
         );
         break;
-      case 'azure-active-directory-default':
+      case AuthType.azure_active_directory_default_:
         _auth = AzureActiveDirectoryDefaultAuthentication(
           clientId: options.clientId,
         );
         break;
-      case 'default':
+      case AuthType.default_:
         _auth = DefaultAuthentication(
           userName: options.userName,
           password: options.password,

@@ -44,7 +44,7 @@ class DateTimeOffset extends DataType {
     timestamp += (value.nanosecondsDelta ?? 0) * pow(10, scale) as int;
     timestamp = timestamp.round();
 
-    switch (scale) {
+    switch (scale.toDouble()) {
       case 0:
       case 1:
       case 2:

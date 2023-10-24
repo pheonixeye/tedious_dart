@@ -25,6 +25,7 @@ import 'package:tedious_dart/message_io.dart';
 import 'package:tedious_dart/meta/annotations.dart';
 import 'package:tedious_dart/models/data_types.dart';
 import 'package:tedious_dart/models/errors.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/models/random_bytes.dart';
 import 'package:tedious_dart/node/abort_controller.dart';
 import 'package:tedious_dart/ntlm.dart';
@@ -112,7 +113,7 @@ class Connection extends EventEmitter {
   Collation? databaseCollation;
 
   Connection(this.config) : super() {
-    STATE = STATES(this);
+    STATE = STATES();
     //
     if (config == null) {
       throw MTypeError(
@@ -136,19 +137,12 @@ class Connection extends EventEmitter {
       var type = config.authentication.type;
       var options = config.authentication.options;
 
-      if (type.runtimeType != String) {
-        throw MTypeError(
-            'The "config.authentication.type" property must be of type string.');
-      }
+      // if (type.runtimeType != String) {
+      //   throw MTypeError(
+      //       'The "config.authentication.type" property must be of type string.');
+      // }
 
-      if (type != 'default' &&
-          type != 'ntlm' &&
-          type != 'azure-active-directory-password' &&
-          type != 'azure-active-directory-access-token' &&
-          type != 'azure-active-directory-msi-vm' &&
-          type != 'azure-active-directory-msi-app-service' &&
-          type != 'azure-active-directory-service-principal-secret' &&
-          type != 'azure-active-directory-default') {
+      if (!AuthType.values.contains(type)) {
         throw MTypeError(
             'The "type" property must one of "default", "ntlm", "azure-active-directory-password", "azure-active-directory-access-token", "azure-active-directory-default", "azure-active-directory-msi-vm" or "azure-active-directory-msi-app-service" or "azure-active-directory-service-principal-secret".');
       }
@@ -157,7 +151,7 @@ class Connection extends EventEmitter {
             'The "config.authentication.options" property must be of type object.');
       }
       //!
-      if (type == 'ntlm') {
+      if (type == AuthType.ntlm_) {
         if (options.domain.runtimeType != String) {
           throw MTypeError(
               'The "config.authentication.options.domain" property must be of type string.');
@@ -180,7 +174,7 @@ class Connection extends EventEmitter {
         );
       }
       //!
-      else if (type == 'azure-active-directory-password') {
+      else if (type == AuthType.azure_active_directory_password_) {
         if (options.clientId.runtimeType != String) {
           throw MTypeError(
               'The "config.authentication.options.clientId" property must be of type string.');
@@ -209,7 +203,7 @@ class Connection extends EventEmitter {
         );
       }
       //!
-      else if (type == 'azure-active-directory-access-token') {
+      else if (type == AuthType.azure_active_directory_access_token_) {
         if (options.token.runtimeType != String) {
           throw MTypeError(
               'The "config.authentication.options.token" property must be of type string.');
@@ -220,7 +214,7 @@ class Connection extends EventEmitter {
         );
       }
       //!
-      else if (type == 'azure-active-directory-msi-vm') {
+      else if (type == AuthType.azure_active_directory_msi_vm_) {
         if (options.clientId != null &&
             options.clientId.runtimeType != String) {
           throw MTypeError(
@@ -232,7 +226,7 @@ class Connection extends EventEmitter {
         );
       }
       //!
-      else if (type == 'azure-active-directory-default') {
+      else if (type == AuthType.azure_active_directory_default_) {
         if (options.clientId != null &&
             options.clientId.runtimeType != String) {
           throw MTypeError(
@@ -244,7 +238,7 @@ class Connection extends EventEmitter {
         );
       }
       //!
-      else if (type == 'azure-active-directory-msi-app-service') {
+      else if (type == AuthType.azure_active_directory_msi_app_service_) {
         if (options.clientId != null &&
             options.clientId.runtimeType != String) {
           throw MTypeError(
@@ -256,7 +250,8 @@ class Connection extends EventEmitter {
         );
       }
       //!
-      else if (type == 'azure-active-directory-service-principal-secret') {
+      else if (type ==
+          AuthType.azure_active_directory_service_principal_secret_) {
         if (options.clientId.runtimeType != String) {
           throw MTypeError(
               'The "config.authentication.options.clientId" property must be of type string.');
@@ -296,7 +291,7 @@ class Connection extends EventEmitter {
       }
     } else {
       authentication =
-          AuthenticationType(type: 'default', options: AuthOptions());
+          AuthenticationType(type: AuthType.default_, options: AuthOptions());
     }
 
     //! i think that these are useless type checks
@@ -697,12 +692,18 @@ class Connection extends EventEmitter {
     state = STATE['INITIALIZED']!;
     cancelAfterRequestSent = () {
       messageIo.sendMessage(PACKETTYPE['ATTENTION']!);
+      print(LoggerStackTrace.from(StackTrace.current).toString());
+
       createCancelTimer();
     };
     //TODO! end of constructor
+    print(LoggerStackTrace.from(StackTrace.current).toString());
   }
 
   connect([void Function(Error error)? connectListener]) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
+    print('called connect');
     if (state != STATE['INITIALIZED']!) {
       throw ConnectionError(
           '`.connect` can not be called on a Connection in `${state!.name}` state.');
@@ -710,11 +711,15 @@ class Connection extends EventEmitter {
 
     if (connectListener != null) {
       onError(Error err) {
+        print(LoggerStackTrace.from(StackTrace.current).toString());
+
         removeEventListener(EventListener('connect', (error) {}));
         connectListener(err);
       }
 
       onConnect(Error err) {
+        print(LoggerStackTrace.from(StackTrace.current).toString());
+
         removeEventListener(EventListener('error', onError));
         connectListener(err);
       }
@@ -724,13 +729,17 @@ class Connection extends EventEmitter {
     }
 
     transitionTo(STATE['CONNECTING']!);
+    print(LoggerStackTrace.from(StackTrace.current).toString());
   }
 
-  close() {
+  void close() {
     transitionTo(STATE['FINAL']!);
+    print(LoggerStackTrace.from(StackTrace.current).toString());
   }
 
   initialiseConnection() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     final signal = createConnectTimer();
 
     if (config.options.port != null) {
@@ -752,6 +761,7 @@ class Connection extends EventEmitter {
             config.options.multiSubnetFailover,
             signal,
           );
+          print(LoggerStackTrace.from(StackTrace.current).toString());
         });
       }).catchError((err) {
         clearConnectTimer();
@@ -761,27 +771,39 @@ class Connection extends EventEmitter {
         }
         scheduleMicrotask(() {
           emit('connect', ConnectionError(err.message, 'EINSTLOOKUP'));
+          print(LoggerStackTrace.from(StackTrace.current).toString());
         });
       });
     }
   }
 
-  cleanupConnection(int cleanupType) {
+  void cleanupConnection(int cleanupType) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (!closed) {
       clearConnectTimer();
+      print(LoggerStackTrace.from(StackTrace.current).toString());
+
       clearRequestTimer();
+      print(LoggerStackTrace.from(StackTrace.current).toString());
+
       clearRetryTimer();
+      print(LoggerStackTrace.from(StackTrace.current).toString());
+
       closeConnection();
+      print(LoggerStackTrace.from(StackTrace.current).toString());
+
       if (cleanupType == CLEANUP_TYPE['REDIRECT']) {
         emit('rerouting');
       } else if (cleanupType != CLEANUP_TYPE['RETRY']) {
         scheduleMicrotask(() {
           emit('end');
+          print(LoggerStackTrace.from(StackTrace.current).toString());
         });
       }
 
-      final request = this.request;
-      if (request) {
+      final request = this.request as Request;
+      if (request == null) {
         final err = RequestError(
             message: 'Connection closed before request completed.',
             code: 'ECLOSE');
@@ -794,7 +816,9 @@ class Connection extends EventEmitter {
     }
   }
 
-  createDebug() {
+  Debug createDebug() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     final debug = Debug(options: config.options.debug!);
     debug.on('debug', (message) {
       emit('debug', message);
@@ -802,9 +826,11 @@ class Connection extends EventEmitter {
     return debug;
   }
 
-  createTokenStreamParser(Message message, TokenHandler handler) {
+  TokenStreamParser createTokenStreamParser(
+      Message message, TokenHandler handler) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     return TokenStreamParser(
-      //TODO:
       message: message,
       debug: debug,
       tokenHandler: handler,
@@ -819,17 +845,29 @@ class Connection extends EventEmitter {
     );
   }
 
-  connectOnPort(num port, bool multiSubnetFailover, AbortSignal signal) {
-    //TODO:
+  void connectOnPort(
+      num port, bool multiSubnetFailover, AbortSignal signal) async {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     final connectOpts = {
       'host': routingData != null ? routingData!.server : config.server,
       'port': routingData != null ? routingData!.port : port,
       'localAddress': config.options.localAddress,
     };
 
-    final connect = multiSubnetFailover ? connectInParallel : connectInSequence;
-    connect(connectOpts, signal).then((socket) {
+    // print(connectOpts.toString());
+
+    Future<Socket> Function(Map<String, dynamic>, AbortSignal<dynamic>)
+        connect = multiSubnetFailover ? connectInParallel : connectInSequence;
+
+    await connect(connectOpts, signal).then((socket) {
+      // print(LoggerStackTrace.from(StackTrace.current).toString());
+      print(socket.address);
+      print(socket.remotePort);
+
       scheduleMicrotask(() async {
+        // print(LoggerStackTrace.from(StackTrace.current).toString());
+
         final sub = socket.listen((event) {});
         sub.onDone(() {
           socketEnd();
@@ -853,19 +891,24 @@ class Connection extends EventEmitter {
         debug.log('connected to ${config.server}:${config.options.port}');
 
         sendPreLogin();
+        // print(LoggerStackTrace.from(StackTrace.current).toString());
+
         transitionTo(STATE['SENT_PRELOGIN']!);
+        // print(LoggerStackTrace.from(StackTrace.current).toString());
       });
-      //TODO!!!!!!: socket.on('event', (){});
     });
   }
 
-  closeConnection() {
+  void closeConnection() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
     if (socket != null) {
       socket!.destroy();
     }
   }
 
-  createConnectTimer() {
+  AbortSignal createConnectTimer() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     final controller = AbortController();
     connectTimer = Timer(
       Duration(
@@ -876,10 +919,14 @@ class Connection extends EventEmitter {
         connectTimeout();
       },
     );
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     return controller.signal;
   }
 
-  createCancelTimer() {
+  void createCancelTimer() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     clearCancelTimer();
     final timeout = config.options.cancelTimeout;
     if (timeout > 0) {
@@ -892,7 +939,9 @@ class Connection extends EventEmitter {
     }
   }
 
-  createRequestTimer() {
+  void createRequestTimer() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     clearRequestTimer(); // release old timer, just to be safe
     final request = this.request as Request;
     final timeout = (request.timeout != null)
@@ -911,7 +960,9 @@ class Connection extends EventEmitter {
     }
   }
 
-  createRetryTimer() {
+  void createRetryTimer() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     clearRetryTimer();
     retryTimer = Timer(
       Duration(seconds: config.options.connectionRetryInterval),
@@ -927,7 +978,9 @@ class Connection extends EventEmitter {
     // );
   }
 
-  connectTimeout() {
+  void connectTimeout() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     final message = """ 
     Failed to connect to ${config.server} ${config.options.port == null ? config.options.port : config.options.instanceName} in ${config.options.connectTimeout} ms
     """;
@@ -937,14 +990,18 @@ class Connection extends EventEmitter {
     dispatchEvent('connectTimeout');
   }
 
-  cancelTimeout() {
+  void cancelTimeout() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     final message =
         'Failed to cancel request in ${config.options.cancelTimeout}ms';
     debug.log(message);
     dispatchEvent('socketError', ConnectionError(message, 'ETIMEOUT'));
   }
 
-  requestTimeout() {
+  void requestTimeout() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     requestTimer = null;
     final request = this.request!;
     request.cancel();
@@ -955,13 +1012,17 @@ class Connection extends EventEmitter {
     request.error = RequestError(message: message, code: 'ETIMEOUT');
   }
 
-  retryTimeout() {
+  void retryTimeout() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     retryTimer = null;
     emit('retry');
     transitionTo(STATE['CONNECTING']!);
   }
 
-  clearConnectTimer() {
+  void clearConnectTimer() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (connectTimer != null) {
       connectTimer!.cancel();
       // clearTimeout(this.connectTimer);
@@ -969,7 +1030,9 @@ class Connection extends EventEmitter {
     }
   }
 
-  clearCancelTimer() {
+  void clearCancelTimer() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (cancelTimer != null) {
       cancelTimer!.cancel();
       // clearTimeout(this.cancelTimer);
@@ -977,7 +1040,9 @@ class Connection extends EventEmitter {
     }
   }
 
-  clearRequestTimer() {
+  void clearRequestTimer() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (requestTimer != null) {
       requestTimer!.cancel();
       // clearTimeout(this.requestTimer);
@@ -985,7 +1050,9 @@ class Connection extends EventEmitter {
     }
   }
 
-  clearRetryTimer() {
+  void clearRetryTimer() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (retryTimer != null) {
       retryTimer!.cancel();
       // clearTimeout(this.retryTimer);
@@ -993,7 +1060,9 @@ class Connection extends EventEmitter {
     }
   }
 
-  transitionTo(State newState) {
+  void transitionTo(State newState) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (state == newState) {
       debug.log('State is already ${newState.name}');
       return;
@@ -1013,20 +1082,23 @@ class Connection extends EventEmitter {
     }
   }
 
-  getEventHandler(String eventName) {
-    final handler = state?.eventsMap[eventName];
+  Function getEventHandler(String eventName) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
+    final handler = state?.eventsMap()[eventName];
     if (handler == null) {
       throw MTypeError("No event '$eventName' in state '${state!.name}'");
     }
     return handler;
   }
 
-  dispatchEvent(String eventName, [dynamic args]) {
-    final handler = state?.eventsMap[eventName] as void Function(
-        Connection? connection, dynamic args)?;
+  void dispatchEvent(String eventName, [dynamic args]) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
+    final handler = state?.eventsMap()[eventName];
     if (handler != null) {
-      Function.apply(handler, [this, args]);
-      // handler(this, args);
+      // Function.apply(handler, [this, args]);
+      handler(this, args);
     } else {
       emit('error',
           MTypeError("No event '$eventName' in state '${state!.name}"));
@@ -1034,7 +1106,9 @@ class Connection extends EventEmitter {
     }
   }
 
-  socketError(Error error) {
+  void socketError(Error error) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (state == STATE['CONNECTING'] ||
         state == STATE['SENT_TLSSSLNEGOTIATION']) {
       final message =
@@ -1049,7 +1123,9 @@ class Connection extends EventEmitter {
     dispatchEvent('socketError', error);
   }
 
-  socketEnd() {
+  void socketEnd() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     debug.log('socket ended');
     if (state != STATE['FINAL']) {
       final error = ConnectionError('socket hang up');
@@ -1058,7 +1134,9 @@ class Connection extends EventEmitter {
     }
   }
 
-  socketClose() {
+  void socketClose() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     debug.log('connection to ${config.server}:${config.options.port} closed');
     if (state == STATE['REROUTING']) {
       debug.log('Rerouting to ${routingData!.server}:${routingData!.port}');
@@ -1076,7 +1154,9 @@ class Connection extends EventEmitter {
     }
   }
 
-  sendPreLogin() {
+  void sendPreLogin() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     // final [, major, minor, build] = /^(\d+)\.(\d+)\.(\d+)/.exec(version) ?? ['0.0.0', '0', '0', '0'];
     final major = '0.0.0';
     final minor = '0';
@@ -1100,7 +1180,9 @@ class Connection extends EventEmitter {
     });
   }
 
-  sendLogin7Packet() {
+  void sendLogin7Packet() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     final payload = Login7Payload(
       login7Options: Login7Options(
           tdsVersion: TDSVERSIONS[config.options.tdsVersion]!,
@@ -1114,27 +1196,27 @@ class Connection extends EventEmitter {
 
     var authentication = config.authentication;
     switch (authentication.type) {
-      case 'azure-active-directory-password':
+      case AuthType.azure_active_directory_password_:
         payload.fedAuth =
             FedAuth(type: 'ADAL', echo: fedAuthRequired, workflow: 'default');
         break;
 
-      case 'azure-active-directory-access-token':
+      case AuthType.azure_active_directory_access_token_:
         payload.fedAuth = FedAuth(
             type: 'SECURITYTOKEN',
             echo: fedAuthRequired,
             fedAuthToken: authentication.options.token);
         break;
 
-      case 'azure-active-directory-msi-vm':
-      case 'azure-active-directory-default':
-      case 'azure-active-directory-msi-app-service':
-      case 'azure-active-directory-service-principal-secret':
+      case AuthType.azure_active_directory_msi_vm_:
+      case AuthType.azure_active_directory_default_:
+      case AuthType.azure_active_directory_msi_app_service_:
+      case AuthType.azure_active_directory_service_principal_secret_:
         payload.fedAuth = FedAuth(
             type: 'ADAL', echo: fedAuthRequired, workflow: 'integrated');
         break;
 
-      case 'ntlm':
+      case AuthType.ntlm_:
         payload.sspi = createNTLMRequest(
           NTLMrequestOption(
             domain: authentication.options.domain,
@@ -1167,7 +1249,9 @@ class Connection extends EventEmitter {
     });
   }
 
-  sendFedAuthTokenMessage(String token) {
+  void sendFedAuthTokenMessage(String token) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     final accessTokenLen = Buffer.byteLength(token, 'ucs2');
     final data = Buffer.alloc(8 + accessTokenLen);
     var offset = 0;
@@ -1180,7 +1264,9 @@ class Connection extends EventEmitter {
     transitionTo(STATE['SENT_LOGIN7_WITH_STANDARD_LOGIN']!);
   }
 
-  sendInitialSql() async {
+  void sendInitialSql() async {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     final payload = SqlBatchPayload(
       sqlText: getInitialSql(),
       txnDescriptor: currentTransactionDescriptor(),
@@ -1198,7 +1284,9 @@ class Connection extends EventEmitter {
     _controller.add(message);
   }
 
-  getInitialSql() {
+  String getInitialSql() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     List options = [];
 
     if (config.options.enableAnsiNull == true) {
@@ -1291,12 +1379,16 @@ class Connection extends EventEmitter {
     return options.join('\n');
   }
 
-  processedInitialSql() {
+  void processedInitialSql() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     clearConnectTimer();
     emit('connect');
   }
 
-  execSqlBatch(Request request) {
+  void execSqlBatch(Request request) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     makeRequest(
         request,
         PACKETTYPE['SQL_BATCH']!,
@@ -1308,6 +1400,8 @@ class Connection extends EventEmitter {
   }
 
   execSql(Request request) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     try {
       request.validateParameters(databaseCollation);
     } catch (error) {
@@ -1359,6 +1453,8 @@ class Connection extends EventEmitter {
 
   BulkLoad newBulkLoad(String table, BulkLoadOptions options,
       [BulkLoadCallback? callback]) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (options is! BulkLoadOptions) {
       throw MTypeError('"options" argument must be an object');
     }
@@ -1373,6 +1469,8 @@ class Connection extends EventEmitter {
 
   //* something wrong or i am a genius xD
   execBulkLoad(BulkLoad bulkLoad, dynamic rows) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     //* rows = AsyncIterable<unknown[] | { [columnName: string]: unknown }> | Iterable<unknown[] | { [columnName: string]: unknown }>
     bulkLoad.executionStarted = true;
 
@@ -1460,6 +1558,8 @@ class Connection extends EventEmitter {
   }
 
   prepare(Request request) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     List<Parameter> parameters = [];
 
     parameters.add(Parameter(
@@ -1523,6 +1623,8 @@ class Connection extends EventEmitter {
   }
 
   unprepare(Request request) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     List<Parameter> parameters = [];
 
     parameters.add(Parameter(
@@ -1549,6 +1651,8 @@ class Connection extends EventEmitter {
   }
 
   execute(Request request, Map<String, dynamic>? parameters) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     List<Parameter> executeParameters = [];
 
     executeParameters.add(Parameter(
@@ -1594,6 +1698,8 @@ class Connection extends EventEmitter {
   }
 
   callProcedure(Request request) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     try {
       request.validateParameters(databaseCollation);
     } catch (error) {
@@ -1624,6 +1730,8 @@ class Connection extends EventEmitter {
       {required BeginTransactionCallback callback,
       String name = '',
       int? isolationLevel}) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     isolationLevel = config.options.isolationLevel;
     assertValidIsolationLevel(isolationLevel, 'isolationLevel');
 
@@ -1658,6 +1766,8 @@ class Connection extends EventEmitter {
     required CommitTransactionCallback callback,
     String name = '',
   }) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     final transaction = Transaction(name: name);
     if (TDSVERSIONS[config.options.tdsVersion]! < TDSVERSIONS['7_2']!) {
       return execSqlBatch(Request(
@@ -1686,6 +1796,8 @@ class Connection extends EventEmitter {
     required RollbackTransactionCallback callback,
     String name = '',
   }) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     var transaction = Transaction(name: name);
     if (TDSVERSIONS[config.options.tdsVersion]! < TDSVERSIONS['7_2']!) {
       return execSqlBatch(
@@ -1710,6 +1822,8 @@ class Connection extends EventEmitter {
   }
 
   saveTransaction(SaveTransactionCallback? callback, String name) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     var transaction = Transaction(name: name);
     if (TDSVERSIONS[config.options.tdsVersion]! < TDSVERSIONS['7_2']!) {
       return execSqlBatch(
@@ -1742,6 +1856,8 @@ class Connection extends EventEmitter {
     })? cb,
     int? isolationLevel,
   ) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (cb is! Function) {
       throw MTypeError('cb must be a function');
     }
@@ -1756,6 +1872,8 @@ class Connection extends EventEmitter {
       TransactionDoneCallback? done,
       List<CallbackParameters>? args,
     }) {
+      print(LoggerStackTrace.from(StackTrace.current).toString());
+
       if (err != null) {
         if (inTransaction && state == STATE['LOGGED_IN']) {
           rollbackTransaction(
@@ -1830,8 +1948,10 @@ class Connection extends EventEmitter {
 
   @PrivateExposed('Used in get_parameter_encryption_metadata.dart')
   @DynamicParameterType('request', 'Request || BulkLoad')
-  makeRequest(dynamic request, num packetType, Iterable<Buffer> payload,
+  void makeRequest(dynamic request, num packetType, Iterable<Buffer> payload,
       {String Function(String indent)? toString}) async {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (state != STATE['LOGGED_IN']) {
       final message =
           'Requests can only be made in the ${STATE['LOGGED_IN']!.name} state, not the ${state?.name} state';
@@ -1859,7 +1979,7 @@ class Connection extends EventEmitter {
       // payloadStreamController.addStream(payload);
       // StreamSubscription<Buffer> payloadStream = payload.listen((event) {});
 
-      this.request = request;
+      this.request = request as Request;
       request.connection = this;
       request.rowCount = 0;
       request.rows = [];
@@ -1883,7 +2003,7 @@ class Connection extends EventEmitter {
         }
       }
 
-      (request as Request).once('cancel', onCancel());
+      request.once('cancel', onCancel());
 
       createRequestTimer();
 
@@ -1916,6 +2036,8 @@ class Connection extends EventEmitter {
 
   ///* Cancel currently executed Request | BulkLoad.
   bool cancel() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (request == null) {
       return false;
     }
@@ -1929,6 +2051,8 @@ class Connection extends EventEmitter {
   /// Reset the connection to its initial state.
   /// Can be useful for connection pool implementations.
   void reset(ResetCallback callback) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     var request = Request(
         sqlTextOrProcedure: getInitialSql(),
         callback: ([error, rowCount, rows]) {
@@ -1943,11 +2067,15 @@ class Connection extends EventEmitter {
 
   @PrivateExposed()
   Buffer currentTransactionDescriptor() {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     return transactionDescriptors[transactionDescriptors.length - 1];
   }
 
   @Private()
   String getIsolationLevelText(num isolationLevel) {
+    print(LoggerStackTrace.from(StackTrace.current).toString());
+
     if (isolationLevel == ISOLATION_LEVEL['READ_UNCOMMITTED']!) {
       return 'read uncommitted';
     }
@@ -1971,6 +2099,8 @@ class Connection extends EventEmitter {
 }
 
 bool isTransientError(dynamic error) {
+  print(LoggerStackTrace.from(StackTrace.current).toString());
+
   //error ==>> ConnectionError | AggregateError
   if (error is! ConnectionError) {
     error = error.errors[0];
