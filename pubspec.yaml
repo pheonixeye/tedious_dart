@@ -29,6 +29,7 @@ dependencies:
   magic_buffer_copy:
     path: c:/users/kareemzaher/desktop/darTedious/magic_buffer_copy
   rxdart:  
+  dartz:
   
 dev_dependencies:
   lints: ^2.0.0

@@ -3,7 +3,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:bloc/bloc.dart';
 import 'package:events_emitter/events_emitter.dart';
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/bulk_load.dart';
@@ -12,8 +11,6 @@ import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/conn_authentication.dart';
 import 'package:tedious_dart/conn_config.dart';
 import 'package:tedious_dart/conn_const_typedef.dart';
-import 'package:tedious_dart/conn_events.dart';
-import 'package:tedious_dart/conn_state.dart';
 import 'package:tedious_dart/conn_states.dart';
 import 'package:tedious_dart/connector.dart';
 import 'package:tedious_dart/data_types/int.dart';
@@ -53,10 +50,10 @@ class RoutingData {
   });
 }
 
-class Connection extends Bloc<ConnectionEvent, ConnectionState> {
-  final ConnectionConfiguration config;
-
+class Connection extends EventEmitter {
   late bool fedAuthRequired;
+
+  ConnectionConfiguration config;
 
   late SecurityContext secureContextOptions;
 
@@ -90,12 +87,12 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
   late MessageIO messageIo;
 
-  // late State? state;
+  late State? state;
 
   bool? resetConnectionOnNextRequest;
 
   dynamic request;
-  //  null | Request | BulkLoad;//TODO:union type
+  //  null | Request | BulkLoad;
 
   dynamic procReturnStatusValue;
 
@@ -115,10 +112,187 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
   Collation? databaseCollation;
 
-  Connection(this.config) : super(InitialState()) {
-    // STATE = STATES(); //TODO
+  Connection(this.config) : super() {
+    STATE = STATES();
+    //
+    if (config == null) {
+      throw MTypeError(
+          'The "config" argument is required and must be of type Object.');
+    }
+
+    if (config.server.runtimeType != String) {
+      throw MTypeError(
+          'The "config.server" property is required and must be of type string.');
+    }
 
     fedAuthRequired = false;
+
+    AuthenticationType authentication;
+    if (config.authentication != null) {
+      if (config.authentication == null) {
+        throw MTypeError(
+            'The "config.authentication" property must be of type Object.');
+      }
+
+      var type = config.authentication.type;
+      var options = config.authentication.options;
+
+      // if (type.runtimeType != String) {
+      //   throw MTypeError(
+      //       'The "config.authentication.type" property must be of type string.');
+      // }
+
+      if (!AuthType.values.contains(type)) {
+        throw MTypeError(
+            'The "type" property must one of "default", "ntlm", "azure-active-directory-password", "azure-active-directory-access-token", "azure-active-directory-default", "azure-active-directory-msi-vm" or "azure-active-directory-msi-app-service" or "azure-active-directory-service-principal-secret".');
+      }
+      if (options == null) {
+        throw MTypeError(
+            'The "config.authentication.options" property must be of type object.');
+      }
+      //!
+      if (type == AuthType.ntlm_) {
+        if (options.domain.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.domain" property must be of type string.');
+        }
+
+        if (options.userName != null &&
+            options.userName.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.userName" property must be of type string.');
+        }
+
+        if (options.password != null &&
+            options.password.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.password" property must be of type string.');
+        }
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
+      }
+      //!
+      else if (type == AuthType.azure_active_directory_password_) {
+        if (options.clientId.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.clientId" property must be of type string.');
+        }
+
+        if (options.userName != null &&
+            options.userName.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.userName" property must be of type string.');
+        }
+
+        if (options.password != null &&
+            options.password.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.password" property must be of type string.');
+        }
+
+        if (options.tenantId != null &&
+            options.tenantId.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.tenantId" property must be of type string.');
+        }
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
+      }
+      //!
+      else if (type == AuthType.azure_active_directory_access_token_) {
+        if (options.token.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.token" property must be of type string.');
+        }
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
+      }
+      //!
+      else if (type == AuthType.azure_active_directory_msi_vm_) {
+        if (options.clientId != null &&
+            options.clientId.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.clientId" property must be of type string.');
+        }
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
+      }
+      //!
+      else if (type == AuthType.azure_active_directory_default_) {
+        if (options.clientId != null &&
+            options.clientId.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.clientId" property must be of type string.');
+        }
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
+      }
+      //!
+      else if (type == AuthType.azure_active_directory_msi_app_service_) {
+        if (options.clientId != null &&
+            options.clientId.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.clientId" property must be of type string.');
+        }
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
+      }
+      //!
+      else if (type ==
+          AuthType.azure_active_directory_service_principal_secret_) {
+        if (options.clientId.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.clientId" property must be of type string.');
+        }
+
+        if (options.clientSecret.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.clientSecret" property must be of type string.');
+        }
+
+        if (options.tenantId.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.tenantId" property must be of type string.');
+        }
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
+      }
+      //!
+      else {
+        if (options.userName != null &&
+            options.userName.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.userName" property must be of type string.');
+        }
+
+        if (options.password != null &&
+            options.password.runtimeType != String) {
+          throw MTypeError(
+              'The "config.authentication.options.password" property must be of type string.');
+        }
+        authentication = AuthenticationType(
+          type: type,
+          options: options,
+        );
+      }
+    } else {
+      authentication =
+          AuthenticationType(type: AuthType.default_, options: AuthOptions());
+    }
 
     //! i think that these are useless type checks
     if (config.options != null) {
@@ -127,16 +301,219 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
             'Port and instanceName are mutually exclusive, but   ${config.options.port}  and   ${config.options.instanceName}  provided');
       }
 
+      if (config.options.abortTransactionOnError != null) {
+        if (config.options.abortTransactionOnError is! bool &&
+            config.options.abortTransactionOnError != null) {
+          throw MTypeError(
+              'The "config!.options!.abortTransactionOnError" property must be of type bool.');
+        }
+      }
+
+      if (config.options.appName != null) {
+        if (config.options.appName is! String) {
+          throw MTypeError(
+              'The "config!.options!.appName" property must be of type string.');
+        }
+      }
+
+      if (config.options.camelCaseColumns != null) {
+        if (config.options.camelCaseColumns is! bool) {
+          throw MTypeError(
+              'The "config!.options!.camelCaseColumns" property must be of type boolean.');
+        }
+      }
+
+      if (config.options.cancelTimeout != null) {
+        if (config.options.cancelTimeout is! num) {
+          throw MTypeError(
+              'The "config!.options!.cancelTimeout" property must be of type number.');
+        }
+      }
+
+      if (config.options.columnNameReplacer != null) {
+        if (config.options.columnNameReplacer is! Function) {
+          throw MTypeError(
+              'The "config!.options!.cancelTimeout" property must be of type function.');
+        }
+      }
+
       if (config.options.connectionIsolationLevel != null) {
         assertValidIsolationLevel(config.options.connectionIsolationLevel,
             'config!.options!.connectionIsolationLevel');
       }
 
+      if (config.options.connectTimeout != null) {
+        if (config.options.connectTimeout is! num) {
+          throw MTypeError(
+              'The "config!.options!.connectTimeout" property must be of type number.');
+        }
+      }
+
+      if (config.options.cryptoCredentialsDetails != null) {
+        if (config.options.cryptoCredentialsDetails is! SecurityContext ||
+            config.options.cryptoCredentialsDetails == null) {
+          throw MTypeError(
+              'The "config!.options!.cryptoCredentialsDetails" property must be of type Object.');
+        }
+      }
+
+      if (config.options.database != null) {
+        if (config.options.database is! String) {
+          throw MTypeError(
+              'The "config!.options!.database" property must be of type string.');
+        }
+      }
+
       if (config.options.datefirst != null) {
+        if (config.options.datefirst is! num &&
+            config.options.datefirst != null) {
+          throw MTypeError(
+              'The "config!.options!.datefirst" property must be of type number.');
+        }
+
         if (config.options.datefirst != null &&
             (config.options.datefirst! < 1 || config.options.datefirst! > 7)) {
           throw RangeError(
               'The "config!.options!.datefirst" property must be >= 1 and <= 7');
+        }
+      }
+
+      if (config.options.dateFormat != null) {
+        if (config.options.dateFormat is! String &&
+            config.options.dateFormat != null) {
+          throw MTypeError(
+              'The "config!.options!.dateFormat" property must be of type string or null.');
+        }
+      }
+
+      if (config.options.debug != null) {
+        if (config.options.debug!.data != null) {
+          if (config.options.debug!.data is! bool) {
+            throw MTypeError(
+                'The "config!.options!.debug.data" property must be of type boolean.');
+          }
+        }
+
+        if (config.options.debug!.packet != null) {
+          if (config.options.debug!.packet is! bool) {
+            throw MTypeError(
+                'The "config!.options!.debug.packet" property must be of type boolean.');
+          }
+        }
+
+        if (config.options.debug!.payload != null) {
+          if (config.options.debug!.payload is! bool) {
+            throw MTypeError(
+                'The "config!.options!.debug.payload" property must be of type boolean.');
+          }
+        }
+
+        if (config.options.debug!.token != null) {
+          if (config.options.debug!.token is! bool) {
+            throw MTypeError(
+                'The "config!.options!.debug.token" property must be of type boolean.');
+          }
+        }
+      }
+
+      if (config.options.enableAnsiNull != null) {
+        if (config.options.enableAnsiNull is! bool &&
+            config.options.enableAnsiNull != null) {
+          throw MTypeError(
+              'The "config!.options!.enableAnsiNull" property must be of type boolean or null.');
+        }
+      }
+
+      if (config.options.enableAnsiNullDefault != null) {
+        if (config.options.enableAnsiNullDefault is! bool &&
+            config.options.enableAnsiNullDefault != null) {
+          throw MTypeError(
+              'The "config!.options!.enableAnsiNullDefault" property must be of type boolean or null.');
+        }
+      }
+
+      if (config.options.enableAnsiPadding != null) {
+        if (config.options.enableAnsiPadding is! bool &&
+            config.options.enableAnsiPadding != null) {
+          throw MTypeError(
+              'The "config!.options!.enableAnsiPadding" property must be of type boolean or null.');
+        }
+      }
+
+      if (config.options.enableAnsiWarnings != null) {
+        if (config.options.enableAnsiWarnings is! bool &&
+            config.options.enableAnsiWarnings != null) {
+          throw MTypeError(
+              'The "config!.options!.enableAnsiWarnings" property must be of type boolean or null.');
+        }
+      }
+
+      if (config.options.enableArithAbort != null) {
+        if (config.options.enableArithAbort is! bool &&
+            config.options.enableArithAbort != null) {
+          throw MTypeError(
+              'The "config!.options!.enableArithAbort" property must be of type boolean or null.');
+        }
+      }
+
+      if (config.options.enableConcatNullYieldsNull != null) {
+        if (config.options.enableConcatNullYieldsNull is! bool &&
+            config.options.enableConcatNullYieldsNull != null) {
+          throw MTypeError(
+              'The "config!.options!.enableConcatNullYieldsNull" property must be of type boolean or null.');
+        }
+      }
+
+      if (config.options.enableCursorCloseOnCommit != null) {
+        if (config.options.enableCursorCloseOnCommit is! bool &&
+            config.options.enableCursorCloseOnCommit != null) {
+          throw MTypeError(
+              'The "config!.options!.enableCursorCloseOnCommit" property must be of type boolean or null.');
+        }
+      }
+
+      if (config.options.enableImplicitTransactions != null) {
+        if (config.options.enableImplicitTransactions is! bool &&
+            config.options.enableImplicitTransactions != null) {
+          throw MTypeError(
+              'The "config!.options!.enableImplicitTransactions" property must be of type boolean or null.');
+        }
+      }
+
+      if (config.options.enableNumericRoundabort != null) {
+        if (config.options.enableNumericRoundabort is! bool &&
+            config.options.enableNumericRoundabort != null) {
+          throw MTypeError(
+              'The "config!.options!.enableNumericRoundabort" property must be of type boolean or null.');
+        }
+      }
+
+      if (config.options.enableQuotedIdentifier != null) {
+        if (config.options.enableQuotedIdentifier is! bool &&
+            config.options.enableQuotedIdentifier != null) {
+          throw MTypeError(
+              'The "config!.options!.enableQuotedIdentifier" property must be of type boolean or null.');
+        }
+      }
+
+      if (config.options.encrypt != null) {
+        if (config.options.encrypt is! bool) {
+          throw MTypeError(
+              'The "config!.options!.encrypt" property must be of type boolean.');
+        }
+      }
+
+      if (config.options.fallbackToDefaultDb != null) {
+        if (config.options.fallbackToDefaultDb is! bool) {
+          throw MTypeError(
+              'The "config!.options!.fallbackToDefaultDb" property must be of type boolean.');
+        }
+      }
+
+      if (config.options.instanceName != null) {
+        if (config.options.instanceName is! String) {
+          throw MTypeError(
+              'The "config!.options!.instanceName" property must be of type string.');
         }
       }
 
@@ -145,14 +522,67 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
             config.options.isolationLevel, 'config!.options!.isolationLevel');
       }
 
+      if (config.options.language != null) {
+        if (config.options.language is! String &&
+            config.options.language != null) {
+          throw MTypeError(
+              'The "config!.options!.language" property must be of type string or null.');
+        }
+      }
+
+      if (config.options.localAddress != null) {
+        if (config.options.localAddress is! String) {
+          throw MTypeError(
+              'The "config!.options!.localAddress" property must be of type string.');
+        }
+      }
+
+      if (config.options.multiSubnetFailover != null) {
+        if (config.options.multiSubnetFailover is! bool) {
+          throw MTypeError(
+              'The "config!.options!.multiSubnetFailover" property must be of type boolean.');
+        }
+      }
+
+      if (config.options.packetSize != null) {
+        if (config.options.packetSize is! num) {
+          throw MTypeError(
+              'The "config!.options!.packetSize" property must be of type number.');
+        }
+      }
+
       if (config.options.port != null) {
+        if (config.options.port is! num) {
+          throw MTypeError(
+              'The "config!.options!.port" property must be of type number.');
+        }
+
         if (config.options.port! <= 0 || config.options.port! >= 65536) {
           throw RangeError(
               'The "config!.options!.port" property must be > 0 and < 65536');
         }
       }
 
+      if (config.options.readOnlyIntent != null) {
+        if (config.options.readOnlyIntent is! bool) {
+          throw MTypeError(
+              'The "config!.options!.readOnlyIntent" property must be of type boolean.');
+        }
+      }
+
+      if (config.options.requestTimeout != null) {
+        if (config.options.requestTimeout is! num) {
+          throw MTypeError(
+              'The "config!.options!.requestTimeout" property must be of type number.');
+        }
+      }
+
       if (config.options.maxRetriesOnTransientErrors != null) {
+        if (config.options.maxRetriesOnTransientErrors is! num) {
+          throw MTypeError(
+              'The "config!.options!.maxRetriesOnTransientErrors" property must be of type number.');
+        }
+
         if (config.options.maxRetriesOnTransientErrors < 0) {
           throw MTypeError(
               'The "config!.options!.maxRetriesOnTransientErrors" property must be equal or greater than 0.');
@@ -160,13 +590,45 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       }
 
       if (config.options.connectionRetryInterval != null) {
+        if (config.options.connectionRetryInterval is! num) {
+          throw MTypeError(
+              'The "config!.options!.connectionRetryInterval" property must be of type number.');
+        }
+
         if (config.options.connectionRetryInterval <= 0) {
           throw MTypeError(
               'The "config!.options!.connectionRetryInterval" property must be greater than 0.');
         }
       }
 
+      if (config.options.rowCollectionOnDone != null) {
+        if (config.options.rowCollectionOnDone is! bool) {
+          throw MTypeError(
+              'The "config!.options!.rowCollectionOnDone" property must be of type boolean.');
+        }
+      }
+
+      if (config.options.rowCollectionOnRequestCompletion != null) {
+        if (config.options.rowCollectionOnRequestCompletion is! bool) {
+          throw MTypeError(
+              'The "config!.options!.rowCollectionOnRequestCompletion" property must be of type boolean.');
+        }
+      }
+
+      if (config.options.tdsVersion != null) {
+        if (config.options.tdsVersion is! String) {
+          throw MTypeError(
+              'The "config!.options!.tdsVersion" property must be of type string.');
+        }
+      }
+
       if (config.options.textsize != null) {
+        if (config.options.textsize is! num &&
+            config.options.textsize != null) {
+          throw MTypeError(
+              'The "config!.options!.textsize" property must be of type number or null.');
+        }
+
         if (config.options.textsize > 2147483647) {
           throw MTypeError(
               'The "config!.options!.textsize" can\'t be greater than 2147483647.');
@@ -175,44 +637,67 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
               'The "config!.options!.textsize" can\'t be smaller than -1.');
         }
       }
+
+      if (config.options.trustServerCertificate != null) {
+        if (config.options.trustServerCertificate is! bool) {
+          throw MTypeError(
+              'The "config!.options!.trustServerCertificate" property must be of type boolean.');
+        }
+      }
+
+      if (config.options.useColumnNames != null) {
+        if (config.options.useColumnNames is! bool) {
+          throw MTypeError(
+              'The "config!.options!.useColumnNames" property must be of type boolean.');
+        }
+      }
+
+      if (config.options.useUTC != null) {
+        if (config.options.useUTC is! bool) {
+          throw MTypeError(
+              'The "config!.options!.useUTC" property must be of type boolean.');
+        }
+      }
+
+      if (config.options.workstationId != null) {
+        if (config.options.workstationId is! String) {
+          throw MTypeError(
+              'The "config!.options!.workstationId" property must be of type string.');
+        }
+      }
+
+      if (config.options.lowerCaseGuids != null) {
+        if (config.options.lowerCaseGuids is! bool) {
+          throw MTypeError(
+              'The "config!.options!.lowerCaseGuids" property must be of type boolean.');
+        }
+      }
     }
     debug = createDebug();
     inTransaction = false;
     transactionDescriptors = [
       Buffer.from([0, 0, 0, 0, 0, 0, 0, 0])
     ];
+    // 'beginTransaction', 'commitTransaction' and 'rollbackTransaction'
+    // events are utilized to maintain inTransaction property state which in
+    // turn is used in managing transactions. These events are only fired for
+    // TDS version 7.2 and beyond. The properties below are used to emulate
+    // equivalent behavior for TDS versions before 7.2.
     transactionDepth = 0;
     isSqlBatch = false;
     closed = false;
     messageBuffer = Buffer.alloc(0);
     curTransientRetryCount = 0;
     transientErrorLookup = TransientErrorLookup();
-    // state = STATE['INITIALIZED']!;
+    state = STATE['INITIALIZED']!;
     cancelAfterRequestSent = () {
       messageIo.sendMessage(PACKETTYPE['ATTENTION']!);
       print(LoggerStackTrace.from(StackTrace.current).toString());
 
       createCancelTimer();
     };
+    //TODO! end of constructor
     print(LoggerStackTrace.from(StackTrace.current).toString());
-    //! end of constructor
-    //***/Bloc Events:
-    //**-------------------------------------------------------------------- */
-
-    on<InitialConnectionEvent>(
-      (event, emit) => InitialState(),
-    );
-    on<EnterConnectEvent>(
-      (event, emit) {
-        initialiseConnection();
-      },
-    );
-    on<SocketErrorConnectEvent>(
-      (event, emit) => Final(),
-    );
-    on<ConnectionTimeoutConnectEvent>(
-      (event, emit) {},
-    );
   }
 
   connect([void Function(Error error)? connectListener]) {
@@ -513,7 +998,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
     requestTimer = null;
-    final request = this.request! as Request;
+    final request = this.request!;
     request.cancel();
     final timeout = (request.timeout != null)
         ? request.timeout

@@ -40,7 +40,7 @@ class InstanceLookUpOptions {
   });
 }
 
-Future instanceLookup(InstanceLookUpOptions options) async {
+Future<int> instanceLookup(InstanceLookUpOptions options) async {
   print(LoggerStackTrace.from(StackTrace.current).toString());
 
   final server = options.server;
@@ -66,8 +66,8 @@ Future instanceLookup(InstanceLookUpOptions options) async {
   if (options.lookup != null && options.lookup is! Function) {
     throw MTypeError('Invalid arguments: "lookup" must be a function');
   }
+  //TODO: dns.lookup;
   final lookup = options.lookup ?? InternetAddress.lookup;
-  // ?? dns.lookup; //TODO:
 
   if (options.port != null && options.port is! num) {
     throw MTypeError('Invalid arguments: "port" must be a number');
@@ -80,7 +80,7 @@ Future instanceLookup(InstanceLookUpOptions options) async {
     throw AbortError();
   }
 
-  dynamic response;
+  Buffer? response;
 
   for (int i = 0; i <= retries; i++) {
     try {
@@ -104,24 +104,25 @@ Future instanceLookup(InstanceLookUpOptions options) async {
     }
   }
 
-  if (!response) {
+  if (response == null) {
     throw MTypeError(
         'Failed to get response from SQL Server Browser on $server');
   }
 
-  final message = response.toString('ascii', MYSTERY_HEADER_LENGTH);
+  final message =
+      response.toString_({'encoding': 'ascii', 'start': MYSTERY_HEADER_LENGTH});
   final foundPort = parseBrowserResponse(message, instanceName);
 
-  if (!foundPort) {
+  if (foundPort == null) {
     throw MTypeError('Port for $instanceName not found in ${options.server}');
   }
 
   return foundPort;
 }
 
-parseBrowserResponse(String response, String instanceName) {
+int? parseBrowserResponse(String response, String instanceName) {
   print(LoggerStackTrace.from(StackTrace.current).toString());
-
+  int? port;
   dynamic getPort;
 
   final instances = response.split(';;');
@@ -134,7 +135,7 @@ parseBrowserResponse(String response, String instanceName) {
       final value = parts[p + 1];
 
       if (name == 'tcp' && getPort! + null) {
-        final port = int.parse(int.parse(value).toRadixString(10));
+        port = int.tryParse(value, radix: 10);
         return port;
       }
 
@@ -147,4 +148,5 @@ parseBrowserResponse(String response, String instanceName) {
       }
     }
   }
+  return port;
 }

@@ -9,7 +9,10 @@ import 'dart:developer' show log;
 
 final config = ConnectionConfiguration(
   server: '127.0.0.1',
-  options: ConnectionOptions(),
+  options: ConnectionOptions(
+    encrypt: false,
+    trustServerCertificate: true,
+  ),
   authentication: AuthenticationType(
     type: AuthType.default_,
     options: AuthOptions(

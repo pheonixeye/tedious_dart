@@ -93,7 +93,7 @@ class State extends _State implements Equatable {
   List<Object?> get props => [name];
 
   @override
-  bool? get stringify => throw UnimplementedError();
+  bool? get stringify => false;
 }
 
 //TODO: ??

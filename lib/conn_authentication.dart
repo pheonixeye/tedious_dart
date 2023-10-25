@@ -30,7 +30,7 @@ class AuthOptions {
   final String? tenantId;
   final String? clientSecret;
   final String? domain;
-  AuthOptions({
+  const AuthOptions({
     this.clientId,
     this.clientSecret,
     this.domain,
@@ -178,64 +178,62 @@ class DefaultAuthentication extends Authentication {
 }
 
 class AuthenticationType {
-  late Authentication _auth;
+  final Authentication _auth;
   final AuthType type;
   final AuthOptions options;
 
   Authentication get auth => _auth;
+
+  factory AuthenticationType.empty() {
+    return AuthenticationType(
+        type: AuthType.default_,
+        options: AuthOptions(
+          userName: 'admin',
+          password: 'password',
+        ));
+  }
+
   AuthenticationType({
     required this.type,
     required this.options,
-  }) {
-    switch (type) {
-      case AuthType.ntlm_:
-        _auth = NtlmAuthentication(
-          userName: options.userName,
-          password: options.password,
-          domain: options.domain,
-        );
-        break;
-      case AuthType.azure_active_directory_password_:
-        _auth = AzureActiveDirectoryPasswordAuthentication(
-          userName: options.userName,
-          password: options.password,
-          clientId: options.clientId,
-          tenantId: options.tenantId,
-        );
-        break;
-      case AuthType.azure_active_directory_msi_app_service_:
-        _auth = AzureActiveDirectoryMsiAppServiceAuthentication(
-          clientId: options.clientId,
-        );
-        break;
-      case AuthType.azure_active_directory_msi_vm_:
-        _auth = AzureActiveDirectoryMsiVmAuthentication(
-          clientId: options.clientId,
-        );
-        break;
-      case AuthType.azure_active_directory_access_token_:
-        _auth = AzureActiveDirectoryAccessTokenAuthentication(
-          token: options.token,
-        );
-        break;
-      case AuthType.azure_active_directory_service_principal_secret_:
-        _auth = AzureActiveDirectoryServicePrincipalSecret(
-          clientId: options.clientId,
-          clientSecret: options.clientSecret,
-          tenantId: options.tenantId,
-        );
-        break;
-      case AuthType.azure_active_directory_default_:
-        _auth = AzureActiveDirectoryDefaultAuthentication(
-          clientId: options.clientId,
-        );
-        break;
-      case AuthType.default_:
-        _auth = DefaultAuthentication(
-          userName: options.userName,
-          password: options.password,
-        );
-        break;
-    }
-  }
+  }) : _auth = switch (type) {
+          AuthType.ntlm_ => NtlmAuthentication(
+              userName: options.userName,
+              password: options.password,
+              domain: options.domain,
+            ),
+          AuthType.azure_active_directory_password_ =>
+            AzureActiveDirectoryPasswordAuthentication(
+              userName: options.userName,
+              password: options.password,
+              clientId: options.clientId,
+              tenantId: options.tenantId,
+            ),
+          AuthType.azure_active_directory_msi_app_service_ =>
+            AzureActiveDirectoryMsiAppServiceAuthentication(
+              clientId: options.clientId,
+            ),
+          AuthType.azure_active_directory_msi_vm_ =>
+            AzureActiveDirectoryMsiVmAuthentication(
+              clientId: options.clientId,
+            ),
+          AuthType.azure_active_directory_access_token_ =>
+            AzureActiveDirectoryAccessTokenAuthentication(
+              token: options.token,
+            ),
+          AuthType.azure_active_directory_service_principal_secret_ =>
+            AzureActiveDirectoryServicePrincipalSecret(
+              clientId: options.clientId,
+              clientSecret: options.clientSecret,
+              tenantId: options.tenantId,
+            ),
+          AuthType.azure_active_directory_default_ =>
+            AzureActiveDirectoryDefaultAuthentication(
+              clientId: options.clientId,
+            ),
+          AuthType.default_ => DefaultAuthentication(
+              userName: options.userName,
+              password: options.password,
+            ),
+        };
 }
