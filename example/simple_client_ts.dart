@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:tedious_dart/conn_authentication.dart';
 import 'package:tedious_dart/conn_config.dart';
+import 'package:tedious_dart/conn_events.dart';
 import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/request.dart';
@@ -53,6 +54,10 @@ executeStatement() {
 void main() async {
   print(LoggerStackTrace.from(StackTrace.current).toString());
   try {
+    conn.add(EnterConnectingEvent());
+
+    conn.on((event, emit) => null);
+
     conn.connect((error) {
       conn.on('connect', (_) {
         executeStatement();

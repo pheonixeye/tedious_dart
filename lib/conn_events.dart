@@ -2,18 +2,18 @@ abstract class ConnectionEvent {
   const ConnectionEvent();
 }
 
-class InitialConnectionEvent extends ConnectionEvent {
-  const InitialConnectionEvent() : super();
+class InitialEvent extends ConnectionEvent {
+  const InitialEvent() : super();
 }
 
-class EnterConnectEvent extends ConnectionEvent {
-  const EnterConnectEvent() : super();
+class EnterConnectingEvent extends ConnectionEvent {
+  const EnterConnectingEvent() : super();
 }
 
-class SocketErrorConnectEvent extends ConnectionEvent {
-  const SocketErrorConnectEvent() : super();
+class SocketErrorConnectingEvent extends ConnectionEvent {
+  const SocketErrorConnectingEvent() : super();
 }
 
-class ConnectionTimeoutConnectEvent extends ConnectionEvent {
-  const ConnectionTimeoutConnectEvent() : super();
+class ConnectionTimeoutConnectingEvent extends ConnectionEvent {
+  const ConnectionTimeoutConnectingEvent() : super();
 }

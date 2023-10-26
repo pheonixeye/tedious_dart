@@ -2,16 +2,19 @@ import 'package:tedious_dart/conn_state_enum.dart';
 
 abstract class ConnectionState {
   const ConnectionState();
+  CSE get name;
 }
 
 class InitialState extends ConnectionState {
   const InitialState() : super();
-  static const CSE name = CSE.INITIALIZED;
+  @override
+  final CSE name = CSE.INITIALIZED;
 }
 
 class Connecting extends ConnectionState {
   const Connecting() : super();
-  static const CSE name = CSE.CONNECTING;
+  @override
+  final CSE name = CSE.CONNECTING;
 
   //enter
   // //* initalize connection:
@@ -23,7 +26,8 @@ class Connecting extends ConnectionState {
 
 class Final extends ConnectionState {
   const Final() : super();
-  static const CSE name = CSE.FINAL;
+  @override
+  final CSE name = CSE.FINAL;
 
   cleanUpConnection() {}
 }

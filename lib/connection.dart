@@ -14,6 +14,7 @@ import 'package:tedious_dart/conn_config.dart';
 import 'package:tedious_dart/conn_const_typedef.dart';
 import 'package:tedious_dart/conn_events.dart';
 import 'package:tedious_dart/conn_state.dart';
+import 'package:tedious_dart/conn_state_enum.dart';
 import 'package:tedious_dart/conn_states.dart';
 import 'package:tedious_dart/connector.dart';
 import 'package:tedious_dart/data_types/int.dart';
@@ -84,7 +85,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
   Buffer? ntlmpacketBuffer;
 
   // ignore: non_constant_identifier_names
-  late Map<String, State> STATE;
+  // late Map<String, State> STATE;
 
   RoutingData? routingData;
 
@@ -116,8 +117,6 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
   Collation? databaseCollation;
 
   Connection(this.config) : super(InitialState()) {
-    // STATE = STATES(); //TODO
-
     fedAuthRequired = false;
 
     //! i think that these are useless type checks
@@ -199,19 +198,28 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     //***/Bloc Events:
     //**-------------------------------------------------------------------- */
 
-    on<InitialConnectionEvent>(
-      (event, emit) => InitialState(),
+    on<InitialEvent>(
+      (event, emit) => emit(InitialState()),
     );
-    on<EnterConnectEvent>(
+    on<EnterConnectingEvent>(
       (event, emit) {
         initialiseConnection();
+        emit(Connecting());
       },
     );
-    on<SocketErrorConnectEvent>(
-      (event, emit) => Final(),
+    on<SocketErrorConnectingEvent>(
+      (event, emit) {
+        add(event);
+        cleanupConnection(CLEANUP_TYPE['NORMAL']!);
+        emit(Final());
+      },
     );
-    on<ConnectionTimeoutConnectEvent>(
-      (event, emit) {},
+    on<ConnectionTimeoutConnectingEvent>(
+      (event, emit) {
+        add(event);
+        cleanupConnection(CLEANUP_TYPE['NORMAL']!);
+        emit(Final());
+      },
     );
   }
 
@@ -219,9 +227,9 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
     print('called connect');
-    if (state != STATE['INITIALIZED']!) {
+    if (state.name != CSE.INITIALIZED) {
       throw ConnectionError(
-          '`.connect` can not be called on a Connection in `${state!.name}` state.');
+          '`.connect` can not be called on a Connection in `${state.name}` state.');
     }
 
     if (connectListener != null) {
@@ -252,21 +260,21 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     print(LoggerStackTrace.from(StackTrace.current).toString());
   }
 
-  initialiseConnection() {
+  void initialiseConnection() async {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
     final signal = createConnectTimer();
 
     if (config.options.port != null) {
-      return connectOnPort(
+      connectOnPort(
         config.options.port!,
         config.options.multiSubnetFailover,
         signal,
       );
     } else {
-      return instanceLookup(InstanceLookUpOptions(
+      await instanceLookup(InstanceLookUpOptions(
         server: config.server,
-        instanceName: config.options.instanceName!,
+        instanceName: config.options.instanceName,
         timeout: config.options.connectTimeout,
         signal: signal,
       )).then((port) {
@@ -297,16 +305,12 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
     if (!closed) {
       clearConnectTimer();
-      print(LoggerStackTrace.from(StackTrace.current).toString());
 
       clearRequestTimer();
-      print(LoggerStackTrace.from(StackTrace.current).toString());
 
       clearRetryTimer();
-      print(LoggerStackTrace.from(StackTrace.current).toString());
 
       closeConnection();
-      print(LoggerStackTrace.from(StackTrace.current).toString());
 
       if (cleanupType == CLEANUP_TYPE['REDIRECT']) {
         emit('rerouting');
@@ -570,9 +574,9 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     }
   }
 
-  void transitionTo(State newState) {
+  void transitionTo(ConnectionState newState) {
     print(LoggerStackTrace.from(StackTrace.current).toString());
-    console.log(["newState", newState.name]);
+    console.log(["newState =>", newState.name]);
 
     if (state == newState) {
       debug.log('State is already ${newState.name}');
@@ -584,7 +588,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     }
 
     debug.log(
-        'State change: ${state != null ? state!.name : 'null'} -> ${newState.name}');
+        'State change: ${state != null ? state.name : 'null'} -> ${newState.name}');
     state = newState;
 
     if (state!.enter != null) {

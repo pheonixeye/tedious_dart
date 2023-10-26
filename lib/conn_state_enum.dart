@@ -1,6 +1,8 @@
 // ignore_for_file: constant_identifier_names
 
-enum CSE {
+import 'package:equatable/equatable.dart';
+
+enum CSE implements Equatable {
   INITIALIZED('Initialized'),
   CONNECTING('Connecting'),
   SENT_PRELOGIN('SentPrelogin'),
@@ -19,4 +21,10 @@ enum CSE {
   final String value;
 
   const CSE(this.value);
+
+  @override
+  List get props => [value];
+
+  @override
+  bool get stringify => false;
 }

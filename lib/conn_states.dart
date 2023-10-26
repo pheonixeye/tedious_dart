@@ -106,15 +106,18 @@ Map<String, State> STATES() {
       enter: ([c]) {
         c?.initialiseConnection();
         print(LoggerStackTrace.from(StackTrace.current).toString());
+        console.log(['Connecting - enter']);
       },
       events: StateEvents(
         socketError: ([c, e]) {
           c?.transitionTo(c.STATE['FINAL']!);
           print(LoggerStackTrace.from(StackTrace.current).toString());
+          console.log(['Connecting - socketError']);
         },
         connectionTimeout: ([c]) {
           c?.transitionTo(c.STATE['FINAL']!);
           print(LoggerStackTrace.from(StackTrace.current).toString());
+          console.log(['Connecting - connectionTimeout']);
         },
       ),
     ),
