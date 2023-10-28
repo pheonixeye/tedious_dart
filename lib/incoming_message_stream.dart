@@ -22,7 +22,7 @@ class IncomingMessageStream extends Stream<Buffer>
     //TODO: re-implement bufferList class;
     bl = List<Buffer>.empty();
     controller = StreamController<Buffer>.broadcast();
-    controller.sink.addStream(this);
+    // controller.sink.addStream(this);
 
     // BufferList([]);
   }
@@ -107,7 +107,7 @@ class IncomingMessageStream extends Stream<Buffer>
   @override
   StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return controller.stream.listen(onData,
+    return controller.stream.asBroadcastStream().listen(onData,
         onDone: onDone, onError: onError, cancelOnError: cancelOnError);
   }
 

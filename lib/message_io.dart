@@ -52,11 +52,13 @@ class MessageIO extends EventEmitter {
         OutgoingMessageStream(debug, packetSize: _packetSize);
 
     socket.pipe(_incomingMessageStream!);
-    //TODO: wrong type
-    outgoingMessageStream?.pipe(socket as StreamConsumer<Buffer>);
+
+    final controller = StreamController<Buffer>.broadcast();
+    controller.addStream(socket.transform(BufferTransformer()));
+    outgoingMessageStream?.pipe(controller);
   }
 
-  packetSize(List<int> args) {
+  int packetSize(List<int> args) {
     if (args.isNotEmpty) {
       var packetSize = args[0];
       this.debug.log('Packet size changed from '
@@ -182,7 +184,8 @@ class MessageIO extends EventEmitter {
   // todo listen for 'drain' event when socket.write returns false.
   // todo implement incomplete request cancelation (2.2.1.6)
 
-  sendMessage(int packetType, {Buffer? data, bool? resetConnection}) async {
+  Future<Message> sendMessage(int packetType,
+      {Buffer? data, bool? resetConnection}) async {
     final message =
         Message(type: packetType, resetConnection: resetConnection!);
     await message.drain();
@@ -190,7 +193,7 @@ class MessageIO extends EventEmitter {
     return message;
   }
 
-  readMessage() async {
+  Future<Buffer> readMessage() async {
     var result = this.incomingMessageIterator;
 
     if (!await result.moveNext()) {
@@ -218,5 +221,19 @@ class SocketConsumer extends Stream<Buffer> {
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
     // TODO: implement listen
     throw UnimplementedError();
+  }
+}
+
+class BufferTransformer extends StreamTransformerBase<Uint8List, Buffer> {
+  @override
+  Stream<Buffer> bind(Stream<Uint8List> stream) {
+    return stream.map((event) => Buffer.from(event));
+  }
+}
+
+class Uint8ListTransformer extends StreamTransformerBase<Buffer, Uint8List> {
+  @override
+  Stream<Uint8List> bind(Stream<Buffer> stream) {
+    return stream.map((event) => event.buffer);
   }
 }

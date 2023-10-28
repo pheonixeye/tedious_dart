@@ -5,49 +5,55 @@ import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/node/abort_controller.dart';
 
-Future<Socket> connectInParallel(
-  Map<String, dynamic> options,
+class LocalConnectionOptions {
+  final String host;
+  final int port;
+  final String? localAddress;
+
+  LocalConnectionOptions({
+    required this.host,
+    required this.port,
+    this.localAddress,
+  });
+}
+
+Stream<Socket?> connectInParallel(
+  LocalConnectionOptions options,
   AbortSignal signal,
-) async {
-  print(LoggerStackTrace.from(StackTrace.current).toString());
+) async* {
+  // print(LoggerStackTrace.from(StackTrace.current).toString());
 
   if (signal.aborted) {
     throw AbortError();
   }
   final addresses = await lookupAllAddresses(
-    options['host']!,
+    options.host,
     signal,
   );
 
-  return Future<Socket>(
-    () async {
-      List<Socket> sockets = []..length = addresses.length;
-      // List<Error> errors = [];
-      late Socket _s;
-      for (int i = 0, len = addresses.length; i < len; i++) {
-        final socket = sockets[i] = await Socket.connect(
-          addresses[i].address,
-          options['port']!,
-        );
-        _s = socket;
-      }
-      return _s;
-    },
-  );
+  // List<Socket> sockets = [];
+  for (var adr in addresses) {
+    final socket = await Socket.connect(
+      adr,
+      options.port,
+    );
+    // print(i);
+    yield socket;
+  }
 }
 
-Future<Socket?> connectInSequence(
-  Map<String, dynamic> options,
+Stream<Socket?> connectInSequence(
+  LocalConnectionOptions options,
   AbortSignal signal,
-) async {
+) async* {
   Socket? socket;
-  print(LoggerStackTrace.from(StackTrace.current).toString());
+  // print(LoggerStackTrace.from(StackTrace.current).toString());
 
   if (signal.aborted) {
     throw AbortError();
   }
   Future<List<InternetAddress>> addresses = lookupAllAddresses(
-    options['host']!,
+    options.host,
     signal,
   );
   for (InternetAddress address in await addresses) {
@@ -55,15 +61,16 @@ Future<Socket?> connectInSequence(
     try {
       socket = await Socket.connect(
         address.address,
-        options['port']!,
+        options.port,
       );
-      return socket;
+      yield socket;
     } catch (e) {
+      print(e.toString());
       throw AbortError();
     }
   }
 
-  return socket;
+  // return socket;
 }
 
 Future<List<InternetAddress>> lookupAllAddresses(

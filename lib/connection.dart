@@ -17,6 +17,8 @@ import 'package:tedious_dart/conn_state.dart';
 import 'package:tedious_dart/conn_state_enum.dart';
 import 'package:tedious_dart/conn_states.dart';
 import 'package:tedious_dart/connector.dart';
+import 'package:tedious_dart/core/core_bloc.dart';
+import 'package:tedious_dart/core/core_events.dart';
 import 'package:tedious_dart/data_types/int.dart';
 import 'package:tedious_dart/data_types/nvarchar.dart';
 import 'package:tedious_dart/debug.dart';
@@ -116,7 +118,11 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
   Collation? databaseCollation;
 
+  late final CoreBloc core;
+
   Connection(this.config) : super(InitialState()) {
+    core = CoreBloc(this);
+
     fedAuthRequired = false;
 
     //! i think that these are useless type checks
@@ -194,16 +200,37 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       createCancelTimer();
     };
     print(LoggerStackTrace.from(StackTrace.current).toString());
-    //! end of constructor
     //***/Bloc Events:
     //**-------------------------------------------------------------------- */
-
-    on<InitialEvent>(
-      (event, emit) => emit(InitialState()),
-    );
+    on<InitialEvent>((event, emit) {
+      emit(InitialState());
+      core.add(Connect());
+    });
     on<EnterConnectingEvent>(
-      (event, emit) {
-        initialiseConnection();
+      (event, emit) async {
+        final signal = createConnectTimer();
+
+        if (config.options.port != null) {
+          connectOnPort(
+            config.options.port!,
+            config.options.multiSubnetFailover,
+            signal,
+          );
+        } else {
+          await instanceLookup(InstanceLookUpOptions(
+            server: config.server,
+            instanceName: config.options.instanceName,
+            timeout: config.options.connectTimeout,
+            signal: signal,
+          )).then((port) {
+            connectOnPort(
+              port,
+              config.options.multiSubnetFailover,
+              signal,
+            );
+          });
+        }
+
         emit(Connecting());
       },
     );
@@ -221,12 +248,19 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
         emit(Final());
       },
     );
+    //! end of constructor
+  }
+
+  @override
+  onChange(Change<ConnectionState> change) {
+    console.log(['Connection', state.name, change.toString()]);
+    super.onChange(change);
   }
 
   connect([void Function(Error error)? connectListener]) {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
-    print('called connect');
+    console.log(['called connect']);
     if (state.name != CSE.INITIALIZED) {
       throw ConnectionError(
           '`.connect` can not be called on a Connection in `${state.name}` state.');
@@ -236,28 +270,30 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       onError(Error err) {
         print(LoggerStackTrace.from(StackTrace.current).toString());
 
-        removeEventListener(EventListener('connect', (error) {}));
+        // removeEventListener(EventListener('connect', (error) {}));
         connectListener(err);
       }
 
       onConnect(Error err) {
         print(LoggerStackTrace.from(StackTrace.current).toString());
 
-        removeEventListener(EventListener('error', onError));
+        // removeEventListener(EventListener('error', onError));
         connectListener(err);
       }
 
-      once('connect', onConnect);
-      once('error', onError);
+      // once('connect', onConnect);
+      // once('error', onError);
     }
 
-    transitionTo(STATE['CONNECTING']!);
+    // transitionTo(STATE['CONNECTING']!);
     print(LoggerStackTrace.from(StackTrace.current).toString());
   }
 
-  void close() {
-    transitionTo(STATE['FINAL']!);
+  @override
+  Future<void> close() {
+    // transitionTo(STATE['FINAL']!);
     print(LoggerStackTrace.from(StackTrace.current).toString());
+    return super.close();
   }
 
   void initialiseConnection() async {
@@ -293,7 +329,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
           return;
         }
         scheduleMicrotask(() {
-          emit('connect', ConnectionError(err.message, 'EINSTLOOKUP'));
+          // emit('connect', ConnectionError(err.message, 'EINSTLOOKUP'));
           print(LoggerStackTrace.from(StackTrace.current).toString());
         });
       });
@@ -313,10 +349,10 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       closeConnection();
 
       if (cleanupType == CLEANUP_TYPE['REDIRECT']) {
-        emit('rerouting');
+        // emit('rerouting');
       } else if (cleanupType != CLEANUP_TYPE['RETRY']) {
         scheduleMicrotask(() {
-          emit('end');
+          // emit('end');
           print(LoggerStackTrace.from(StackTrace.current).toString());
         });
       }
@@ -340,7 +376,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
     final debug = Debug(options: config.options.debug!);
     debug.on('debug', (message) {
-      emit('debug', message);
+      // emit('debug', message);
     });
     return debug;
   }
@@ -368,48 +404,54 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       num port, bool multiSubnetFailover, AbortSignal signal) async {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
-    final connectOpts = {
-      'host': routingData != null ? routingData!.server : config.server,
-      'port': routingData != null ? routingData!.port : port,
-      'localAddress': config.options.localAddress,
-    };
+    final localConnectionOptions = LocalConnectionOptions(
+      host: routingData != null ? routingData!.server : config.server,
+      port: routingData != null ? routingData!.port as int : port as int,
+      localAddress: config.options.localAddress,
+    );
 
-    // print(connectOpts.toString());
-
-    Future<Socket?> Function(Map<String, dynamic>, AbortSignal<dynamic>)
+    Stream<Socket?> Function(LocalConnectionOptions, AbortSignal<dynamic>)
         connect = multiSubnetFailover ? connectInParallel : connectInSequence;
 
-    await connect(connectOpts, signal).then((socket) {
-      scheduleMicrotask(() async {
-        final sub = socket!.listen((event) {});
-        sub.onDone(() {
-          socketEnd();
+    connect(localConnectionOptions, signal).listen((socket) {
+      if (socket != null) {
+        console.log([socket.remoteAddress, socket.remotePort]);
+        scheduleMicrotask(() async {
+          final sub = socket.listen((event) {});
+          sub.onDone(() {
+            socketEnd();
+          });
+          sub.onError((error) {
+            socketError(error);
+          });
+          // if (await socket.done == true) {
+          //   socketClose();
+          // }
+          //
+          console.log(['before message io']);
+
+          messageIo = MessageIO(
+            socket,
+            config.options.packetSize,
+            debug,
+          );
+          console.log(['before message io']);
+
+          // messageIo.on(
+          //     'secure', (Socket cleartext) => {emit('secure', cleartext)});
+
+          this.socket = socket;
+          closed = false;
+          debug.log('connected to ${config.server}:${config.options.port}');
+          console.log(['connected to ${config.server}:${config.options.port}']);
+
+          sendPreLogin();
+          // print(LoggerStackTrace.from(StackTrace.current).toString());
+
+          // transitionTo(STATE['SENT_PRELOGIN']!);
+          // print(LoggerStackTrace.from(StackTrace.current).toString());
         });
-        sub.onError((error) {
-          socketError(error);
-        });
-        if (await socket.done == true) {
-          socketClose();
-        }
-        //
-        messageIo = MessageIO(
-          socket,
-          config.options.packetSize,
-          debug,
-        );
-        messageIo.on(
-            'secure', (Socket cleartext) => {emit('secure', cleartext)});
-
-        this.socket = socket;
-        closed = false;
-        debug.log('connected to ${config.server}:${config.options.port}');
-
-        sendPreLogin();
-        // print(LoggerStackTrace.from(StackTrace.current).toString());
-
-        transitionTo(STATE['SENT_PRELOGIN']!);
-        // print(LoggerStackTrace.from(StackTrace.current).toString());
-      });
+      }
     });
   }
 
@@ -499,7 +541,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     Failed to connect to ${config.server} ${config.options.port == null ? config.options.port : config.options.instanceName} in ${config.options.connectTimeout} ms
     """;
     debug.log(message);
-    emit('connect', ConnectionError(message, 'ETIMEOUT'));
+    // emit('connect', ConnectionError(message, 'ETIMEOUT'));
     connectTimer = null;
     dispatchEvent('connectTimeout');
   }
@@ -530,8 +572,8 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
     retryTimer = null;
-    emit('retry');
-    transitionTo(STATE['CONNECTING']!);
+    // emit('retry');
+    // transitionTo(STATE['CONNECTING']!);
   }
 
   void clearConnectTimer() {
@@ -583,91 +625,91 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       return;
     }
 
-    if (state != null && state!.exit != null) {
-      state!.exit!(this, newState);
-    }
+    // if (state != null && state!.exit != null) {
+    //   state!.exit!(this, newState);
+    // }
 
-    debug.log(
-        'State change: ${state != null ? state.name : 'null'} -> ${newState.name}');
-    state = newState;
+    // debug.log(
+    //     'State change: ${state != null ? state.name : 'null'} -> ${newState.name}');
+    // state = newState;
 
-    if (state!.enter != null) {
-      // Function.apply(state!.enter!, [this]);
-      state!.enter!(this);
-    }
+    // if (state!.enter != null) {
+    //   // Function.apply(state!.enter!, [this]);
+    //   state!.enter!(this);
+    // }
   }
 
-  Function getEventHandler(String eventName) {
+  Function? getEventHandler(String eventName) {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
-    final handler = state?.events?.eventsMap()[eventName]();
-    if (handler == null) {
-      throw MTypeError("No event '$eventName' in state '${state!.name}'");
-    }
-    console.log([handler.runtimeType]);
-    return handler;
+    // final handler = state?.events?.eventsMap()[eventName]();
+    // if (handler == null) {
+    //   throw MTypeError("No event '$eventName' in state '${state!.name}'");
+    // }
+    // console.log([handler.runtimeType]);
+    // return handler;
   }
 
   void dispatchEvent(String eventName, [dynamic args]) {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
-    final handler = state?.events?.eventsMap()[eventName]();
-    if (handler != null) {
-      // Function.apply(handler, [this, args]);
-      handler(this, args);
-    } else {
-      emit('error',
-          MTypeError("No event '$eventName' in state '${state!.name}"));
-      close();
-    }
+    // final handler = state?.events?.eventsMap()[eventName]();
+    // if (handler != null) {
+    //   // Function.apply(handler, [this, args]);
+    //   handler(this, args);
+    // } else {
+    //   emit('error',
+    //       MTypeError("No event '$eventName' in state '${state!.name}"));
+    //   close();
+    // }
   }
 
   void socketError(Error error) {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
-    if (state == STATE['CONNECTING'] ||
-        state == STATE['SENT_TLSSSLNEGOTIATION']) {
-      final message =
-          'Failed to connect to ${config.server}:${config.options.port} - ${error.toString()}';
-      debug.log(message);
-      emit('connect', ConnectionError(message, 'ESOCKET'));
-    } else {
-      final message = 'Connection lost - ${error.toString()}';
-      debug.log(message);
-      emit('error', ConnectionError(message, 'ESOCKET'));
-    }
-    dispatchEvent('socketError', error);
+    // if (state == STATE['CONNECTING'] ||
+    //     state == STATE['SENT_TLSSSLNEGOTIATION']) {
+    //   final message =
+    //       'Failed to connect to ${config.server}:${config.options.port} - ${error.toString()}';
+    //   debug.log(message);
+    //   emit('connect', ConnectionError(message, 'ESOCKET'));
+    // } else {
+    //   final message = 'Connection lost - ${error.toString()}';
+    //   debug.log(message);
+    //   emit('error', ConnectionError(message, 'ESOCKET'));
+    // }
+    // dispatchEvent('socketError', error);
   }
 
   void socketEnd() {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
-    debug.log('socket ended');
-    if (state != STATE['FINAL']) {
-      final error = ConnectionError('socket hang up');
-      error.code = 'ECONNRESET';
-      socketError(error);
-    }
+    // debug.log('socket ended');
+    // if (state != STATE['FINAL']) {
+    //   final error = ConnectionError('socket hang up');
+    //   error.code = 'ECONNRESET';
+    //   socketError(error);
+    // }
   }
 
   void socketClose() {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
-    debug.log('connection to ${config.server}:${config.options.port} closed');
-    if (state == STATE['REROUTING']) {
-      debug.log('Rerouting to ${routingData!.server}:${routingData!.port}');
+    // debug.log('connection to ${config.server}:${config.options.port} closed');
+    // if (state == STATE['REROUTING']) {
+    //   debug.log('Rerouting to ${routingData!.server}:${routingData!.port}');
 
-      dispatchEvent('reconnect');
-    } else if (state == STATE['TRANSIENT_FAILURE_RETRY']) {
-      final server = routingData != null ? routingData!.server : config.server;
-      final port =
-          routingData != null ? routingData!.port : config.options.port;
-      debug.log('Retry after transient failure connecting to ${server}:$port');
+    //   dispatchEvent('reconnect');
+    // } else if (state == STATE['TRANSIENT_FAILURE_RETRY']) {
+    //   final server = routingData != null ? routingData!.server : config.server;
+    //   final port =
+    //       routingData != null ? routingData!.port : config.options.port;
+    //   debug.log('Retry after transient failure connecting to ${server}:$port');
 
-      dispatchEvent('retry');
-    } else {
-      transitionTo(STATE['FINAL']!);
-    }
+    //   dispatchEvent('retry');
+    // } else {
+    //   transitionTo(STATE['FINAL']!);
+    // }
   }
 
   void sendPreLogin() {
@@ -777,7 +819,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     messageIo.sendMessage(PACKETTYPE['FEDAUTH_TOKEN']!, data: data);
     // sent the fedAuth token message, the rest is similar to standard login 7
     //TODO:
-    transitionTo(STATE['SENT_LOGIN7_WITH_STANDARD_LOGIN']!);
+    // transitionTo(STATE['SENT_LOGIN7_WITH_STANDARD_LOGIN']!);
   }
 
   void sendInitialSql() async {
@@ -899,7 +941,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
     clearConnectTimer();
-    emit('connect');
+    // emit('connect');
   }
 
   void execSqlBatch(Request request) {
@@ -1391,16 +1433,16 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       print(LoggerStackTrace.from(StackTrace.current).toString());
 
       if (err != null) {
-        if (inTransaction && state == STATE['LOGGED_IN']) {
-          rollbackTransaction(
-            callback: ({err}) {
-              done!(err: err, args: args);
-            },
-            name: name,
-          );
-        } else {
-          done!(err: err, args: args);
-        }
+        // if (inTransaction && state == STATE['LOGGED_IN']) {
+        //   rollbackTransaction(
+        //     callback: ({err}) {
+        //       done!(err: err, args: args);
+        //     },
+        //     name: name,
+        //   );
+        // } else {
+        //   done!(err: err, args: args);
+        // }
       } else if (useSavepoint) {
         if (TDSVERSIONS[config.options.tdsVersion]! < TDSVERSIONS['7_2']!) {
           transactionDepth--;
@@ -1468,12 +1510,13 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       {String Function(String indent)? toString}) async {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
-    if (state != STATE['LOGGED_IN']) {
-      final message =
-          'Requests can only be made in the ${STATE['LOGGED_IN']!.name} state, not the ${state?.name} state';
-      debug.log(message);
-      request.callback(RequestError(message: message, code: 'EINVALIDSTATE'));
-    } else if (request.canceled) {
+    // if (state != STATE['LOGGED_IN']) {
+    //   final message =
+    //       'Requests can only be made in the ${STATE['LOGGED_IN']!.name} state, not the ${state?.name} state';
+    //   debug.log(message);
+    //   request.callback(RequestError(message: message, code: 'EINVALIDSTATE'));
+    // } else
+    if (request.canceled) {
       scheduleMicrotask(() {
         request.callback(RequestError(message: 'Canceled.', code: 'ECANCEL'));
       }) as RequestCompletionCallback;
@@ -1524,7 +1567,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       createRequestTimer();
 
       messageIo.outgoingMessageStream!.write(message, 'utf-8', ([error]) {});
-      transitionTo(STATE['SENT_CLIENT_REQUEST']!);
+      // transitionTo(STATE['SENT_CLIENT_REQUEST']!);
 
       message.subscription.onDone(() {
         request.removeEventListener(

@@ -86,22 +86,22 @@ class DoneToken extends Token {
         );
 }
 
-//TODO: delete
-class BaseClass extends Token {
-  @override
-  String name;
+//todo: delete
+// class BaseClass extends Token {
+//   @override
+//   String name;
 
-  @override
-  HandlerName handlerName;
+//   @override
+//   HandlerName handlerName;
 
-  BaseClass({
-    this.name = 'DONEINPROC',
-    this.handlerName = 'onDoneInProc',
-  }) : super(
-          name: name,
-          handlerName: handlerName,
-        );
-}
+//   BaseClass({
+//     this.name = 'DONEINPROC',
+//     this.handlerName = 'onDoneInProc',
+//   }) : super(
+//           name: name,
+//           handlerName: handlerName,
+//         );
+// }
 
 class DoneInProcToken extends Token {
   @override

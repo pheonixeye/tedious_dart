@@ -213,16 +213,16 @@ class InitialSqlTokenHandler implements TokenHandler {
 
   @override
   onCharsetChange(CharsetEnvChangeToken token) {
-    connection.emit('charsetChange', token.newValue);
+    // connection.emit('charsetChange', token.newValue);
   }
 
   @override
   onColMetadata(ColMetadataToken token) {
-    connection.emit(
-        'error',
-        MTypeError(
-          "Received 'columnMetadata' when no sqlRequest is in progress",
-        ));
+    // connection.emit(
+    //     'error',
+    //     MTypeError(
+    //       "Received 'columnMetadata' when no sqlRequest is in progress",
+    //     ));
     connection.close();
   }
 
@@ -234,7 +234,7 @@ class InitialSqlTokenHandler implements TokenHandler {
 
   @override
   onDatabaseChange(DatabaseEnvChangeToken token) {
-    connection.emit('databaseChange', token.newValue);
+    // connection.emit('databaseChange', token.newValue);
   }
 
   @override
@@ -253,7 +253,7 @@ class InitialSqlTokenHandler implements TokenHandler {
 
   @override
   onErrorMessage(ErrorMessageToken token) {
-    connection.emit('errorMessage', token);
+    // connection.emit('errorMessage', token);
   }
 
   @override
@@ -268,12 +268,12 @@ class InitialSqlTokenHandler implements TokenHandler {
 
   @override
   onInfoMessage(InfoMessageToken token) {
-    connection.emit('infoMessage', token);
+    // connection.emit('infoMessage', token);
   }
 
   @override
   onLanguageChange(LanguageEnvChangeToken token) {
-    connection.emit('languageChange', token.newValue);
+    // connection.emit('languageChange', token.newValue);
   }
 
   @override
@@ -283,15 +283,15 @@ class InitialSqlTokenHandler implements TokenHandler {
 
   @override
   onNBCRow(NBCRowToken token) {
-    connection.emit('error',
-        MTypeError("Received 'row' when no sqlRequest is in progress"));
+    // connection.emit('error',
+    //     MTypeError("Received 'row' when no sqlRequest is in progress"));
     connection.close();
   }
 
   @override
   onOrder(OrderToken token) {
-    connection.emit('error',
-        MTypeError("Received 'order' when no sqlRequest is in progress"));
+    // connection.emit('error',
+    //     MTypeError("Received 'order' when no sqlRequest is in progress"));
     connection.close();
   }
 
@@ -302,7 +302,7 @@ class InitialSqlTokenHandler implements TokenHandler {
 
   @override
   onResetConnection(ResetConnectionEnvChangeToken token) {
-    connection.emit('resetConnection');
+    // connection.emit('resetConnection');
   }
 
   @override
@@ -316,7 +316,7 @@ class InitialSqlTokenHandler implements TokenHandler {
     connection.transactionDescriptors.length = 1;
     // An outermost transaction was rolled back. Reset the transaction counter
     connection.inTransaction = false;
-    connection.emit('rollbackTransaction');
+    // connection.emit('rollbackTransaction');
   }
 
   @override
@@ -326,8 +326,8 @@ class InitialSqlTokenHandler implements TokenHandler {
 
   @override
   onRow(RowToken token) {
-    connection.emit('error',
-        MTypeError("Received 'row' when no sqlRequest is in progress"));
+    // connection.emit('error',
+    //     MTypeError("Received 'row' when no sqlRequest is in progress"));
     connection.close();
   }
 
@@ -362,7 +362,7 @@ class Login7TokenHandler implements TokenHandler {
 
   @override
   onCharsetChange(CharsetEnvChangeToken token) {
-    connection.emit('charsetChange', token.newValue);
+    // connection.emit('charsetChange', token.newValue);
   }
 
   @override
@@ -377,7 +377,7 @@ class Login7TokenHandler implements TokenHandler {
 
   @override
   onDatabaseChange(DatabaseEnvChangeToken token) {
-    connection.emit('databaseChange', token.newValue);
+    // connection.emit('databaseChange', token.newValue);
   }
 
   @override
@@ -396,7 +396,7 @@ class Login7TokenHandler implements TokenHandler {
 
   @override
   onErrorMessage(ErrorMessageToken token) {
-    connection.emit('errorMessage', token);
+    // connection.emit('errorMessage', token);
 
     final error = ConnectionError(token.message, 'ELOGIN');
 
@@ -445,12 +445,12 @@ class Login7TokenHandler implements TokenHandler {
 
   @override
   onInfoMessage(InfoMessageToken token) {
-    connection.emit('infoMessage', token);
+    // connection.emit('infoMessage', token);
   }
 
   @override
   onLanguageChange(LanguageEnvChangeToken token) {
-    connection.emit('languageChange', token.newValue);
+    // connection.emit('languageChange', token.newValue);
   }
 
   @override
@@ -554,7 +554,7 @@ class RequestTokenHandler implements TokenHandler {
 
   @override
   onCharsetChange(CharsetEnvChangeToken token) {
-    connection.emit('charsetChange', token.newValue);
+    // connection.emit('charsetChange', token.newValue);
   }
 
   @override
@@ -585,7 +585,7 @@ class RequestTokenHandler implements TokenHandler {
 
   @override
   onDatabaseChange(DatabaseEnvChangeToken token) {
-    connection.emit('databaseChange', token.newValue);
+    // connection.emit('databaseChange', token.newValue);
   }
 
   @override
@@ -662,7 +662,7 @@ class RequestTokenHandler implements TokenHandler {
 
   @override
   onErrorMessage(ErrorMessageToken token) {
-    connection.emit('errorMessage', token);
+    // connection.emit('errorMessage', token);
 
     if (!(request as Request).canceled) {
       final error = RequestError(message: token.message, code: 'EREQUEST');
@@ -694,12 +694,12 @@ class RequestTokenHandler implements TokenHandler {
 
   @override
   onInfoMessage(InfoMessageToken token) {
-    connection.emit('infoMessage', token);
+    // connection.emit('infoMessage', token);
   }
 
   @override
   onLanguageChange(LanguageEnvChangeToken token) {
-    connection.emit('languageChange', token.newValue);
+    // connection.emit('languageChange', token.newValue);
   }
 
   @override
@@ -736,7 +736,7 @@ class RequestTokenHandler implements TokenHandler {
 
   @override
   onResetConnection(ResetConnectionEnvChangeToken token) {
-    connection.emit('resetConnection');
+    // connection.emit('resetConnection');
   }
 
   @override
@@ -760,7 +760,7 @@ class RequestTokenHandler implements TokenHandler {
     connection.transactionDescriptors.length = 1;
     // An outermost transaction was rolled back. Reset the transaction counter
     connection.inTransaction = false;
-    connection.emit('rollbackTransaction');
+    // connection.emit('rollbackTransaction');
   }
 
   @override

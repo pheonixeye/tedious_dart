@@ -846,18 +846,24 @@
 //       num port, bool multiSubnetFailover, AbortSignal signal) async {
 //     print(LoggerStackTrace.from(StackTrace.current).toString());
 
-//     final connectOpts = {
-//       'host': routingData != null ? routingData!.server : config.server,
-//       'port': routingData != null ? routingData!.port : port,
-//       'localAddress': config.options.localAddress,
-//     };
+//     // final connectOpts = {
+//     //   'host': routingData != null ? routingData!.server : config.server,
+//     //   'port': routingData != null ? routingData!.port : port,
+//     //   'localAddress': config.options.localAddress,
+//     // };
+
+//     final localConnectionOptions = LocalConnectionOptions(
+//       host: routingData != null ? routingData!.server : config.server,
+//       port: routingData != null ? routingData!.port as int : port as int,
+//       localAddress: config.options.localAddress,
+//     );
 
 //     // print(connectOpts.toString());
 
-//     Future<Socket?> Function(Map<String, dynamic>, AbortSignal<dynamic>)
+//     Stream<Socket?> Function(LocalConnectionOptions, AbortSignal<dynamic>)
 //         connect = multiSubnetFailover ? connectInParallel : connectInSequence;
 
-//     await connect(connectOpts, signal).then((socket) {
+//     connect(localConnectionOptions, signal).listen((socket) {
 //       scheduleMicrotask(() async {
 //         final sub = socket!.listen((event) {
 //           print(LoggerStackTrace.from(StackTrace.current).toString());
