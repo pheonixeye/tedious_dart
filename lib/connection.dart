@@ -435,7 +435,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
             config.options.packetSize,
             debug,
           );
-          console.log(['before message io']);
+          console.log(['after message io']);
 
           // messageIo.on(
           //     'secure', (Socket cleartext) => {emit('secure', cleartext)});

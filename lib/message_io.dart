@@ -10,11 +10,11 @@ import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/incoming_message_stream.dart';
 import 'package:tedious_dart/message.dart';
-import 'package:tedious_dart/models/duplex.dart';
+// import 'package:tedious_dart/models/duplex.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
 // import 'package:tedious_dart/models/duplex.dart';
 import 'package:tedious_dart/outgoing_message_stream.dart';
-import 'package:tedious_dart/packet.dart';
+// import 'package:tedious_dart/packet.dart';
 
 //!manufactured class
 class SecurePair {
@@ -46,12 +46,14 @@ class MessageIO extends EventEmitter {
     tlsNegotiationComplete = false;
 
     _incomingMessageStream = IncomingMessageStream(debug);
-    incomingMessageIterator = StreamIterator(_incomingMessageStream!);
+    incomingMessageIterator =
+        StreamIterator(_incomingMessageStream!.controller.stream);
 
     outgoingMessageStream =
         OutgoingMessageStream(debug, packetSize: _packetSize);
 
-    socket.pipe(_incomingMessageStream!);
+    // socket.pipe(_incomingMessageStream!.);
+    _incomingMessageStream?.bind(socket);
 
     final controller = StreamController<Buffer>.broadcast();
     controller.addStream(socket.transform(BufferTransformer()));

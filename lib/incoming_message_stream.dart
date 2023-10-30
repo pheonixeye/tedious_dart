@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:buffer_list/buffer_list.dart';
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/message.dart';
@@ -10,21 +11,22 @@ import 'package:tedious_dart/models/errors.dart';
 // import 'package:tedious_dart/node/buffer_list.dart';
 import 'package:tedious_dart/packet.dart';
 
-class IncomingMessageStream extends Stream<Buffer>
-    implements StreamConsumer<Uint8List> {
+///
+///  IncomingMessageStream
+///  Transform received TDS data into individual IncomingMessage streams.
+///
+class IncomingMessageStream
+    extends StreamTransformerBase<Uint8List, Stream<Buffer>> {
   Debug debug;
-  dynamic bl;
+  late BufferList bl;
   Message? currentMessage;
   late final StreamController<Buffer> controller;
 
   IncomingMessageStream(this.debug) : super() {
     currentMessage = null;
-    //TODO: re-implement bufferList class;
-    bl = List<Buffer>.empty();
+    //todo:done: re-implement bufferList class;
+    bl = BufferList();
     controller = StreamController<Buffer>.broadcast();
-    // controller.sink.addStream(this);
-
-    // BufferList([]);
   }
   pause() {
     // super.pause();
@@ -80,7 +82,7 @@ class IncomingMessageStream extends Stream<Buffer>
           message.controller.add(packet.data());
           message.controller.close();
           return;
-        } else if (await message.controller.sink.done) {
+        } else if (message.controller.sink.done == true) {
           //!message.write(packet.data())
           // If too much data is buffering up in the
           // current message, wait for it to drain.
@@ -104,24 +106,25 @@ class IncomingMessageStream extends Stream<Buffer>
     this.processBufferedData(Function.apply(callback, []));
   }
 
-  @override
-  StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
-      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return controller.stream.asBroadcastStream().listen(onData,
-        onDone: onDone, onError: onError, cancelOnError: cancelOnError);
-  }
+  // @override
+  // StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
+  //     {Function? onError, void Function()? onDone, bool? cancelOnError}) {
+  //   return controller.stream.asBroadcastStream().listen(onData,
+  //       onDone: onDone, onError: onError, cancelOnError: cancelOnError);
+  // }
+
+  // @override
+  // Future addStream(Stream<Uint8List> stream) {
+  //   final streamTransformer =
+  //       StreamTransformer<Uint8List, Buffer>.fromBind((p0) {
+  //     return p0.asBroadcastStream().map((event) => Buffer.from(event));
+  //   });
+  //   return controller.addStream(stream.transform<Buffer>(streamTransformer));
+  // }
 
   @override
-  Future addStream(Stream<Uint8List> stream) {
-    final streamTransformer =
-        StreamTransformer<Uint8List, Buffer>.fromBind((p0) {
-      return p0.asBroadcastStream().map((event) => Buffer.from(event));
-    });
-    return controller.addStream(stream.transform<Buffer>(streamTransformer));
-  }
-
-  @override
-  Future close() {
-    return controller.close();
+  Stream<Stream<Buffer>> bind(Stream<Uint8List> stream) {
+    // TODO: implement bind
+    throw UnimplementedError();
   }
 }

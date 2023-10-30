@@ -28,6 +28,8 @@ dependencies:
   equatable:
   magic_buffer_copy:
     path: c:/users/kareemzaher/desktop/darTedious/magic_buffer_copy
+  buffer_list:
+    path: c:/users/kareemzaher/desktop/darTedious/buffer_list
   rxdart:  
   dartz:
   
