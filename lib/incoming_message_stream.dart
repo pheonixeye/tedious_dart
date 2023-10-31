@@ -7,6 +7,7 @@ import 'package:buffer_list/buffer_list.dart';
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/message.dart';
+import 'package:tedious_dart/message_io.dart';
 import 'package:tedious_dart/models/errors.dart';
 // import 'package:tedious_dart/node/buffer_list.dart';
 import 'package:tedious_dart/packet.dart';
@@ -16,18 +17,16 @@ import 'package:tedious_dart/packet.dart';
 ///  Transform received TDS data into individual IncomingMessage streams.
 ///
 class IncomingMessageStream
-    extends StreamTransformerBase<Uint8List, Stream<Buffer>> {
+    extends StreamTransformerBase<Uint8List, Stream<Buffer>>
+    implements StreamConsumer<Uint8List> {
   Debug debug;
-  late BufferList bl;
+  BufferList bl = BufferList();
   Message? currentMessage;
-  late final StreamController<Buffer> controller;
+  final StreamController<Buffer> controller =
+      StreamController<Buffer>.broadcast();
 
-  IncomingMessageStream(this.debug) : super() {
-    currentMessage = null;
-    //todo:done: re-implement bufferList class;
-    bl = BufferList();
-    controller = StreamController<Buffer>.broadcast();
-  }
+  IncomingMessageStream(this.debug) : super();
+
   pause() {
     // super.pause();
     if (this.currentMessage != null) {
@@ -106,25 +105,25 @@ class IncomingMessageStream
     this.processBufferedData(Function.apply(callback, []));
   }
 
-  // @override
-  // StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
-  //     {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-  //   return controller.stream.asBroadcastStream().listen(onData,
-  //       onDone: onDone, onError: onError, cancelOnError: cancelOnError);
-  // }
-
-  // @override
-  // Future addStream(Stream<Uint8List> stream) {
-  //   final streamTransformer =
-  //       StreamTransformer<Uint8List, Buffer>.fromBind((p0) {
-  //     return p0.asBroadcastStream().map((event) => Buffer.from(event));
-  //   });
-  //   return controller.addStream(stream.transform<Buffer>(streamTransformer));
-  // }
-
   @override
   Stream<Stream<Buffer>> bind(Stream<Uint8List> stream) {
-    // TODO: implement bind
-    throw UnimplementedError();
+    return stream
+        .asBroadcastStream()
+        .map((event) =>
+            Stream.fromIterable([Buffer.from(event)]).asBroadcastStream())
+        .asBroadcastStream();
+  }
+
+  @override
+  Future addStream(Stream<Uint8List> stream) {
+    return controller.addStream(stream
+        .asBroadcastStream()
+        .transform(BufferTransformer())
+        .asBroadcastStream());
+  }
+
+  @override
+  Future close() {
+    return controller.close();
   }
 }

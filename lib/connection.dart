@@ -413,17 +413,19 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     Stream<Socket?> Function(LocalConnectionOptions, AbortSignal<dynamic>)
         connect = multiSubnetFailover ? connectInParallel : connectInSequence;
 
-    connect(localConnectionOptions, signal).listen((socket) {
+    connect(localConnectionOptions, signal)
+        .asBroadcastStream()
+        .listen((socket) {
       if (socket != null) {
         console.log([socket.remoteAddress, socket.remotePort]);
         scheduleMicrotask(() async {
-          final sub = socket.listen((event) {});
-          sub.onDone(() {
-            socketEnd();
-          });
-          sub.onError((error) {
-            socketError(error);
-          });
+          // final sub = socket.asBroadcastStream().listen((event) {});
+          // sub.onDone(() {
+          //   socketEnd();
+          // });
+          // sub.onError((error) {
+          //   socketError(error);
+          // });
           // if (await socket.done == true) {
           //   socketClose();
           // }

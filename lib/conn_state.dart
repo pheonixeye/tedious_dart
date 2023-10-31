@@ -28,6 +28,4 @@ class Final extends ConnectionState {
   const Final() : super();
   @override
   final CSE name = CSE.FINAL;
-
-  cleanUpConnection() {}
 }

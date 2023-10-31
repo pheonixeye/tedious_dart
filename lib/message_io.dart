@@ -46,18 +46,31 @@ class MessageIO extends EventEmitter {
     tlsNegotiationComplete = false;
 
     _incomingMessageStream = IncomingMessageStream(debug);
+    console.log(['step 1']);
+
     incomingMessageIterator =
         StreamIterator(_incomingMessageStream!.controller.stream);
+    console.log(['step 2']);
 
     outgoingMessageStream =
         OutgoingMessageStream(debug, packetSize: _packetSize);
+    // _incomingMessageStream?.bind(socket);
+    console.log(['step 3']);
+    init();
+  }
 
-    // socket.pipe(_incomingMessageStream!.);
-    _incomingMessageStream?.bind(socket);
+  init() async {
+    final _socketController = StreamController<Buffer>.broadcast();
+    console.log(['step 4']);
 
-    final controller = StreamController<Buffer>.broadcast();
-    controller.addStream(socket.transform(BufferTransformer()));
-    outgoingMessageStream?.pipe(controller);
+    _socketController
+        .addStream(socket.asBroadcastStream().transform(BufferTransformer()));
+    console.log(['step 5']);
+
+    await socket.pipe(_incomingMessageStream!);
+    console.log(['step 6']);
+    await outgoingMessageStream?.pipe(_socketController.sink);
+    console.log(['step 7']);
   }
 
   int packetSize(List<int> args) {
@@ -197,45 +210,51 @@ class MessageIO extends EventEmitter {
 
   Future<Buffer> readMessage() async {
     var result = this.incomingMessageIterator;
-
-    if (!await result.moveNext()) {
+    bool moveNext = await result.moveNext();
+    if (!moveNext) {
       throw ArgumentError('unexpected end of message stream');
     }
     return result.current;
   }
 }
 
-class SocketConsumer extends Stream<Buffer> {
-  late final SecureSocket socket;
-  SocketConsumer(this.socket);
-  // @override
-  // Future addStream(Stream stream) async {
-  //   this.addStream(socket);
-  // }
+// class SocketConsumer extends Stream<Buffer> {
+//   late final SecureSocket socket;
+//   SocketConsumer(this.socket);
+//   // @override
+//   // Future addStream(Stream stream) async {
+//   //   this.addStream(socket);
+//   // }
 
-  // @override
-  // Future close() async {
-  //   this.close();
-  // }
+//   // @override
+//   // Future close() async {
+//   //   this.close();
+//   // }
 
-  @override
-  StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
-      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    // TODO: implement listen
-    throw UnimplementedError();
-  }
-}
+//   @override
+//   StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
+//       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
+//     // TODO: implement listen
+//     throw UnimplementedError();
+//   }
+// }
 
 class BufferTransformer extends StreamTransformerBase<Uint8List, Buffer> {
   @override
   Stream<Buffer> bind(Stream<Uint8List> stream) {
-    return stream.map((event) => Buffer.from(event));
+    return stream
+        .asBroadcastStream()
+        .map((event) => Buffer.from(event))
+        .asBroadcastStream();
   }
 }
 
 class Uint8ListTransformer extends StreamTransformerBase<Buffer, Uint8List> {
   @override
   Stream<Uint8List> bind(Stream<Buffer> stream) {
-    return stream.map((event) => event.buffer);
+    return stream
+        .asBroadcastStream()
+        .map((event) => event.buffer)
+        .asBroadcastStream();
   }
 }
