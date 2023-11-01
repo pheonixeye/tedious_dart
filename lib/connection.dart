@@ -215,9 +215,12 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
             config.options.port!,
             config.options.multiSubnetFailover,
             signal,
-          );
+          ).whenComplete(() {
+            emit(Connecting());
+            core.add(SentPreLoginMessage());
+          });
         } else {
-          await instanceLookup(InstanceLookUpOptions(
+          instanceLookup(InstanceLookUpOptions(
             server: config.server,
             instanceName: config.options.instanceName,
             timeout: config.options.connectTimeout,
@@ -227,13 +230,24 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
               port,
               config.options.multiSubnetFailover,
               signal,
-            );
+            ).whenComplete(() {
+              emit(Connecting());
+              core.add(SentPreLoginMessage());
+            });
           });
         }
-
-        emit(Connecting());
       },
     );
+
+    on<SentPreLoginMessageEvent>((event, emit) async {
+      var messageBuffer = Buffer.alloc(0);
+      late Message message;
+      message = await messageIo.readMessage();
+      await for (Buffer data in message) {
+        messageBuffer = Buffer.concat([messageBuffer, data]);
+      }
+    });
+
     on<SocketErrorConnectingEvent>(
       (event, emit) {
         add(event);
@@ -400,7 +414,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     );
   }
 
-  void connectOnPort(
+  Future connectOnPort(
       num port, bool multiSubnetFailover, AbortSignal signal) async {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
@@ -419,13 +433,13 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       if (socket != null) {
         console.log([socket.remoteAddress, socket.remotePort]);
         scheduleMicrotask(() async {
-          // final sub = socket.asBroadcastStream().listen((event) {});
-          // sub.onDone(() {
-          //   socketEnd();
-          // });
-          // sub.onError((error) {
-          //   socketError(error);
-          // });
+          final sub = socket.asBroadcastStream().listen((event) {});
+          sub.onDone(() {
+            socketEnd();
+          });
+          sub.onError((error) {
+            socketError(error);
+          });
           // if (await socket.done == true) {
           //   socketClose();
           // }
@@ -718,7 +732,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     print(LoggerStackTrace.from(StackTrace.current).toString());
 
     // final [, major, minor, build] = /^(\d+)\.(\d+)\.(\d+)/.exec(version) ?? ['0.0.0', '0', '0', '0'];
-    final major = '0.0.0';
+    final major = '0';
     final minor = '0';
     final build = '0';
     final subbuild = '0';
@@ -736,6 +750,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
     messageIo.sendMessage(PACKETTYPE['PRELOGIN']!, data: payload.data);
     debug.payload(() {
+      console.log([payload.toString(indent: '  ')]);
       return payload.toString(indent: '  ');
     });
   }
@@ -837,7 +852,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       type: PACKETTYPE['SQL_BATCH']!,
       resetConnection: false,
     );
-    messageIo.outgoingMessageStream!.write(message, 'usc-2', (([error]) {}));
+    messageIo.outgoingMessageStream.write(message, 'usc-2', (([error]) {}));
     //TODO* Readable.from(payload).pipe(message);
     final _controller = StreamController.broadcast();
     // _controller.addStream(payload);
@@ -1568,7 +1583,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
       createRequestTimer();
 
-      messageIo.outgoingMessageStream!.write(message, 'utf-8', ([error]) {});
+      messageIo.outgoingMessageStream.write(message, 'utf-8', ([error]) {});
       // transitionTo(STATE['SENT_CLIENT_REQUEST']!);
 
       message.subscription.onDone(() {

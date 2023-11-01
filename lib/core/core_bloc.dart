@@ -18,6 +18,13 @@ class CoreBloc extends Bloc<CoreEvent, CoreState> {
       connection.add(EnterConnectingEvent());
       emit(Connecting());
     });
+
+    on<SentPreLoginMessage>((event, emit) {
+      if (connection.state is Connecting) {
+        connection.add(SentPreLoginMessageEvent());
+        emit(SentPreLoginMessageState());
+      }
+    });
   }
 
   @override

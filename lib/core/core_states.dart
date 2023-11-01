@@ -9,3 +9,7 @@ class InitialState extends CoreState {
 class Connecting extends CoreState {
   const Connecting() : super();
 }
+
+class SentPreLoginMessageState extends CoreState {
+  const SentPreLoginMessageState() : super();
+}

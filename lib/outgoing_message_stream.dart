@@ -8,21 +8,18 @@ import 'package:buffer_list/buffer_list.dart';
 
 class OutgoingMessageStream extends Stream<Buffer?> {
   int packetSize;
-  Debug debug;
-  late BufferList bl;
+  final Debug debug;
+  final BufferList bl;
 
   Message? currentMessage;
 
-  late final StreamController<Buffer?> controller;
+  final StreamController<Buffer?> controller;
   StreamSubscription<Buffer?> get subscription =>
       controller.stream.asBroadcastStream().listen((event) {});
 
-  OutgoingMessageStream(this.debug, {required this.packetSize}) {
-    packetSize = packetSize;
-    debug = debug;
-    bl = BufferList();
-    // BufferList([]);
-    controller = StreamController<Buffer?>.broadcast();
+  OutgoingMessageStream(this.debug, {required this.packetSize})
+      : controller = StreamController<Buffer?>.broadcast(),
+        bl = BufferList() {
     controller.sink.addStream(this);
 
     // When the writable side is ended, push `null`
@@ -32,20 +29,19 @@ class OutgoingMessageStream extends Stream<Buffer?> {
     });
   }
 
-  write(
+  void write(
     Message message,
     String? encoding,
-    void Function(Error? error) callback,
+    void Function([Error? error]) callback,
   ) {
-    var length = packetSize - HEADER_LENGTH;
-    var packetNumber = 0;
+    final int length = packetSize - HEADER_LENGTH;
+    int packetNumber = 0;
 
     currentMessage = message;
-    currentMessage!.subscription.onData((data) async {
+    currentMessage?.subscription.onData((Buffer data) async {
       if (message.ignore == true) {
         return;
       }
-      bl.append(data);
 
       bl.append(data);
 
@@ -53,7 +49,7 @@ class OutgoingMessageStream extends Stream<Buffer?> {
         final data = bl.slice(0, length);
         bl.consume(length);
 
-        // TODO: Get rid of creating `Packet` instances here.
+        // todo: Get rid of creating `Packet` instances here.
         final packet = Packet(message.type);
         packet.packetId(packetNumber += 1);
         packet.resetConnection(message.resetConnection);
@@ -61,23 +57,23 @@ class OutgoingMessageStream extends Stream<Buffer?> {
 
         debug.packet(Direction.Sent, packet);
         debug.data(packet);
-
-        if (await any((d) => d == packet.buffer) == false) {
+        final lastE = await last;
+        if (lastE != packet.buffer) {
           message.subscription.pause();
         }
       }
     });
 
-    currentMessage!.subscription.onDone(() {
-      final data = bl.slice(0, 0);
+    currentMessage?.subscription.onDone(() {
+      final data = bl.slice(0, 0) as Buffer;
       bl.consume(data.length);
 
-      // TODO: Get rid of creating `Packet` instances here.
+      // todo: Get rid of creating `Packet` instances here.
       final packet = Packet(message.type);
       packet.packetId(packetNumber += 1);
       packet.resetConnection(message.resetConnection);
       packet.last(true);
-      packet.ignore(message.ignore!);
+      packet.ignore(message.ignore);
       packet.addData(data);
 
       debug.packet(Direction.Sent, packet);
@@ -87,11 +83,11 @@ class OutgoingMessageStream extends Stream<Buffer?> {
 
       currentMessage = null;
 
-      Function.apply(callback, []);
+      callback();
     });
   }
 
-  read(int size) {
+  void read(int size) {
     // If we do have a message, resume it and get data flowing.
     // Otherwise, there is nothing to do.
     if (currentMessage != null) {
@@ -102,7 +98,7 @@ class OutgoingMessageStream extends Stream<Buffer?> {
   @override
   StreamSubscription<Buffer?> listen(void Function(Buffer? event)? onData,
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return controller.stream.listen(onData,
+    return controller.stream.asBroadcastStream().listen(onData,
         onDone: onDone, onError: onError, cancelOnError: cancelOnError);
   }
 }

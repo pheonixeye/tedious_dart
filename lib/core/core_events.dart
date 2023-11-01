@@ -8,6 +8,8 @@ class Initialize extends CoreEvent {
 
 class Connect extends CoreEvent {
   const Connect() : super();
+}
 
-  initialiseConnection() {}
+class SentPreLoginMessage extends CoreEvent {
+  const SentPreLoginMessage() : super();
 }

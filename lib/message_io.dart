@@ -1,86 +1,83 @@
-// ignore_for_file: unnecessary_this
-
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
-// import 'dart:typed_data';
 
 import 'package:events_emitter/emitters/event_emitter.dart';
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/incoming_message_stream.dart';
 import 'package:tedious_dart/message.dart';
-// import 'package:tedious_dart/models/duplex.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
-// import 'package:tedious_dart/models/duplex.dart';
 import 'package:tedious_dart/outgoing_message_stream.dart';
-// import 'package:tedious_dart/packet.dart';
 
 //!manufactured class
-class SecurePair {
-  Socket cleartext;
-  SecureSocket? encrypted;
+// class SecurePair {
+//   Socket cleartext;
+//   SecureSocket? encrypted;
 
-  SecurePair({
-    required this.cleartext,
-    this.encrypted,
-  });
-}
+//   SecurePair({
+//     required this.cleartext,
+//     this.encrypted,
+//   });
+// }
 
 class MessageIO extends EventEmitter {
   final Debug debug;
   final Socket socket;
-  int _packetSize;
+  // ignore: unused_field
+  final int _packetSize;
 
   late bool? tlsNegotiationComplete;
 
-  IncomingMessageStream? _incomingMessageStream;
-  OutgoingMessageStream? outgoingMessageStream;
+  final IncomingMessageStream _incomingMessageStream;
+  final OutgoingMessageStream outgoingMessageStream;
 
-  SecurePair? securePair;
+  // SecurePair? securePair;
 
-  late StreamIterator<Buffer> incomingMessageIterator;
+  late StreamIterator<Message> incomingMessageIterator;
 
-  MessageIO(this.socket, this._packetSize, this.debug) : super() {
+  MessageIO(this.socket, this._packetSize, this.debug)
+      : _incomingMessageStream = IncomingMessageStream(debug),
+        outgoingMessageStream =
+            OutgoingMessageStream(debug, packetSize: _packetSize),
+        super() {
     console.log(['defined MessageIo class']);
     tlsNegotiationComplete = false;
 
-    _incomingMessageStream = IncomingMessageStream(debug);
+    // _incomingMessageStream = IncomingMessageStream(debug);
     console.log(['step 1']);
 
     incomingMessageIterator =
-        StreamIterator(_incomingMessageStream!.controller.stream);
+        StreamIterator(_incomingMessageStream.controller.stream);
     console.log(['step 2']);
 
-    outgoingMessageStream =
-        OutgoingMessageStream(debug, packetSize: _packetSize);
+    // outgoingMessageStream =
+    //     OutgoingMessageStream(debug, packetSize: _packetSize);
     // _incomingMessageStream?.bind(socket);
     console.log(['step 3']);
-    init();
+    // init();
   }
 
   init() async {
-    final _socketController = StreamController<Buffer>.broadcast();
+    final socketController = StreamController<Buffer>.broadcast();
     console.log(['step 4']);
-
-    _socketController
-        .addStream(socket.asBroadcastStream().transform(BufferTransformer()));
+    socketController
+        .addStream(socket.asBroadcastStream().transform(BufferFromUnit8List()));
     console.log(['step 5']);
-
-    await socket.pipe(_incomingMessageStream!);
+    await socket.pipe(_incomingMessageStream);
     console.log(['step 6']);
-    await outgoingMessageStream?.pipe(_socketController.sink);
+    await outgoingMessageStream.pipe(socketController.sink);
     console.log(['step 7']);
   }
 
   int packetSize(List<int> args) {
     if (args.isNotEmpty) {
       var packetSize = args[0];
-      this.debug.log('Packet size changed from '
-          '${this.outgoingMessageStream!.packetSize}'
+      debug.log('Packet size changed from '
+          '${outgoingMessageStream.packetSize}'
           ' to '
           '$packetSize');
-      this.outgoingMessageStream!.packetSize = packetSize;
+      outgoingMessageStream.packetSize = packetSize;
     }
 
     //!socket.setMaxSendFragments is not implemented in dart;
@@ -92,7 +89,7 @@ class MessageIO extends EventEmitter {
     //       .setMaxSendFragment(this.outgoingMessageStream!.packetSize);
     // }
 
-    return this.outgoingMessageStream!.packetSize;
+    return outgoingMessageStream.packetSize;
   }
 
   // startTls(SecurityContext credentialsDetails, String hostname, int port,
@@ -201,15 +198,17 @@ class MessageIO extends EventEmitter {
 
   Future<Message> sendMessage(int packetType,
       {Buffer? data, bool? resetConnection}) async {
-    final message =
-        Message(type: packetType, resetConnection: resetConnection!);
+    final message = Message(
+      type: packetType,
+      resetConnection: resetConnection,
+    );
     await message.drain();
-    this.outgoingMessageStream!.write(message, 'utf-8', ([error]) {});
+    outgoingMessageStream.write(message, 'utf-8', ([error]) {});
     return message;
   }
 
-  Future<Buffer> readMessage() async {
-    var result = this.incomingMessageIterator;
+  Future<Message> readMessage() async {
+    var result = incomingMessageIterator;
     bool moveNext = await result.moveNext();
     if (!moveNext) {
       throw ArgumentError('unexpected end of message stream');
@@ -218,28 +217,7 @@ class MessageIO extends EventEmitter {
   }
 }
 
-// class SocketConsumer extends Stream<Buffer> {
-//   late final SecureSocket socket;
-//   SocketConsumer(this.socket);
-//   // @override
-//   // Future addStream(Stream stream) async {
-//   //   this.addStream(socket);
-//   // }
-
-//   // @override
-//   // Future close() async {
-//   //   this.close();
-//   // }
-
-//   @override
-//   StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
-//       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-//     // TODO: implement listen
-//     throw UnimplementedError();
-//   }
-// }
-
-class BufferTransformer extends StreamTransformerBase<Uint8List, Buffer> {
+class BufferFromUnit8List extends StreamTransformerBase<Uint8List, Buffer> {
   @override
   Stream<Buffer> bind(Stream<Uint8List> stream) {
     return stream
@@ -249,7 +227,7 @@ class BufferTransformer extends StreamTransformerBase<Uint8List, Buffer> {
   }
 }
 
-class Uint8ListTransformer extends StreamTransformerBase<Buffer, Uint8List> {
+class Uint8ListFromBuffer extends StreamTransformerBase<Buffer, Uint8List> {
   @override
   Stream<Uint8List> bind(Stream<Buffer> stream) {
     return stream

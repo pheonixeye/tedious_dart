@@ -24,6 +24,12 @@ class Connecting extends ConnectionState {
   // //* socket => messageIo => socket(secure) => sendPreLogin => CSE(SENT_PRELOGIN)
 }
 
+class SentPreLogin extends ConnectionState {
+  const SentPreLogin() : super();
+  @override
+  final CSE name = CSE.SENT_PRELOGIN;
+}
+
 class Final extends ConnectionState {
   const Final() : super();
   @override

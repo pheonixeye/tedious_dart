@@ -10,6 +10,12 @@ class EnterConnectingEvent extends ConnectionEvent {
   const EnterConnectingEvent() : super();
 }
 
+class SentPreLoginMessageEvent extends ConnectionEvent {
+  const SentPreLoginMessageEvent() : super();
+}
+
+//!-------------------------------------------------------//
+
 class SocketErrorConnectingEvent extends ConnectionEvent {
   const SocketErrorConnectingEvent() : super();
 }

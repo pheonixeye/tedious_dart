@@ -16,16 +16,15 @@ import 'package:tedious_dart/packet.dart';
 ///  IncomingMessageStream
 ///  Transform received TDS data into individual IncomingMessage streams.
 ///
-class IncomingMessageStream
-    extends StreamTransformerBase<Uint8List, Stream<Buffer>>
-    implements StreamConsumer<Uint8List> {
+class IncomingMessageStream implements StreamConsumer<Uint8List> {
   Debug debug;
   BufferList bl = BufferList();
   Message? currentMessage;
-  final StreamController<Buffer> controller =
-      StreamController<Buffer>.broadcast();
+  final StreamController<Message> controller;
 
-  IncomingMessageStream(this.debug) : super();
+  IncomingMessageStream(this.debug)
+      : controller = StreamController<Message>.broadcast(),
+        super();
 
   pause() {
     // super.pause();
@@ -43,13 +42,14 @@ class IncomingMessageStream
     return this;
   }
 
-  processBufferedData(void Function(ConnectionError? error)? callback) async {
+  Future<Message?> processBufferedData(
+      void Function(ConnectionError? error)? callback) async {
     // The packet header is always 8 bytes of length.
     while (this.bl.length >= HEADER_LENGTH) {
       // Get the full packet length
-      var length = this.bl.readUInt16BE(2);
+      int length = this.bl.readUInt16BE(2);
       if (length < HEADER_LENGTH) {
-        return callback!(ConnectionError('Unable to process incoming packet'));
+        callback!(ConnectionError('Unable to process incoming packet'));
       }
 
       if (this.bl.length >= length) {
@@ -67,7 +67,7 @@ class IncomingMessageStream
             type: packet.type(),
             resetConnection: false,
           );
-          controller.sink.add(await message.controller.stream.first);
+          controller.sink.add(message);
           // this.add(message);
         }
 
@@ -80,7 +80,7 @@ class IncomingMessageStream
           });
           message.controller.add(packet.data());
           message.controller.close();
-          return;
+          return null;
         } else if (message.controller.sink.done == true) {
           //!message.write(packet.data())
           // If too much data is buffering up in the
@@ -88,7 +88,7 @@ class IncomingMessageStream
           message.drain(this.processBufferedData(callback));
           // message.once('drain', () {
           // });
-          return;
+          return null;
         }
       } else {
         break;
@@ -98,6 +98,7 @@ class IncomingMessageStream
     // Not enough data to read the next packet. Stop here and wait for
     // the next call to `_transform`.
     Function.apply(callback!, []);
+    return currentMessage;
   }
 
   transform_(Buffer chunk, String? _encoding, void Function() callback) {
@@ -106,20 +107,13 @@ class IncomingMessageStream
   }
 
   @override
-  Stream<Stream<Buffer>> bind(Stream<Uint8List> stream) {
-    return stream
-        .asBroadcastStream()
-        .map((event) =>
-            Stream.fromIterable([Buffer.from(event)]).asBroadcastStream())
-        .asBroadcastStream();
-  }
-
-  @override
   Future addStream(Stream<Uint8List> stream) {
-    return controller.addStream(stream
-        .asBroadcastStream()
-        .transform(BufferTransformer())
-        .asBroadcastStream());
+    return controller.sink
+        .addStream(stream.asBroadcastStream().asyncMap((event) async {
+      bl.append(event);
+      final m = await processBufferedData((error) {});
+      return Message(type: m!.type);
+    }));
   }
 
   @override
