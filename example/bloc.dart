@@ -1,19 +1,22 @@
 import 'package:bloc/bloc.dart';
 import 'package:tedious_dart/conn_authentication.dart';
 import 'package:tedious_dart/conn_config.dart';
+import 'package:tedious_dart/conn_events.dart';
 import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/core/core_bloc.dart';
 import 'package:tedious_dart/core/core_events.dart';
 
 void main(List<String> args) {
-  final observer = Bloc.observer;
+  // final observer = Bloc.observer;
 
-  core.add(Initialize());
+  connection.add(InitialEvent());
 }
 
 final config = ConnectionConfiguration(
   server: '127.0.0.1',
-  options: ConnectionOptions(),
+  options: ConnectionOptions(
+    port: 1433,
+  ),
   authentication: AuthenticationType(
     type: AuthType.default_,
     options: AuthOptions(
@@ -25,4 +28,4 @@ final config = ConnectionConfiguration(
 
 final connection = Connection(config);
 
-final core = CoreBloc(connection);
+// final core = CoreBloc(connection);

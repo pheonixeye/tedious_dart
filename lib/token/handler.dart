@@ -297,7 +297,7 @@ class InitialSqlTokenHandler implements TokenHandler {
 
   @override
   onPacketSizeChange(PacketSizeEnvChangeToken token) {
-    connection.messageIo.packetSize([token.newValue as int]);
+    connection.messageIo?.packetSize([token.newValue as int]);
   }
 
   @override
@@ -487,7 +487,7 @@ class Login7TokenHandler implements TokenHandler {
 
   @override
   onPacketSizeChange(PacketSizeEnvChangeToken token) {
-    connection.messageIo.packetSize([token.newValue as int]);
+    connection.messageIo?.packetSize([token.newValue as int]);
   }
 
   @override
@@ -731,7 +731,7 @@ class RequestTokenHandler implements TokenHandler {
 
   @override
   onPacketSizeChange(PacketSizeEnvChangeToken token) {
-    connection.messageIo.packetSize([token.newValue as int]);
+    connection.messageIo?.packetSize([token.newValue as int]);
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:magic_buffer_copy/magic_buffer.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 
 class Message extends Stream<Buffer> {
   int type;
@@ -22,7 +23,8 @@ class Message extends Stream<Buffer> {
   @override
   StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return controller.stream.listen(onData,
+    console.log(['got to message.listen();']);
+    return controller.stream.asBroadcastStream().listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
 }

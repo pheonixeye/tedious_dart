@@ -5,14 +5,14 @@ abstract class ConnectionState {
   CSE get name;
 }
 
-class InitialState extends ConnectionState {
-  const InitialState() : super();
+class InitialConnState extends ConnectionState {
+  const InitialConnState() : super();
   @override
   final CSE name = CSE.INITIALIZED;
 }
 
-class Connecting extends ConnectionState {
-  const Connecting() : super();
+class ConnConnectingState extends ConnectionState {
+  const ConnConnectingState() : super();
   @override
   final CSE name = CSE.CONNECTING;
 
@@ -28,6 +28,24 @@ class SentPreLogin extends ConnectionState {
   const SentPreLogin() : super();
   @override
   final CSE name = CSE.SENT_PRELOGIN;
+}
+
+class SentLogin7Withfedauth extends ConnectionState {
+  const SentLogin7Withfedauth() : super();
+  @override
+  CSE get name => CSE.SENT_LOGIN7_WITH_FEDAUTH;
+}
+
+class SentLogin7WithNTLMLogin extends ConnectionState {
+  const SentLogin7WithNTLMLogin() : super();
+  @override
+  CSE get name => CSE.SENT_LOGIN7_WITH_NTLM;
+}
+
+class SentLogin7WithStandardLogin extends ConnectionState {
+  const SentLogin7WithStandardLogin() : super();
+  @override
+  CSE get name => CSE.SENT_LOGIN7_WITH_STANDARD_LOGIN;
 }
 
 class Final extends ConnectionState {

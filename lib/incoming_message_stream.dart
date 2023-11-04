@@ -1,5 +1,3 @@
-// ignore_for_file: unnecessary_this
-
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -7,8 +5,9 @@ import 'package:buffer_list/buffer_list.dart';
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/message.dart';
-import 'package:tedious_dart/message_io.dart';
+// import 'package:tedious_dart/message_io.dart';
 import 'package:tedious_dart/models/errors.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 // import 'package:tedious_dart/node/buffer_list.dart';
 import 'package:tedious_dart/packet.dart';
 
@@ -17,53 +16,66 @@ import 'package:tedious_dart/packet.dart';
 ///  Transform received TDS data into individual IncomingMessage streams.
 ///
 class IncomingMessageStream implements StreamConsumer<Uint8List> {
-  Debug debug;
-  BufferList bl = BufferList();
-  Message? currentMessage;
+  final Debug debug;
+  final BufferList bl = BufferList();
   final StreamController<Message> controller;
+  Message? currentMessage;
 
   IncomingMessageStream(this.debug)
       : controller = StreamController<Message>.broadcast(),
-        super();
+        super() {
+    console.log(['got to incomingMessageStream();']);
+  }
 
   pause() {
-    // super.pause();
-    if (this.currentMessage != null) {
-      this.currentMessage!.controller.stream.listen((event) {}).pause();
+    console.log(['got to incomingMessageStream.pause();']);
+
+    if (currentMessage != null) {
+      currentMessage!.controller.stream
+          .asBroadcastStream()
+          .listen((event) {})
+          .pause();
     }
     return this;
   }
 
   resume() {
     // super.resume();
-    if (this.currentMessage != null) {
-      this.currentMessage!.controller.stream.listen((event) {}).resume();
+    console.log(['got to incomingMessageStream.resume();']);
+
+    if (currentMessage != null) {
+      currentMessage!.controller.stream
+          .asBroadcastStream()
+          .listen((event) {})
+          .resume();
     }
     return this;
   }
 
   Future<Message?> processBufferedData(
-      void Function(ConnectionError? error)? callback) async {
+      [void Function(ConnectionError? error)? callback]) async {
     // The packet header is always 8 bytes of length.
-    while (this.bl.length >= HEADER_LENGTH) {
+    console.log(['got to incomingMessageStream.processBufferedData();']);
+
+    while (bl.length >= HEADER_LENGTH) {
       // Get the full packet length
-      int length = this.bl.readUInt16BE(2);
+      int length = bl.readUInt16BE(2);
       if (length < HEADER_LENGTH) {
         callback!(ConnectionError('Unable to process incoming packet'));
       }
 
-      if (this.bl.length >= length) {
-        var data = this.bl.slice(0, length);
-        this.bl.consume(length);
+      if (bl.length >= length) {
+        var data = bl.slice(0, length);
+        bl.consume(length);
 
         // TODO: Get rid of creating `Packet` instances here.
         final packet = Packet(data);
-        this.debug.packet(Direction.Received, packet);
-        this.debug.data(packet);
+        debug.packet(Direction.Received, packet);
+        debug.data(packet);
 
-        var message = this.currentMessage;
+        var message = currentMessage;
         if (message == null) {
-          this.currentMessage = message = Message(
+          currentMessage = message = Message(
             type: packet.type(),
             resetConnection: false,
           );
@@ -75,8 +87,8 @@ class IncomingMessageStream implements StreamConsumer<Uint8List> {
           // Wait until the current message was fully processed before we
           // continue processing any remaining messages.
           message.subscription.onDone(() {
-            this.currentMessage = null;
-            this.processBufferedData(callback);
+            currentMessage = null;
+            processBufferedData(callback);
           });
           message.controller.add(packet.data());
           message.controller.close();
@@ -85,7 +97,7 @@ class IncomingMessageStream implements StreamConsumer<Uint8List> {
           //!message.write(packet.data())
           // If too much data is buffering up in the
           // current message, wait for it to drain.
-          message.drain(this.processBufferedData(callback));
+          message.drain(processBufferedData(callback));
           // message.once('drain', () {
           // });
           return null;
@@ -97,27 +109,36 @@ class IncomingMessageStream implements StreamConsumer<Uint8List> {
 
     // Not enough data to read the next packet. Stop here and wait for
     // the next call to `_transform`.
-    Function.apply(callback!, []);
+    // Function.apply(callback!, []);
+    callback ?? callback!(null);
     return currentMessage;
   }
 
   transform_(Buffer chunk, String? _encoding, void Function() callback) {
-    this.bl.append(chunk);
-    this.processBufferedData(Function.apply(callback, []));
+    console.log(['got to incomingMessageStream.transform_();']);
+
+    bl.append(chunk);
+    processBufferedData(Function.apply(callback, []));
   }
 
   @override
   Future addStream(Stream<Uint8List> stream) {
-    return controller.sink
+    console.log(['got to incomingMessageStream.addStream();']);
+    return controller
         .addStream(stream.asBroadcastStream().asyncMap((event) async {
+      console.log([
+        'got to incomingMessageStream.addStream()=>controller.addStream();'
+      ]);
+
       bl.append(event);
-      final m = await processBufferedData((error) {});
+      final m = await processBufferedData();
       return Message(type: m!.type);
     }));
   }
 
   @override
   Future close() {
+    console.log(['got to incomingMessageStream.close();']);
     return controller.close();
   }
 }

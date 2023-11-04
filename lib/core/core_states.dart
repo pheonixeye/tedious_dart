@@ -2,14 +2,14 @@ sealed class CoreState {
   const CoreState();
 }
 
-class InitialState extends CoreState {
-  const InitialState() : super();
+class InitialCoreState extends CoreState {
+  const InitialCoreState() : super();
 }
 
-class Connecting extends CoreState {
-  const Connecting() : super();
+class CoreConnectingState extends CoreState {
+  const CoreConnectingState() : super();
 }
 
-class SentPreLoginMessageState extends CoreState {
-  const SentPreLoginMessageState() : super();
+class CoreSentPreLoginMessageState extends CoreState {
+  const CoreSentPreLoginMessageState() : super();
 }

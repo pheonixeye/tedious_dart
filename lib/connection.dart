@@ -91,7 +91,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
   RoutingData? routingData;
 
-  late MessageIO messageIo;
+  MessageIO? messageIo;
 
   // late State? state;
 
@@ -120,7 +120,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
   late final CoreBloc core;
 
-  Connection(this.config) : super(InitialState()) {
+  Connection(this.config) : super(InitialConnState()) {
     core = CoreBloc(this);
 
     fedAuthRequired = false;
@@ -194,7 +194,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     transientErrorLookup = TransientErrorLookup();
     // state = STATE['INITIALIZED']!;
     cancelAfterRequestSent = () {
-      messageIo.sendMessage(PACKETTYPE['ATTENTION']!);
+      messageIo?.sendMessage(PACKETTYPE['ATTENTION']!);
       print(LoggerStackTrace.from(StackTrace.current).toString());
 
       createCancelTimer();
@@ -203,24 +203,24 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     //***/Bloc Events:
     //**-------------------------------------------------------------------- */
     on<InitialEvent>((event, emit) {
-      emit(InitialState());
-      core.add(Connect());
+      emit(InitialConnState());
+      add(EnterConnectingEvent());
     });
     on<EnterConnectingEvent>(
       (event, emit) async {
         final signal = createConnectTimer();
 
         if (config.options.port != null) {
-          connectOnPort(
+          await connectOnPort(
             config.options.port!,
             config.options.multiSubnetFailover,
             signal,
-          ).whenComplete(() {
-            emit(Connecting());
-            core.add(SentPreLoginMessage());
-          });
+          );
+          if (messageIo != null) {
+            emit(ConnConnectingState());
+          }
         } else {
-          instanceLookup(InstanceLookUpOptions(
+          await instanceLookup(InstanceLookUpOptions(
             server: config.server,
             instanceName: config.options.instanceName,
             timeout: config.options.connectTimeout,
@@ -230,21 +230,53 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
               port,
               config.options.multiSubnetFailover,
               signal,
-            ).whenComplete(() {
-              emit(Connecting());
-              core.add(SentPreLoginMessage());
-            });
+            );
           });
+          if (messageIo != null) {
+            emit(ConnConnectingState());
+            // add(SentPreLoginMessageEvent());
+          }
         }
       },
     );
 
     on<SentPreLoginMessageEvent>((event, emit) async {
       var messageBuffer = Buffer.alloc(0);
+
       late Message message;
-      message = await messageIo.readMessage();
-      await for (Buffer data in message) {
+
+      message = await messageIo!.readMessage();
+
+      console.log(['readMessage()']);
+
+      message.listen((data) {
         messageBuffer = Buffer.concat([messageBuffer, data]);
+      });
+
+      final preloginPayload = PreloginPayload(messageBuffer);
+
+      debug.payload(() {
+        return preloginPayload.toString(indent: '  ');
+      });
+
+      sendLogin7Packet();
+
+      final authentication = config.authentication;
+
+      switch (authentication.type) {
+        case AuthType.azure_active_directory_password_:
+        case AuthType.azure_active_directory_msi_vm_:
+        case AuthType.azure_active_directory_msi_app_service_:
+        case AuthType.azure_active_directory_service_principal_secret_:
+        case AuthType.azure_active_directory_default_:
+          emit(SentLogin7Withfedauth());
+          break;
+        case AuthType.ntlm_:
+          emit(SentLogin7WithNTLMLogin());
+          break;
+        default:
+          emit(SentLogin7WithStandardLogin());
+          break;
       }
     });
 
@@ -266,9 +298,14 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
   }
 
   @override
-  onChange(Change<ConnectionState> change) {
-    console.log(['Connection', state.name, change.toString()]);
-    super.onChange(change);
+  void onTransition(Transition<ConnectionEvent, ConnectionState> transition) {
+    console.log([
+      'connection',
+      "Event : ${transition.event}",
+      "Current: ${transition.currentState}",
+      "Next: ${transition.nextState}"
+    ]);
+    super.onTransition(transition);
   }
 
   connect([void Function(Error error)? connectListener]) {
@@ -433,17 +470,23 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       if (socket != null) {
         console.log([socket.remoteAddress, socket.remotePort]);
         scheduleMicrotask(() async {
-          final sub = socket.asBroadcastStream().listen((event) {});
-          sub.onDone(() {
-            socketEnd();
-          });
-          sub.onError((error) {
-            socketError(error);
-          });
-          // if (await socket.done == true) {
+          socket.asBroadcastStream().listen((event) {})
+            ..onDone(() {
+              socketEnd();
+            })
+            ..onError((error) {
+              socketError(error);
+            });
+          // sub.onDone(() {
+          // });
+          // sub.onError((error) {
+          // });
+          // final _done = await socket.done;
+          // if (_done) {
           //   socketClose();
           // }
-          //
+          // socket.done.then((_) => socket.close());
+
           console.log(['before message io']);
 
           messageIo = MessageIO(
@@ -465,6 +508,8 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
           // print(LoggerStackTrace.from(StackTrace.current).toString());
 
           // transitionTo(STATE['SENT_PRELOGIN']!);
+          add(SentPreLoginMessageEvent());
+
           // print(LoggerStackTrace.from(StackTrace.current).toString());
         });
       }
@@ -748,7 +793,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       ),
     );
 
-    messageIo.sendMessage(PACKETTYPE['PRELOGIN']!, data: payload.data);
+    messageIo?.sendMessage(PACKETTYPE['PRELOGIN']!, data: payload.data);
     debug.payload(() {
       console.log([payload.toString(indent: '  ')]);
       return payload.toString(indent: '  ');
@@ -817,7 +862,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     payload.initDbFatal = !config.options.fallbackToDefaultDb;
 
     routingData = null;
-    messageIo.sendMessage(PACKETTYPE['LOGIN7']!, data: payload.toBuffer());
+    messageIo?.sendMessage(PACKETTYPE['LOGIN7']!, data: payload.toBuffer());
 
     debug.payload(() {
       return payload.toString(indent: '  ');
@@ -833,7 +878,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     offset = data.writeUInt32LE(accessTokenLen + 4, offset);
     offset = data.writeUInt32LE(accessTokenLen, offset);
     data.write(token, offset: offset, length: 0, encoding: 'ucs2');
-    messageIo.sendMessage(PACKETTYPE['FEDAUTH_TOKEN']!, data: data);
+    messageIo?.sendMessage(PACKETTYPE['FEDAUTH_TOKEN']!, data: data);
     // sent the fedAuth token message, the rest is similar to standard login 7
     //TODO:
     // transitionTo(STATE['SENT_LOGIN7_WITH_STANDARD_LOGIN']!);
@@ -852,7 +897,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       type: PACKETTYPE['SQL_BATCH']!,
       resetConnection: false,
     );
-    messageIo.outgoingMessageStream.write(message, 'usc-2', (([error]) {}));
+    messageIo?.outgoingMessageStream.write(message, 'usc-2', (([error]) {}));
     //TODO* Readable.from(payload).pipe(message);
     final _controller = StreamController.broadcast();
     // _controller.addStream(payload);
@@ -1583,7 +1628,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
       createRequestTimer();
 
-      messageIo.outgoingMessageStream.write(message, 'utf-8', ([error]) {});
+      messageIo?.outgoingMessageStream.write(message, 'utf-8', ([error]) {});
       // transitionTo(STATE['SENT_CLIENT_REQUEST']!);
 
       message.subscription.onDone(() {

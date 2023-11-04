@@ -10,24 +10,13 @@ import 'package:tedious_dart/message.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/outgoing_message_stream.dart';
 
-//!manufactured class
-// class SecurePair {
-//   Socket cleartext;
-//   SecureSocket? encrypted;
-
-//   SecurePair({
-//     required this.cleartext,
-//     this.encrypted,
-//   });
-// }
-
 class MessageIO extends EventEmitter {
   final Debug debug;
   final Socket socket;
   // ignore: unused_field
   final int _packetSize;
 
-  late bool? tlsNegotiationComplete;
+  final bool tlsNegotiationComplete;
 
   final IncomingMessageStream _incomingMessageStream;
   final OutgoingMessageStream outgoingMessageStream;
@@ -40,9 +29,9 @@ class MessageIO extends EventEmitter {
       : _incomingMessageStream = IncomingMessageStream(debug),
         outgoingMessageStream =
             OutgoingMessageStream(debug, packetSize: _packetSize),
+        tlsNegotiationComplete = false,
         super() {
     console.log(['defined MessageIo class']);
-    tlsNegotiationComplete = false;
 
     // _incomingMessageStream = IncomingMessageStream(debug);
     console.log(['step 1']);
@@ -51,23 +40,13 @@ class MessageIO extends EventEmitter {
         StreamIterator(_incomingMessageStream.controller.stream);
     console.log(['step 2']);
 
-    // outgoingMessageStream =
-    //     OutgoingMessageStream(debug, packetSize: _packetSize);
-    // _incomingMessageStream?.bind(socket);
-    console.log(['step 3']);
-    // init();
-  }
+    socket.pipe(_incomingMessageStream);
 
-  init() async {
-    final socketController = StreamController<Buffer>.broadcast();
+    console.log(['step 3']);
+
+    outgoingMessageStream.pipe(SocketConsumer(socket: socket));
+
     console.log(['step 4']);
-    socketController
-        .addStream(socket.asBroadcastStream().transform(BufferFromUnit8List()));
-    console.log(['step 5']);
-    await socket.pipe(_incomingMessageStream);
-    console.log(['step 6']);
-    await outgoingMessageStream.pipe(socketController.sink);
-    console.log(['step 7']);
   }
 
   int packetSize(List<int> args) {
@@ -207,13 +186,14 @@ class MessageIO extends EventEmitter {
     return message;
   }
 
-  Future<Message> readMessage() async {
-    var result = incomingMessageIterator;
-    bool moveNext = await result.moveNext();
-    if (!moveNext) {
-      throw ArgumentError('unexpected end of message stream');
-    }
-    return result.current;
+  Future<Message> readMessage() {
+    final result = incomingMessageIterator;
+
+    return result.moveNext().then<Message>((value) {
+      return !value
+          ? throw ArgumentError('unexpected end of message stream')
+          : result.current;
+    });
   }
 }
 
@@ -234,5 +214,31 @@ class Uint8ListFromBuffer extends StreamTransformerBase<Buffer, Uint8List> {
         .asBroadcastStream()
         .map((event) => event.buffer)
         .asBroadcastStream();
+  }
+}
+
+class IntListFromBuffer extends StreamTransformerBase<Buffer, List<int>> {
+  @override
+  Stream<List<int>> bind(Stream<Buffer> stream) {
+    return stream
+        .asBroadcastStream()
+        .map((event) => event.buffer.toList())
+        .asBroadcastStream();
+  }
+}
+
+class SocketConsumer<Buffer> implements StreamConsumer<Buffer> {
+  final Socket socket;
+
+  SocketConsumer({required this.socket});
+  @override
+  Future addStream(Stream<Buffer> stream) {
+    return socket.addStream(stream.asBroadcastStream().transform<List<int>>(
+        IntListFromBuffer() as StreamTransformer<Buffer, List<int>>));
+  }
+
+  @override
+  Future close() {
+    return socket.close();
   }
 }
