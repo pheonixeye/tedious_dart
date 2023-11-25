@@ -22,7 +22,7 @@ class TokenStreamParser extends EventEmitter {
     parser = Stream.fromIterable(StreamParser.parseTokens(
       debug: debug,
       options: options,
-      iterable: message,
+      iterable: message.controller.stream,
     )).asBroadcastStream();
 
     sub = parser.listen((data) {

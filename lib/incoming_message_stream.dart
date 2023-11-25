@@ -3,8 +3,10 @@ import 'dart:typed_data';
 
 import 'package:buffer_list/buffer_list.dart';
 import 'package:magic_buffer_copy/magic_buffer.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/message.dart';
+import 'package:tedious_dart/message_io.dart';
 // import 'package:tedious_dart/message_io.dart';
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
@@ -15,17 +17,19 @@ import 'package:tedious_dart/packet.dart';
 ///  IncomingMessageStream
 ///  Transform received TDS data into individual IncomingMessage streams.
 ///
-class IncomingMessageStream implements StreamConsumer<Uint8List> {
+class IncomingMessageStream extends StreamTransformerBase<Buffer, Message> {
   final Debug debug;
   final BufferList bl = BufferList();
-  final StreamController<Message> controller;
+  final PublishSubject<Uint8List> controller;
   Message? currentMessage;
 
   IncomingMessageStream(this.debug)
-      : controller = StreamController<Message>.broadcast(),
+      : controller = PublishSubject<Uint8List>(),
         super() {
-    console.log(['got to incomingMessageStream();']);
+    console.log(['got to IncomingMessageStream();']);
   }
+
+  Stream<Uint8List> get asyncIterator => controller.stream;
 
   pause() {
     console.log(['got to incomingMessageStream.pause();']);
@@ -79,14 +83,16 @@ class IncomingMessageStream implements StreamConsumer<Uint8List> {
             type: packet.type(),
             resetConnection: false,
           );
-          controller.sink.add(message);
+          controller.add(await message.controller.stream
+              .transform(Uint8ListFromBuffer())
+              .first);
           // this.add(message);
         }
 
         if (packet.isLast()) {
           // Wait until the current message was fully processed before we
           // continue processing any remaining messages.
-          message.subscription.onDone(() {
+          message.controller.listen((value) {}).onDone(() {
             currentMessage = null;
             processBufferedData(callback);
           });
@@ -97,7 +103,7 @@ class IncomingMessageStream implements StreamConsumer<Uint8List> {
           //!message.write(packet.data())
           // If too much data is buffering up in the
           // current message, wait for it to drain.
-          message.drain(processBufferedData(callback));
+          message.controller.stream.drain(processBufferedData(callback));
           // message.once('drain', () {
           // });
           return null;
@@ -122,23 +128,31 @@ class IncomingMessageStream implements StreamConsumer<Uint8List> {
   }
 
   @override
-  Future addStream(Stream<Uint8List> stream) {
-    console.log(['got to incomingMessageStream.addStream();']);
-    return controller
-        .addStream(stream.asBroadcastStream().asyncMap((event) async {
-      console.log([
-        'got to incomingMessageStream.addStream()=>controller.addStream();'
-      ]);
-
+  Stream<Message> bind(Stream<Buffer> stream) {
+    return stream.asBroadcastStream().asyncMap((event) {
       bl.append(event);
-      final m = await processBufferedData();
-      return Message(type: m!.type);
-    }));
+      return processBufferedData() as FutureOr<Message>;
+    });
   }
 
-  @override
-  Future close() {
-    console.log(['got to incomingMessageStream.close();']);
-    return controller.close();
-  }
+  // @override
+  // Future addStream(Stream<Uint8List> stream) {
+  //   console.log(['got to incomingMessageStream.addStream();']);
+  //   return controller
+  //       .addStream(stream.asBroadcastStream().asyncMap((event) async {
+  //     console.log([
+  //       'got to incomingMessageStream.addStream()=>controller.addStream();'
+  //     ]);
+
+  //     bl.append(event);
+  //     final m = await processBufferedData();
+  //     return Message(type: m!.type);
+  //   }));
+  // }
+
+  // @override
+  // Future close() {
+  //   console.log(['got to incomingMessageStream.close();']);
+  //   return controller.close();
+  // }
 }

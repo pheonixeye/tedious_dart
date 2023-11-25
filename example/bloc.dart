@@ -1,10 +1,7 @@
-import 'package:bloc/bloc.dart';
 import 'package:tedious_dart/conn_authentication.dart';
 import 'package:tedious_dart/conn_config.dart';
 import 'package:tedious_dart/conn_events.dart';
 import 'package:tedious_dart/connection.dart';
-import 'package:tedious_dart/core/core_bloc.dart';
-import 'package:tedious_dart/core/core_events.dart';
 
 void main(List<String> args) {
   // final observer = Bloc.observer;

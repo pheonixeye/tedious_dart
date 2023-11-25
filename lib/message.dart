@@ -1,30 +1,28 @@
 import 'dart:async';
 
 import 'package:magic_buffer_copy/magic_buffer.dart';
-import 'package:tedious_dart/models/logger_stacktrace.dart';
+import 'package:rxdart/rxdart.dart';
 
-class Message extends Stream<Buffer> {
+class Message extends PassthroughStream<Buffer> {
   int type;
   bool resetConnection;
   bool ignore;
-  final StreamController<Buffer> controller;
+  final PublishSubject<Buffer> controller;
   Message({
     required this.type,
     bool? resetConnection,
     bool? ignore,
-  })  : controller = StreamController<Buffer>.broadcast(),
+  })  : controller = PublishSubject<Buffer>(),
         resetConnection = resetConnection ?? false,
         ignore = ignore ?? false,
         super() {
-    controller.sink.addStream(this);
+    bind(controller.stream);
   }
-  StreamSubscription<Buffer> get subscription => listen((event) {});
+}
 
+class PassthroughStream<T> extends StreamTransformerBase<T, T> {
   @override
-  StreamSubscription<Buffer> listen(void Function(Buffer event)? onData,
-      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    console.log(['got to message.listen();']);
-    return controller.stream.asBroadcastStream().listen(onData,
-        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+  Stream<T> bind(Stream<T> stream) {
+    return PublishSubject<T>();
   }
 }

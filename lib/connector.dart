@@ -1,9 +1,10 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' hide Socket;
 
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/node/abort_controller.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
 
 class LocalConnectionOptions {
   final String host;
@@ -17,7 +18,7 @@ class LocalConnectionOptions {
   });
 }
 
-Stream<Socket?> connectInParallel(
+Stream<io.Socket?> connectInParallel(
   LocalConnectionOptions options,
   AbortSignal signal,
 ) async* {
@@ -33,20 +34,17 @@ Stream<Socket?> connectInParallel(
 
   // List<Socket> sockets = [];
   for (var adr in addresses) {
-    final socket = await Socket.connect(
-      adr,
-      options.port,
-    );
+    final socket = io.io('http://${adr.address}:${options.port}');
     // print(i);
     yield socket;
   }
 }
 
-Stream<Socket?> connectInSequence(
+Stream<io.Socket?> connectInSequence(
   LocalConnectionOptions options,
   AbortSignal signal,
 ) async* {
-  Socket? socket;
+  io.Socket? socket;
   // print(LoggerStackTrace.from(StackTrace.current).toString());
 
   if (signal.aborted) {
@@ -59,10 +57,8 @@ Stream<Socket?> connectInSequence(
   for (InternetAddress address in await addresses) {
     console.log([...await addresses]);
     try {
-      socket = await Socket.connect(
-        address.address,
-        options.port,
-      );
+      socket = io.io('http://${address.address}:${options.port}');
+
       yield socket;
     } catch (e) {
       print(e.toString());

@@ -31,6 +31,7 @@ dependencies:
   buffer_list:
     path: c:/users/kareemzaher/desktop/darTedious/buffer_list
   rxdart:  
+  socket_io_client: ^2.0.3+1
   dartz:
   
 dev_dependencies:

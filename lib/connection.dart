@@ -1,7 +1,7 @@
 // ignore_for_file: constant_identifier_names, library_private_types_in_public_api,  unnecessary_null_comparison, unnecessary_type_check
 
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' hide Socket;
 
 import 'package:bloc/bloc.dart';
 import 'package:events_emitter/events_emitter.dart';
@@ -15,10 +15,7 @@ import 'package:tedious_dart/conn_const_typedef.dart';
 import 'package:tedious_dart/conn_events.dart';
 import 'package:tedious_dart/conn_state.dart';
 import 'package:tedious_dart/conn_state_enum.dart';
-import 'package:tedious_dart/conn_states.dart';
 import 'package:tedious_dart/connector.dart';
-import 'package:tedious_dart/core/core_bloc.dart';
-import 'package:tedious_dart/core/core_events.dart';
 import 'package:tedious_dart/data_types/int.dart';
 import 'package:tedious_dart/data_types/nvarchar.dart';
 import 'package:tedious_dart/debug.dart';
@@ -46,6 +43,7 @@ import 'package:tedious_dart/token/stream_parser.dart';
 import 'package:tedious_dart/token/token_stream_parser.dart';
 import 'package:tedious_dart/transaction.dart';
 import 'package:tedious_dart/transient_error_lookup.dart';
+import 'package:socket_io_client/socket_io_client.dart';
 
 class RoutingData {
   String server;
@@ -118,11 +116,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
   Collation? databaseCollation;
 
-  late final CoreBloc core;
-
   Connection(this.config) : super(InitialConnState()) {
-    core = CoreBloc(this);
-
     fedAuthRequired = false;
 
     //! i think that these are useless type checks
@@ -243,13 +237,11 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
     on<SentPreLoginMessageEvent>((event, emit) async {
       var messageBuffer = Buffer.alloc(0);
 
-      late Message message;
+      Message message;
 
       message = await messageIo!.readMessage();
 
-      console.log(['readMessage()']);
-
-      message.listen((data) {
+      message.controller.stream.listen((data) {
         messageBuffer = Buffer.concat([messageBuffer, data]);
       });
 
@@ -468,24 +460,18 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
         .asBroadcastStream()
         .listen((socket) {
       if (socket != null) {
-        console.log([socket.remoteAddress, socket.remotePort]);
+        console.log([socket.nsp, socket.flags, socket.acks]);
         scheduleMicrotask(() async {
-          socket.asBroadcastStream().listen((event) {})
-            ..onDone(() {
-              socketEnd();
-            })
-            ..onError((error) {
-              socketError(error);
-            });
-          // sub.onDone(() {
-          // });
-          // sub.onError((error) {
-          // });
-          // final _done = await socket.done;
-          // if (_done) {
-          //   socketClose();
-          // }
-          // socket.done.then((_) => socket.close());
+          // socket.asBroadcastStream().listen((event) {})
+          //   ..onDone(() {
+          //     socketEnd();
+          //   })
+          //   ..onError((error) {
+          //     socketError(error);
+          //   });
+          socket.onError((data) => socketError(data));
+          socket.onDisconnect((data) => socketEnd());
+          socket.on('close', (data) => socketClose());
 
           console.log(['before message io']);
 
@@ -802,6 +788,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
   void sendLogin7Packet() {
     print(LoggerStackTrace.from(StackTrace.current).toString());
+    console.log(['sendLogin7Packet();']);
 
     final payload = Login7Payload(
       login7Options: Login7Options(
@@ -1616,7 +1603,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
 
         // set the ignore bit and end the message.
         message.ignore = true;
-        message.subscription.cancel();
+        message.controller.sink.close();
 
         if (request is Request && request.paused) {
           // resume the request if it was paused so we can read the remaining tokens
@@ -1631,7 +1618,7 @@ class Connection extends Bloc<ConnectionEvent, ConnectionState> {
       messageIo?.outgoingMessageStream.write(message, 'utf-8', ([error]) {});
       // transitionTo(STATE['SENT_CLIENT_REQUEST']!);
 
-      message.subscription.onDone(() {
+      message.controller.listen((value) {}).onDone(() {
         request.removeEventListener(
             EventListener('cancel', (val) {}, onCancel: onCancel));
         request.once('cancel', Function.apply(cancelAfterRequestSent, []));

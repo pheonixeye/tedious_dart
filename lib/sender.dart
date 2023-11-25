@@ -1,14 +1,15 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' hide Socket;
 
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/instance_lookup.dart';
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/node/abort_controller.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
 
 void clearSockets({
-  required List<Socket> sockets,
+  required List<io.Socket> sockets,
 }) {
   for (var socket in sockets) {
     socket.close();
@@ -28,26 +29,28 @@ Future<Buffer?> sendInParallel(
     throw AbortError();
   }
 
-  List<Socket> sockets = [];
+  List<io.Socket> sockets = [];
 
   int errorCount = 0;
 
   late Buffer? result;
 
   for (int j = 0; j < addresses.length; j++) {
-    var socket = await Socket.connect(addresses[j], port as int);
+    var socket = io.io('http://${addresses[j].address}:${port}');
     sockets.add(socket);
-    socket.listen((event) {
-      result = Buffer.from(event);
-    }, onError: (error) {
+    socket.on('data', (data) => result = Buffer.from(data));
+    socket.onError((error) {
       errorCount++;
       for (var socket in sockets) {
         socket.close();
       }
       sockets.clear();
     });
+
     // socket.writeAll([request, 0, request.length, port, addresses[j].address]);
-    socket.add(request.buffer);
+    // socket.add(request.buffer);
+    socket.send([request, 0, request.length, port, addresses[j].address]);
+    socket.send(request.buffer);
   }
   return Future.value(result);
 }

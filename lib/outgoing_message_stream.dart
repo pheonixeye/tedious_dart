@@ -1,30 +1,26 @@
-import 'dart:async';
-
 import 'package:magic_buffer_copy/magic_buffer.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/message.dart';
 import 'package:tedious_dart/packet.dart';
 import 'package:buffer_list/buffer_list.dart';
 
-class OutgoingMessageStream extends Stream<Buffer?> {
+class OutgoingMessageStream {
   int packetSize;
   final Debug debug;
   final BufferList bl;
 
   Message? currentMessage;
 
-  final StreamController<Buffer?> controller;
-  StreamSubscription<Buffer?> get subscription =>
-      controller.stream.asBroadcastStream().listen((event) {});
+  final PublishSubject<Buffer?> controller;
 
   OutgoingMessageStream(this.debug, {required this.packetSize})
-      : controller = StreamController<Buffer?>.broadcast(),
+      : controller = PublishSubject<Buffer?>(),
         bl = BufferList() {
-    controller.sink.addStream(this);
-
     // When the writable side is ended, push `null`
     // to also end the readable side.
-    subscription.onDone(() {
+
+    controller.doOnDone(() {
       controller.add(null);
     });
   }
@@ -38,7 +34,7 @@ class OutgoingMessageStream extends Stream<Buffer?> {
     int packetNumber = 0;
 
     currentMessage = message;
-    currentMessage?.subscription.onData((Buffer data) async {
+    currentMessage?.controller.listen((value) {}).onData((Buffer data) async {
       if (message.ignore == true) {
         return;
       }
@@ -57,14 +53,14 @@ class OutgoingMessageStream extends Stream<Buffer?> {
 
         debug.packet(Direction.Sent, packet);
         debug.data(packet);
-        final lastE = await last;
+        final lastE = await controller.last;
         if (lastE != packet.buffer) {
-          message.subscription.pause();
+          message.controller.listen((value) {}).pause();
         }
       }
     });
 
-    currentMessage?.subscription.onDone(() {
+    currentMessage?.controller.listen((value) {}).onDone(() {
       final data = bl.slice(0, 0) as Buffer;
       bl.consume(data.length);
 
@@ -91,14 +87,7 @@ class OutgoingMessageStream extends Stream<Buffer?> {
     // If we do have a message, resume it and get data flowing.
     // Otherwise, there is nothing to do.
     if (currentMessage != null) {
-      currentMessage!.subscription.resume();
+      currentMessage!.controller.listen((value) {}).resume();
     }
-  }
-
-  @override
-  StreamSubscription<Buffer?> listen(void Function(Buffer? event)? onData,
-      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return controller.stream.asBroadcastStream().listen(onData,
-        onDone: onDone, onError: onError, cancelOnError: cancelOnError);
   }
 }

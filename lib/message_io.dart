@@ -1,14 +1,16 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:events_emitter/emitters/event_emitter.dart';
 import 'package:magic_buffer_copy/magic_buffer.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/incoming_message_stream.dart';
 import 'package:tedious_dart/message.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/outgoing_message_stream.dart';
+
+import 'package:socket_io_client/socket_io_client.dart';
 
 class MessageIO extends EventEmitter {
   final Debug debug;
@@ -33,18 +35,20 @@ class MessageIO extends EventEmitter {
         super() {
     console.log(['defined MessageIo class']);
 
-    // _incomingMessageStream = IncomingMessageStream(debug);
     console.log(['step 1']);
 
-    incomingMessageIterator =
-        StreamIterator(_incomingMessageStream.controller.stream);
+    incomingMessageIterator = StreamIterator(_incomingMessageStream.bind(
+        _incomingMessageStream.asyncIterator.transform(BufferFromUnit8List())));
+
     console.log(['step 2']);
 
-    socket.pipe(_incomingMessageStream);
+    // socket.pipe(_incomingMessageStream.controller.sink);
+    socket.on(
+        'connect', (data) => data.pipe(_incomingMessageStream.controller));
 
     console.log(['step 3']);
 
-    outgoingMessageStream.pipe(SocketConsumer(socket: socket));
+    outgoingMessageStream.controller.pipe(SocketConsumer(socket: socket));
 
     console.log(['step 4']);
   }
@@ -177,23 +181,27 @@ class MessageIO extends EventEmitter {
 
   Future<Message> sendMessage(int packetType,
       {Buffer? data, bool? resetConnection}) async {
+    console.log(['MessageIo.sendMessage();']);
+
     final message = Message(
       type: packetType,
       resetConnection: resetConnection,
     );
-    await message.drain();
+
+    message.controller.add(data!);
+    message.controller.close();
     outgoingMessageStream.write(message, 'utf-8', ([error]) {});
     return message;
   }
 
-  Future<Message> readMessage() {
-    final result = incomingMessageIterator;
-
-    return result.moveNext().then<Message>((value) {
-      return !value
-          ? throw ArgumentError('unexpected end of message stream')
-          : result.current;
-    });
+  Future<Message> readMessage() async {
+    console.log(['MessageIo.readMessage();']);
+    final result = await incomingMessageIterator.moveNext();
+    if (result) {
+      return incomingMessageIterator.current;
+    } else {
+      throw ArgumentError('unexpected end of message stream');
+    }
   }
 }
 
@@ -233,12 +241,11 @@ class SocketConsumer<Buffer> implements StreamConsumer<Buffer> {
   SocketConsumer({required this.socket});
   @override
   Future addStream(Stream<Buffer> stream) {
-    return socket.addStream(stream.asBroadcastStream().transform<List<int>>(
-        IntListFromBuffer() as StreamTransformer<Buffer, List<int>>));
+    return Future.value(stream);
   }
 
   @override
   Future close() {
-    return socket.close();
+    return Future.value(socket.close());
   }
 }

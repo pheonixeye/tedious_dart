@@ -1,8 +1,9 @@
-// ignore_for_file: constant_identifier_names, non_constant_identifier_names, unnecessary_this
+// ignore_for_file: constant_identifier_names
 
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:sprintf/sprintf.dart';
 import 'package:tedious_dart/meta/annotations.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 
 const HEADER_LENGTH = 8;
 
@@ -56,92 +57,92 @@ class Packet {
   @DynamicParameterType('bufferOrType', 'Buffer | int')
   Packet(dynamic bufferOrType) {
     if (bufferOrType is Buffer) {
-      this.buffer = bufferOrType;
+      buffer = bufferOrType;
     } else {
       final type = bufferOrType as int;
-      this.buffer = Buffer.alloc(HEADER_LENGTH, 0);
-      this.buffer.writeUInt8(type, OFFSET.Type.value);
-      this.buffer.writeUInt8(STATUS['NORMAL']!, OFFSET.Status.value);
+      buffer = Buffer.alloc(HEADER_LENGTH, 0);
+      buffer.writeUInt8(type, OFFSET.Type.value);
+      buffer.writeUInt8(STATUS['NORMAL']!, OFFSET.Status.value);
       //todo: change eom according to message / packet size
-      this.buffer.writeUInt16BE(DEFAULT_SPID, OFFSET.SPID.value);
-      this.buffer.writeUInt8(DEFAULT_PACKETID, OFFSET.PacketID.value);
-      this.buffer.writeUInt8(DEFAULT_WINDOW, OFFSET.Window.value);
-      this.setLength();
-      print('packet header ==>>');
+      buffer.writeUInt16BE(DEFAULT_SPID, OFFSET.SPID.value);
+      buffer.writeUInt8(DEFAULT_PACKETID, OFFSET.PacketID.value);
+      buffer.writeUInt8(DEFAULT_WINDOW, OFFSET.Window.value);
+      setLength();
+      console.log(['packet header ==>>']);
       print(buffer.buffer);
     }
   }
 
   void setLength() {
-    this.buffer.writeUInt16BE(this.buffer.length, OFFSET.Length.value);
+    buffer.writeUInt16BE(buffer.length, OFFSET.Length.value);
   }
 
   int length() {
-    return this.buffer.readUInt16BE(OFFSET.Length.value);
+    return buffer.readUInt16BE(OFFSET.Length.value);
   }
 
   void resetConnection(bool reset) {
-    var status = this.buffer.readUInt8(OFFSET.Status.value).toInt();
+    var status = buffer.readUInt8(OFFSET.Status.value).toInt();
     if (reset) {
       status |= STATUS['RESETCONNECTION']!;
     } else {
       status &= 0xFF - STATUS['RESETCONNECTION']!;
     }
-    this.buffer.writeUInt8(status, OFFSET.Status.value);
+    buffer.writeUInt8(status, OFFSET.Status.value);
   }
 
   bool? last(bool? last) {
-    var status = this.buffer.readUInt8(OFFSET.Status.value);
+    var status = buffer.readUInt8(OFFSET.Status.value);
     if (last != null) {
       if (last) {
         status |= STATUS['EOM']!;
       } else {
         status &= 0xFF - STATUS['EOM']!;
       }
-      this.buffer.writeUInt8(status, OFFSET.Status.value);
+      buffer.writeUInt8(status, OFFSET.Status.value);
     }
-    return this.isLast();
+    return isLast();
   }
 
   void ignore(bool last) {
-    var status = this.buffer.readUInt8(OFFSET.Status.value);
+    var status = buffer.readUInt8(OFFSET.Status.value);
     if (last) {
       status |= STATUS['IGNORE']!;
     } else {
       status &= 0xFF - STATUS['IGNORE']!;
     }
-    this.buffer.writeUInt8(status, OFFSET.Status.value);
+    buffer.writeUInt8(status, OFFSET.Status.value);
   }
 
   bool isLast() {
-    return this.buffer.readUInt8(OFFSET.Status.value) == STATUS['EOM']!;
+    return buffer.readUInt8(OFFSET.Status.value) == STATUS['EOM']!;
   }
 
   int? packetId([int? packetId]) {
     if (packetId != null) {
-      this.buffer.writeUInt8(packetId % 256, OFFSET.PacketID.value);
+      buffer.writeUInt8(packetId % 256, OFFSET.PacketID.value);
     }
-    return this.buffer.readUInt8(OFFSET.PacketID.value);
+    return buffer.readUInt8(OFFSET.PacketID.value);
   }
 
   Packet addData(Buffer data) {
-    this.buffer = Buffer.concat([this.buffer, data]);
-    print('packet data after concat ==>>');
+    buffer = Buffer.concat([buffer, data]);
+    console.log(['packet data after concat ==>>']);
     print(buffer.buffer);
-    this.setLength();
+    setLength();
     return this;
   }
 
   Buffer data() {
-    return this.buffer.slice(HEADER_LENGTH);
+    return buffer.slice(HEADER_LENGTH);
   }
 
   int type() {
-    return this.buffer.readUInt8(OFFSET.Type.value);
+    return buffer.readUInt8(OFFSET.Type.value);
   }
 
   String statusAsString() {
-    final int status = this.buffer.readUInt8(OFFSET.Status.value);
+    final int status = buffer.readUInt8(OFFSET.Status.value);
     List statuses = [];
 
     for (String name in STATUS.keys) {
@@ -159,14 +160,14 @@ class Packet {
     final text = sprintf(
         'type:0x%02X(%s), status:0x%02X(%s), length:0x%04X, spid:0x%04X, packetId:0x%02X, window:0x%02X',
         [
-          this.buffer.readUInt8(OFFSET.Type.value),
-          packetTypeByValue[this.buffer.readUInt8(OFFSET.Type.value)],
-          this.buffer.readUInt8(OFFSET.Status.value),
-          this.statusAsString(),
-          this.buffer.readUInt16BE(OFFSET.Length.value),
-          this.buffer.readUInt16BE(OFFSET.SPID.value),
-          this.buffer.readUInt8(OFFSET.PacketID.value),
-          this.buffer.readUInt8(OFFSET.Window.value),
+          buffer.readUInt8(OFFSET.Type.value),
+          packetTypeByValue[buffer.readUInt8(OFFSET.Type.value)],
+          buffer.readUInt8(OFFSET.Status.value),
+          statusAsString(),
+          buffer.readUInt16BE(OFFSET.Length.value),
+          buffer.readUInt16BE(OFFSET.SPID.value),
+          buffer.readUInt8(OFFSET.PacketID.value),
+          buffer.readUInt8(OFFSET.Window.value),
         ]);
     return indent + text;
   }
@@ -223,7 +224,7 @@ class Packet {
 
   @override
   String toString({String indent = ''}) {
-    return '${this.headerToString(indent: indent)}\n${this.dataToString(indent: indent + indent)}';
+    return '${headerToString(indent: indent)}\n${dataToString(indent: indent + indent)}';
   }
 
   String payloadString() {
