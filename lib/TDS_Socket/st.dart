@@ -1,26 +1,23 @@
+import 'dart:typed_data';
+
 import 'package:tedious_dart/models/logger_stacktrace.dart';
 
 abstract class TdsSocketState {
   const TdsSocketState();
 }
 
+class TdsSocketNotConnected extends TdsSocketState {
+  TdsSocketNotConnected() : super() {
+    console.log(["Socket Disconnected..."]);
+  }
+}
+
 class TdsSocketConnecting extends TdsSocketState {
-  const TdsSocketConnecting({
-    String? host,
-    int? port,
-  })  : host = host ?? 'localhost',
-        port = port ?? 1433,
-        super();
-  final String host;
-  final int port;
+  const TdsSocketConnecting() : super();
 }
 
 class TdsSocketConnected extends TdsSocketState {
   const TdsSocketConnected() : super();
-}
-
-class TdsSocketNotConnected extends TdsSocketState {
-  const TdsSocketNotConnected() : super();
 }
 
 class TdsSocketError extends TdsSocketState {
@@ -37,7 +34,9 @@ class TdsSocketWriting extends TdsSocketState {
 }
 
 class TdsSocketReading extends TdsSocketState {
-  TdsSocketReading() : super() {
+  TdsSocketReading(this.data) : super() {
     console.log(['Socket is Reading...']);
+    console.log(['$data']);
   }
+  final Uint8List? data;
 }

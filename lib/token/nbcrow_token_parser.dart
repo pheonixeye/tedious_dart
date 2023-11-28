@@ -23,18 +23,18 @@ class Column {
 
 Future<NBCRowToken> nbcRowParser(StreamParser parser) async {
   final colMetadata = parser.colMetadata;
-  final bitmapByteLength = (colMetadata!.length / 8).ceil();
+  final bitmapByteLength = (colMetadata.length / 8).ceil();
   List<Column> columns = [];
   List<bool> bitmap = [];
 
-  while (parser.buffer!.length - (parser.position as int) < bitmapByteLength) {
+  while (parser.buffer.length - (parser.position) < bitmapByteLength) {
     await parser.streamBuffer.waitForChunk();
   }
 
-  final bytes = parser.buffer!.slice(
-      parser.position as int, (parser.position! + bitmapByteLength) as int);
+  final bytes = parser.buffer
+      .slice(parser.position, (parser.position + bitmapByteLength));
 
-  parser.setPosition(parser.position! + bitmapByteLength);
+  parser.setPosition(parser.position + bitmapByteLength);
   for (int i = 0, len = bytes.length; i < len; i++) {
     int byte = bytes[i];
 

@@ -2,12 +2,15 @@ abstract class TdsSocketEvent {
   const TdsSocketEvent();
 }
 
-class InitEvent extends TdsSocketEvent {
-  const InitEvent() : super();
-}
-
 class ConnectEvent extends TdsSocketEvent {
-  const ConnectEvent() : super();
+  const ConnectEvent({
+    String? host,
+    int? port,
+  })  : host = host ?? 'localhost',
+        port = port ?? 1433,
+        super();
+  final String host;
+  final int port;
 }
 
 class WriteEvent extends TdsSocketEvent {
@@ -16,6 +19,14 @@ class WriteEvent extends TdsSocketEvent {
 }
 
 class ReadEvent extends TdsSocketEvent {
-  const ReadEvent(this.length) : super();
-  final int length;
+  const ReadEvent({int? length})
+      : _length = length,
+        super();
+  final int? _length;
+
+  int? get len => _length;
+}
+
+class DisconnectEvent extends TdsSocketEvent {
+  const DisconnectEvent() : super();
 }

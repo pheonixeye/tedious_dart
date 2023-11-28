@@ -107,13 +107,13 @@ readColumn(
 }
 
 Future<ColMetadataToken> colMetadataParser(StreamParser parser) async {
-  while (parser.buffer!.length - (parser.position!) < 2) {
+  while (parser.buffer.length - (parser.position) < 2) {
     await parser.streamBuffer.waitForChunk();
   }
 
-  final columnCount = parser.buffer!.readUInt16LE(parser.position as int);
+  final columnCount = parser.buffer.readUInt16LE(parser.position);
 
-  parser.setPosition(parser.position! + 2);
+  parser.setPosition(parser.position + 2);
 
   List<ColumnMetadata> columns = [];
   for (int i = 0; i < columnCount; i++) {

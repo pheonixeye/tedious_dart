@@ -86,23 +86,6 @@ class DoneToken extends Token {
         );
 }
 
-//todo: delete
-// class BaseClass extends Token {
-//   @override
-//   String name;
-
-//   @override
-//   HandlerName handlerName;
-
-//   BaseClass({
-//     this.name = 'DONEINPROC',
-//     this.handlerName = 'onDoneInProc',
-//   }) : super(
-//           name: name,
-//           handlerName: handlerName,
-//         );
-// }
-
 class DoneInProcToken extends Token {
   @override
   String name;
@@ -161,7 +144,13 @@ class DoneProcToken extends Token {
         );
 }
 
-class DatabaseEnvChangeToken extends Token {
+class EnvChangeToken extends Token {
+  EnvChangeToken({
+    required super.handlerName,
+  }) : super(name: 'ENVCHANGE');
+}
+
+class DatabaseEnvChangeToken extends EnvChangeToken {
   @override
   String name;
 
@@ -179,12 +168,11 @@ class DatabaseEnvChangeToken extends Token {
     required this.oldValue,
     this.type = 'DATABASE',
   }) : super(
-          name: name,
           handlerName: handlerName,
         );
 }
 
-class LanguageEnvChangeToken extends Token {
+class LanguageEnvChangeToken extends EnvChangeToken {
   @override
   String name;
 
@@ -202,12 +190,11 @@ class LanguageEnvChangeToken extends Token {
     required this.oldValue,
     this.type = 'LANGUAGE',
   }) : super(
-          name: name,
           handlerName: handlerName,
         );
 }
 
-class CharsetEnvChangeToken extends Token {
+class CharsetEnvChangeToken extends EnvChangeToken {
   @override
   String name;
 
@@ -225,12 +212,11 @@ class CharsetEnvChangeToken extends Token {
     required this.oldValue,
     this.type = 'CHARSET',
   }) : super(
-          name: name,
           handlerName: handlerName,
         );
 }
 
-class PacketSizeEnvChangeToken extends Token {
+class PacketSizeEnvChangeToken extends EnvChangeToken {
   @override
   String name;
 
@@ -248,12 +234,11 @@ class PacketSizeEnvChangeToken extends Token {
     required this.oldValue,
     this.type = 'PACKET_SIZE',
   }) : super(
-          name: name,
           handlerName: handlerName,
         );
 }
 
-class BeginTransactionEnvChangeToken extends Token {
+class BeginTransactionEnvChangeToken extends EnvChangeToken {
   @override
   String name;
 
@@ -271,12 +256,11 @@ class BeginTransactionEnvChangeToken extends Token {
     required this.oldValue,
     this.type = 'BEGIN_TXN',
   }) : super(
-          name: name,
           handlerName: handlerName,
         );
 }
 
-class CommitTransactionEnvChangeToken extends Token {
+class CommitTransactionEnvChangeToken extends EnvChangeToken {
   @override
   String name;
 
@@ -294,12 +278,11 @@ class CommitTransactionEnvChangeToken extends Token {
     required this.oldValue,
     this.type = 'COMMIT_TXN',
   }) : super(
-          name: name,
           handlerName: handlerName,
         );
 }
 
-class RollbackTransactionEnvChangeToken extends Token {
+class RollbackTransactionEnvChangeToken extends EnvChangeToken {
   @override
   String name;
 
@@ -317,12 +300,11 @@ class RollbackTransactionEnvChangeToken extends Token {
     required this.oldValue,
     this.type = 'ROLLBACK_TXN',
   }) : super(
-          name: name,
           handlerName: handlerName,
         );
 }
 
-class DatabaseMirroringPartnerEnvChangeToken extends Token {
+class DatabaseMirroringPartnerEnvChangeToken extends EnvChangeToken {
   @override
   String name;
 
@@ -340,12 +322,11 @@ class DatabaseMirroringPartnerEnvChangeToken extends Token {
     required this.oldValue,
     this.type = 'DATABASE_MIRRORING_PARTNER',
   }) : super(
-          name: name,
           handlerName: handlerName,
         );
 }
 
-class ResetConnectionEnvChangeToken extends Token {
+class ResetConnectionEnvChangeToken extends EnvChangeToken {
   @override
   String name;
 
@@ -363,12 +344,11 @@ class ResetConnectionEnvChangeToken extends Token {
     required this.oldValue,
     this.type = 'RESET_CONNECTION',
   }) : super(
-          name: name,
           handlerName: handlerName,
         );
 }
 
-class CollationChangeToken extends Token {
+class CollationChangeToken extends EnvChangeToken {
   @override
   String name;
 
@@ -386,7 +366,6 @@ class CollationChangeToken extends Token {
     required this.oldValue,
     this.type = 'SQL_COLLATION',
   }) : super(
-          name: name,
           handlerName: handlerName,
         );
 }
@@ -405,7 +384,7 @@ class RoutingEnvChange {
   });
 }
 
-class RoutingEnvChangeToken extends Token {
+class RoutingEnvChangeToken extends EnvChangeToken {
   @override
   String name;
 
@@ -423,7 +402,6 @@ class RoutingEnvChangeToken extends Token {
     required this.oldValue,
     this.type = 'ROUTING_CHANGE',
   }) : super(
-          name: name,
           handlerName: handlerName,
         );
 }

@@ -4,15 +4,18 @@ import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/conn_authentication.dart';
 // import 'package:tedious_dart/conn_config_internal.dart';
 import 'package:tedious_dart/conn_const_typedef.dart';
+import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/extensions/to_iterable_on_stream.dart';
 import 'package:tedious_dart/functions/get_initial_sql.dart';
 // import 'package:tedious_dart/functions/get_initial_sql.dart';
 import 'package:tedious_dart/library.dart';
 import 'package:tedious_dart/login7_payload.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/packet.dart';
 import 'package:tedious_dart/prelogin_payload.dart';
 import 'package:tedious_dart/sqlbatch_payload.dart';
 import 'package:tedious_dart/tds_versions.dart';
+import 'package:tedious_dart/token/stream_parser.dart';
 
 void main(List<String> args) async {
   final preSocket = RawSocket.connect('127.0.0.1', 1433);
@@ -40,25 +43,33 @@ void main(List<String> args) async {
   socket.write(login7Packet.buffer.buffer);
   await Future.delayed(duration);
   final login7Response = socket.read();
-  print('login7');
+  console.log(['\nlogin7 Server Response (LOGINACK):\n']);
   final login7ResponsePacket = Packet(Buffer(login7Response));
   print(login7ResponsePacket.toString());
+  StreamParser.parseTokens(
+    iterable: Stream.fromIterable([Buffer(login7Response)]),
+    debug: Debug(options: DebugOptions()),
+    options: ParserOptions(),
+  ).listen((event) {
+    print(event);
+  });
+  console.log(['\nCalled StreamParser.parseTokens(Buffer(Login7Response)):\n']);
   await Future.delayed(duration);
   print('sqlbatchpayload ==>> to be sent');
 
   await executeSQLpayload(socket, sqlbatchpayload);
   //-------------------------------------------------------//
 
-  await executeSQLpayload(socket, sqlbatchpayload2);
+  // await executeSQLpayload(socket, sqlbatchpayload2);
   //----------------------------------------------------//
 
-  await executeSQLpayload(socket, sqlbatchpayload3);
+  // await executeSQLpayload(socket, sqlbatchpayload3);
   //----------------------------------------------------//
 
   await executeSQLpayload(socket, sqlbatchpayload4);
 
   //-------------------------------------------------//
-  await executeSQLpayload(socket, sqlbatchpayload5);
+  // await executeSQLpayload(socket, sqlbatchpayload5);
 }
 
 const duration = Duration(milliseconds: 100);
@@ -110,6 +121,7 @@ final login7Payload = Login7Payload(
   appName: LIBRARYNAME,
   libraryName: LIBRARYNAME,
   language: DEFAULT_LANGUAGE,
+  database: "test",
   hostname: '127.0.0.1',
   serverName: 'kareemzaher',
   clientId: Buffer.from([1, 2, 3, 4, 5, 6]),
@@ -178,6 +190,13 @@ Future<void> executeSQLpayload(
   await Future.delayed(duration);
   final sqlResponse = socket.read();
   order++;
+  // if (order == 2) {
+  //   StreamParser.parseTokens(
+  //     iterable: Stream.fromIterable([Buffer(sqlResponse)]),
+  //     debug: Debug(options: DebugOptions()),
+  //     options: ParserOptions(),
+  //   );
+  // }
   print('sqlResponse $order');
   print(Packet(Buffer(sqlResponse)).headerToString());
   print(Packet(Buffer(sqlResponse)).dataToString());

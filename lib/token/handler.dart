@@ -1,5 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'package:tedious_dart/conn_authentication.dart';
 import 'package:tedious_dart/connection.dart';
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/request.dart';
@@ -415,13 +416,14 @@ class Login7TokenHandler implements TokenHandler {
   onFeatureExtAck(FeatureExtAckToken token) {
     final authentication = connection.config.authentication;
 
-    if (authentication.type == 'azure-active-directory-password' ||
-        authentication.type == 'azure-active-directory-access-token' ||
-        authentication.type == 'azure-active-directory-msi-vm' ||
-        authentication.type == 'azure-active-directory-msi-app-service' ||
+    if (authentication.type == AuthType.azure_active_directory_password_ ||
+        authentication.type == AuthType.azure_active_directory_access_token_ ||
+        authentication.type == AuthType.azure_active_directory_msi_vm_ ||
         authentication.type ==
-            'azure-active-directory-service-principal-secret' ||
-        authentication.type == 'azure-active-directory-default') {
+            AuthType.azure_active_directory_msi_app_service_ ||
+        authentication.type ==
+            AuthType.azure_active_directory_service_principal_secret_ ||
+        authentication.type == AuthType.azure_active_directory_default_) {
       if (token.fedAuth == null) {
         connection.loginError = ConnectionError(
             'Did not receive Active Directory authentication acknowledgement');

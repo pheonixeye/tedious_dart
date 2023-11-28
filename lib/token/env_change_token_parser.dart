@@ -1,6 +1,7 @@
 //manufactured class instead of object literal
 import 'package:tedious_dart/collation.dart';
 import 'package:tedious_dart/models/errors.dart';
+import 'package:tedious_dart/models/logger_stacktrace.dart';
 import 'package:tedious_dart/token/stream_parser.dart';
 import 'package:tedious_dart/token/token.dart';
 import 'dart:developer' show log;
@@ -33,7 +34,7 @@ readNewAndOldValue(
   StreamParser parser,
   num length,
   EnvChangeEvents type,
-  void Function(Token? token) callback,
+  void Function(EnvChangeToken? token) callback,
 ) {
   switch (type.name) {
     case 'DATABASE':
@@ -174,4 +175,25 @@ readNewAndOldValue(
         callback(null);
       });
   }
+}
+
+envChangeParser(StreamParser parser, ParserOptions _options,
+    void Function(EnvChangeToken? token)? callback) {
+  parser.readUInt16LE((length) {
+    parser.readUInt8((typeNumber) {
+      final type = _types[typeNumber];
+
+      if (type == null) {
+        console.log(['Tedious > Unsupported ENVCHANGE type $typeNumber']);
+        // skip unknown bytes
+        return parser.readBuffer(length - 1, (_) {
+          callback == null ? () {} : callback(null);
+        });
+      }
+
+      readNewAndOldValue(parser, length, type, (token) {
+        callback!(token);
+      });
+    });
+  });
 }

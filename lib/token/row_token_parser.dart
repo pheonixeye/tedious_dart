@@ -5,7 +5,7 @@ import 'package:tedious_dart/value_parser.dart';
 
 Future<RowToken> rowParser(StreamParser parser) async {
   final colMetadata = parser.colMetadata;
-  final length = colMetadata!.length;
+  final length = colMetadata.length;
   List<Column> columns = [];
 
   for (int i = 0; i < length; i++) {

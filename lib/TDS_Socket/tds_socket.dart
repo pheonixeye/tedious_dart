@@ -6,29 +6,15 @@ import 'package:tedious_dart/TDS_Socket/st.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
 
 class TdsSocket extends Bloc<TdsSocketEvent, TdsSocketState> {
-  final Future<RawSocket> _socket;
-  late final RawSocket socket;
-  TdsSocket({TdsSocketConnecting initialState = const TdsSocketConnecting()})
-      : _socket = RawSocket.connect(
-          initialState.host,
-          initialState.port,
-        ),
-        super(initialState) {
-    on<TdsSocketEvent>((event, emit) async {
+  late final RawSocket _socket;
+  TdsSocket() : super(TdsSocketNotConnected()) {
+    on<ConnectEvent>((event, emit) async {
       emit(TdsSocketConnecting());
-      while (state == TdsSocketConnecting()) {
-        console.log(['Not Connected Yet, Retry in 500ms.']);
-        await Future.delayed(Duration(milliseconds: 500));
-        emit(TdsSocketConnecting());
-      }
-    });
-
-    on<InitEvent>((event, emit) async {
       try {
-        emit(TdsSocketConnecting());
-        await _init().whenComplete(() {
+        await RawSocket.connect(event.host, event.port).then((value) {
+          _socket = value;
           console.log([
-            "Connected to ${socket.remoteAddress} on Port ${socket.remotePort}"
+            'Connected to ${_socket.remoteAddress} on port ${_socket.remotePort}'
           ]);
         });
         emit(TdsSocketConnected());
@@ -38,27 +24,44 @@ class TdsSocket extends Bloc<TdsSocketEvent, TdsSocketState> {
     });
 
     on<WriteEvent>((event, emit) async {
-      while (state == TdsSocketConnecting()) {
+      if (state != TdsSocketConnected()) {
         console.log(['Not Connected Yet, Retry in 500ms.']);
         await Future.delayed(Duration(milliseconds: 500));
-        emit(TdsSocketConnecting());
       }
-      socket.write(event.data);
       emit(TdsSocketWriting());
+      _socket.write(event.data);
+      emit(TdsSocketConnected());
     });
 
     on<ReadEvent>((event, emit) async {
-      while (state == TdsSocketConnecting()) {
+      if (state != TdsSocketConnected()) {
         console.log(['Not Connected Yet, Retry in 500ms.']);
         await Future.delayed(Duration(milliseconds: 500));
-        emit(TdsSocketConnecting());
       }
-      socket.read(event.length);
-      emit(TdsSocketReading());
+
+      emit(TdsSocketReading(_socket.read(event.len)));
+      emit(TdsSocketConnected());
+    });
+
+    on<DisconnectEvent>((event, emit) async {
+      if (state != TdsSocketConnected()) {
+        console.log(['Cannot close in ${state.toString()}, Retry in 500ms.']);
+        await Future.delayed(Duration(milliseconds: 500));
+      }
+      _socket.shutdown(SocketDirection.both);
+      emit(TdsSocketNotConnected());
     });
   }
 
-  Future<void> _init() async {
-    socket = await _socket;
+  @override
+  void onTransition(Transition<TdsSocketEvent, TdsSocketState> transition) {
+    console.log([
+      transition.event,
+      "current: ",
+      transition.currentState,
+      "next: ",
+      transition.nextState
+    ]);
+    super.onTransition(transition);
   }
 }
