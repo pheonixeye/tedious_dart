@@ -29,7 +29,7 @@ const Map<String, int> TOKEN_TYPE = {
   "TABNAME": 0xA4
 };
 
-//TODO: better implement after understanding keyof operator of typescript
+//todo: better implement after understanding keyof operator of typescript
 typedef HandlerName = String;
 
 abstract class Token {

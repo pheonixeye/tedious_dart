@@ -5,30 +5,28 @@ import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/message.dart';
 import 'package:tedious_dart/token/handler.dart';
 import 'package:tedious_dart/token/stream_parser.dart';
+import 'package:tedious_dart/token/token.dart';
 
 class TokenStreamParser extends EventEmitter {
-  Debug debug;
-  ParserOptions options;
-  late Stream parser;
-
-  late StreamSubscription sub;
+  final Debug debug;
+  final ParserOptions options;
+  final Stream<Token?> parser;
+  late final StreamSubscription<Token?> sub;
 
   TokenStreamParser({
     required this.debug,
     required this.options,
     required Message message,
     required TokenHandler tokenHandler,
-  }) {
-    parser = StreamParser.parseTokens(
-      debug: debug,
-      options: options,
-      iterable: message.controller.stream,
-    ).asBroadcastStream();
-
+  }) : parser = StreamParser.parseTokens(
+          debug: debug,
+          options: options,
+          iterable: message.controller.stream,
+        ).asBroadcastStream() {
     sub = parser.listen((data) {
-      //TODO:
+      //todo:
       //call the function from token handler class whos name is in data as token.handlerName with token as a parameter
-      TOKEN_FUNCTIONS[data.handlerName]!(data).call();
+      TokenHandler().TOKEN_FUNCTIONS[data?.handlerName]!(data);
     });
 
     sub.onDone(() {

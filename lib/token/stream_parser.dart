@@ -198,12 +198,12 @@ class StreamParser {
     streamBuffer.position = value;
   }
 
-  suspend(void Function() next) {
+  void suspend(void Function() next) {
     suspended = true;
     this.next = next;
   }
 
-  awaitData(int length, void Function() callback) {
+  void awaitData(int length, void Function() callback) {
     if (position + length <= buffer.length) {
       callback();
     } else {
@@ -213,7 +213,7 @@ class StreamParser {
     }
   }
 
-  readInt8(void Function(int data) callback) {
+  void readInt8(void Function(int data) callback) {
     awaitData(1, () {
       final data = buffer.readInt8(position);
       setPosition(position + 1);
@@ -221,7 +221,7 @@ class StreamParser {
     });
   }
 
-  readUInt8(void Function(int data) callback) {
+  void readUInt8(void Function(int data) callback) {
     awaitData(1, () {
       final data = buffer.readUInt8(position);
       setPosition(position + 1);
@@ -229,7 +229,7 @@ class StreamParser {
     });
   }
 
-  readInt16LE(void Function(int data) callback) {
+  void readInt16LE(void Function(int data) callback) {
     awaitData(2, () {
       final data = buffer.readInt16LE(position);
       setPosition(position + 2);
@@ -237,7 +237,7 @@ class StreamParser {
     });
   }
 
-  readInt16BE(void Function(int data) callback) {
+  void readInt16BE(void Function(int data) callback) {
     awaitData(2, () {
       final data = buffer.readInt16BE(position);
       setPosition(position + 2);
@@ -245,7 +245,7 @@ class StreamParser {
     });
   }
 
-  readUInt16LE(void Function(int data) callback) {
+  void readUInt16LE(void Function(int data) callback) {
     awaitData(2, () {
       final data = buffer.readUInt16LE(position);
       setPosition(position + 2);
@@ -253,7 +253,7 @@ class StreamParser {
     });
   }
 
-  readUInt16BE(void Function(int data) callback) {
+  void readUInt16BE(void Function(int data) callback) {
     awaitData(2, () {
       final data = buffer.readUInt16BE(position);
       setPosition(position + 2);
@@ -261,7 +261,7 @@ class StreamParser {
     });
   }
 
-  readInt32LE(void Function(int data) callback) {
+  void readInt32LE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer.readInt32LE(position);
       setPosition(position + 4);
@@ -269,7 +269,7 @@ class StreamParser {
     });
   }
 
-  readInt32BE(void Function(int data) callback) {
+  void readInt32BE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer.readInt32BE(position);
       setPosition(position + 4);
@@ -277,7 +277,7 @@ class StreamParser {
     });
   }
 
-  readUInt32LE(void Function(int data) callback) {
+  void readUInt32LE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer.readUInt32LE(position);
       setPosition(position + 4);
@@ -285,7 +285,7 @@ class StreamParser {
     });
   }
 
-  readUInt32BE(void Function(int data) callback) {
+  void readUInt32BE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer.readUInt32BE(position);
       setPosition(position + 4);
@@ -293,7 +293,7 @@ class StreamParser {
     });
   }
 
-  readBigInt64LE(void Function(int data) callback) {
+  void readBigInt64LE(void Function(int data) callback) {
     awaitData(8, () {
       final data = buffer.readBigInt64LE(position);
       setPosition(position + 8);
@@ -301,7 +301,7 @@ class StreamParser {
     });
   }
 
-  readInt64LE(void Function(int data) callback) {
+  void readInt64LE(void Function(int data) callback) {
     awaitData(8, () {
       final data = pow(2, 32) * buffer.readInt32LE(position + 4) +
           ((buffer[position + 4] & 0x80) == 0x80 ? 1 : -1) *
@@ -311,7 +311,7 @@ class StreamParser {
     });
   }
 
-  readInt64BE(void Function(int data) callback) {
+  void readInt64BE(void Function(int data) callback) {
     awaitData(8, () {
       final data = pow(2, 32) * buffer.readInt32BE(position) +
           ((buffer[position] & 0x80) == 0x80 ? 1 : -1) *
@@ -321,7 +321,7 @@ class StreamParser {
     });
   }
 
-  readBigUInt64LE(void Function(int data) callback) {
+  void readBigUInt64LE(void Function(int data) callback) {
     awaitData(8, () {
       final data = buffer.readBigUInt64LE(position);
       setPosition(position + 8);
@@ -329,7 +329,7 @@ class StreamParser {
     });
   }
 
-  readUInt64LE(void Function(int data) callback) {
+  void readUInt64LE(void Function(int data) callback) {
     awaitData(8, () {
       final data = pow(2, 32) * buffer.readUInt32LE(position + 4) +
           buffer.readUInt32LE(position);
@@ -338,7 +338,7 @@ class StreamParser {
     });
   }
 
-  readUInt64BE(void Function(int data) callback) {
+  void readUInt64BE(void Function(int data) callback) {
     awaitData(8, () {
       final data = pow(2, 32) * buffer.readUInt32BE(position) +
           buffer.readUInt32BE(position + 4);
@@ -347,7 +347,7 @@ class StreamParser {
     });
   }
 
-  readFloatLE(void Function(int data) callback) {
+  void readFloatLE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer.readFloatLE(position);
       setPosition(position + 4);
@@ -355,7 +355,7 @@ class StreamParser {
     });
   }
 
-  readFloatBE(void Function(int data) callback) {
+  void readFloatBE(void Function(int data) callback) {
     awaitData(4, () {
       final data = buffer.readFloatBE(position);
       setPosition(position + 4);
@@ -363,7 +363,7 @@ class StreamParser {
     });
   }
 
-  readDoubleLE(void Function(int data) callback) {
+  void readDoubleLE(void Function(int data) callback) {
     awaitData(8, () {
       final data = buffer.readDoubleLE(position);
       setPosition(position + 8);
@@ -371,7 +371,7 @@ class StreamParser {
     });
   }
 
-  readDoubleBE(void Function(int data) callback) {
+  void readDoubleBE(void Function(int data) callback) {
     awaitData(8, () {
       final data = buffer.readDoubleBE(position);
       setPosition(position + 8);
@@ -379,7 +379,7 @@ class StreamParser {
     });
   }
 
-  readUInt24LE(void Function(int data) callback) {
+  void readUInt24LE(void Function(int data) callback) {
     awaitData(3, () {
       final low = buffer.readUInt16LE(position);
       final high = buffer.readUInt8(position + 2);
@@ -388,7 +388,7 @@ class StreamParser {
     });
   }
 
-  readUInt40LE(void Function(int data) callback) {
+  void readUInt40LE(void Function(int data) callback) {
     awaitData(5, () {
       final low = buffer.readUInt32LE(position);
       final high = buffer.readUInt8(position + 4);
@@ -397,7 +397,7 @@ class StreamParser {
     });
   }
 
-  readUinteric64LE(void Function(int data) callback) {
+  void readUinteric64LE(void Function(int data) callback) {
     awaitData(8, () {
       final low = buffer.readUInt32LE(position);
       final high = buffer.readUInt32LE(position + 4);
@@ -406,7 +406,7 @@ class StreamParser {
     });
   }
 
-  readUinteric96LE(void Function(int data) callback) {
+  void readUinteric96LE(void Function(int data) callback) {
     awaitData(12, () {
       final dword1 = buffer.readUInt32LE(position);
       final dword2 = buffer.readUInt32LE(position + 4);
@@ -418,7 +418,7 @@ class StreamParser {
     });
   }
 
-  readUinteric128LE(void Function(int data) callback) {
+  void readUinteric128LE(void Function(int data) callback) {
     awaitData(16, () {
       final dword1 = buffer.readUInt32LE(position);
       final dword2 = buffer.readUInt32LE(position + 4);
@@ -432,7 +432,7 @@ class StreamParser {
     });
   }
 
-  readBuffer(int length, void Function(Buffer data) callback) {
+  void readBuffer(int length, void Function(Buffer data) callback) {
     awaitData(length, () {
       final data = buffer.slice(position, position + length);
       setPosition(position + length);
@@ -440,7 +440,7 @@ class StreamParser {
     });
   }
 
-  readBVarChar(void Function(String data) callback) {
+  void readBVarChar(void Function(String data) callback) {
     readUInt8((length) {
       readBuffer(length * 2, (data) {
         callback(data.toString_({'encoding': 'ucs2'}));
@@ -448,7 +448,7 @@ class StreamParser {
     });
   }
 
-  readUsVarChar(void Function(String data) callback) {
+  void readUsVarChar(void Function(String data) callback) {
     readUInt16LE((length) {
       readBuffer(length * 2, (data) {
         callback(data.toString_({'encoding': 'ucs2'}));
@@ -456,13 +456,13 @@ class StreamParser {
     });
   }
 
-  readBVarByte(void Function(Buffer data) callback) {
+  void readBVarByte(void Function(Buffer data) callback) {
     readUInt8((length) {
       readBuffer(length, callback);
     });
   }
 
-  readUsVarByte(void Function(Buffer data) callback) {
+  void readUsVarByte(void Function(Buffer data) callback) {
     readUInt16LE((length) {
       readBuffer(length, callback);
     });

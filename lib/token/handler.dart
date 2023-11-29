@@ -12,65 +12,65 @@ class UnexpectedTokenError extends MTypeError {
       : super('Unexpected token ${token.name} in ${token.handlerName}');
 }
 
-Map<String, Function> TOKEN_FUNCTIONS = {};
+typedef HandlerFunction = void Function(Token? token);
 
 //!
-abstract class _Handler {
-  onInfoMessage(InfoMessageToken token);
+abstract interface class Handler {
+  void onInfoMessage(InfoMessageToken token);
 
-  onErrorMessage(ErrorMessageToken token);
+  void onErrorMessage(ErrorMessageToken token);
 
-  onSSPI(SSPIToken token);
+  void onSSPI(SSPIToken token);
 
-  onDatabaseChange(DatabaseEnvChangeToken token);
+  void onDatabaseChange(DatabaseEnvChangeToken token);
 
-  onLanguageChange(LanguageEnvChangeToken token);
+  void onLanguageChange(LanguageEnvChangeToken token);
 
-  onCharsetChange(CharsetEnvChangeToken token);
+  void onCharsetChange(CharsetEnvChangeToken token);
 
-  onSqlCollationChange(CollationChangeToken token);
+  void onSqlCollationChange(CollationChangeToken token);
 
-  onRoutingChange(RoutingEnvChangeToken token);
+  void onRoutingChange(RoutingEnvChangeToken token);
 
-  onPacketSizeChange(PacketSizeEnvChangeToken token);
+  void onPacketSizeChange(PacketSizeEnvChangeToken token);
 
-  onResetConnection(ResetConnectionEnvChangeToken token);
+  void onResetConnection(ResetConnectionEnvChangeToken token);
 
-  onBeginTransaction(BeginTransactionEnvChangeToken token);
+  void onBeginTransaction(BeginTransactionEnvChangeToken token);
 
-  onCommitTransaction(CommitTransactionEnvChangeToken token);
+  void onCommitTransaction(CommitTransactionEnvChangeToken token);
 
-  onRollbackTransaction(RollbackTransactionEnvChangeToken token);
+  void onRollbackTransaction(RollbackTransactionEnvChangeToken token);
 
-  onFedAuthInfo(FedAuthInfoToken token);
+  void onFedAuthInfo(FedAuthInfoToken token);
 
-  onFeatureExtAck(FeatureExtAckToken token);
+  void onFeatureExtAck(FeatureExtAckToken token);
 
-  onLoginAck(LoginAckToken token);
+  void onLoginAck(LoginAckToken token);
 
-  onColMetadata(ColMetadataToken token);
+  void onColMetadata(ColMetadataToken token);
 
-  onOrder(OrderToken token);
+  void onOrder(OrderToken token);
 
-  onRow(RowToken token);
+  void onRow(RowToken token);
 
-  onNBCRow(NBCRowToken token);
+  void onNBCRow(NBCRowToken token);
 
-  onReturnStatus(ReturnStatusToken token);
+  void onReturnStatus(ReturnStatusToken token);
 
-  onReturnValue(ReturnValueToken token);
+  void onReturnValue(ReturnValueToken token);
 
-  onDoneProc(DoneProcToken token);
+  void onDoneProc(DoneProcToken token);
 
-  onDoneInProc(DoneInProcToken token);
+  void onDoneInProc(DoneInProcToken token);
 
-  onDone(DoneToken token);
+  void onDone(DoneToken token);
 
-  onDatabaseMirroringPartner(DatabaseMirroringPartnerEnvChangeToken token);
+  void onDatabaseMirroringPartner(DatabaseMirroringPartnerEnvChangeToken token);
 }
 
 //!
-class TokenHandler implements _Handler {
+class TokenHandler implements Handler {
   @override
   onInfoMessage(InfoMessageToken token) {
     throw UnexpectedTokenError(token);
@@ -200,6 +200,35 @@ class TokenHandler implements _Handler {
   onDatabaseMirroringPartner(DatabaseMirroringPartnerEnvChangeToken token) {
     throw UnexpectedTokenError(token);
   }
+
+  Map<String, Function> get TOKEN_FUNCTIONS => {
+        "onInfoMessage": onInfoMessage,
+        "onErrorMessage": onErrorMessage,
+        "onSSPI": onSSPI,
+        "onDatabaseChange": onDatabaseChange,
+        "onLanguageChange": onLanguageChange,
+        "onCharsetChange": onCharsetChange,
+        "onSqlCollationChange": onSqlCollationChange,
+        "onRoutingChange": onRoutingChange,
+        "onPacketSizeChange": onPacketSizeChange,
+        "onResetConnection": onResetConnection,
+        "onBeginTransaction": onBeginTransaction,
+        "onCommitTransaction": onCommitTransaction,
+        "onRollbackTransaction": onRollbackTransaction,
+        "onFedAuthInfo": onFedAuthInfo,
+        "onFeatureExtAck": onFeatureExtAck,
+        "onLoginAck": onLoginAck,
+        "onColMetadata": onColMetadata,
+        "onOrder": onOrder,
+        "onRow": onRow,
+        "onNBCRow": onNBCRow,
+        "onReturnStatus": onReturnStatus,
+        "onReturnValue": onReturnValue,
+        "onDoneProc": onDoneProc,
+        "onDoneInProc": onDoneInProc,
+        "onDone": onDone,
+        "onDatabaseMirroringPartner": onDatabaseMirroringPartner,
+      };
 }
 
 //!
@@ -341,6 +370,36 @@ class InitialSqlTokenHandler implements TokenHandler {
   onSqlCollationChange(CollationChangeToken token) {
     connection.databaseCollation = token.newValue;
   }
+
+  @override
+  Map<String, Function> get TOKEN_FUNCTIONS => {
+        "onInfoMessage": onInfoMessage,
+        "onErrorMessage": onErrorMessage,
+        "onSSPI": onSSPI,
+        "onDatabaseChange": onDatabaseChange,
+        "onLanguageChange": onLanguageChange,
+        "onCharsetChange": onCharsetChange,
+        "onSqlCollationChange": onSqlCollationChange,
+        "onRoutingChange": onRoutingChange,
+        "onPacketSizeChange": onPacketSizeChange,
+        "onResetConnection": onResetConnection,
+        "onBeginTransaction": onBeginTransaction,
+        "onCommitTransaction": onCommitTransaction,
+        "onRollbackTransaction": onRollbackTransaction,
+        "onFedAuthInfo": onFedAuthInfo,
+        "onFeatureExtAck": onFeatureExtAck,
+        "onLoginAck": onLoginAck,
+        "onColMetadata": onColMetadata,
+        "onOrder": onOrder,
+        "onRow": onRow,
+        "onNBCRow": onNBCRow,
+        "onReturnStatus": onReturnStatus,
+        "onReturnValue": onReturnValue,
+        "onDoneProc": onDoneProc,
+        "onDoneInProc": onDoneInProc,
+        "onDone": onDone,
+        "onDatabaseMirroringPartner": onDatabaseMirroringPartner,
+      };
 }
 
 //!
@@ -537,6 +596,36 @@ class Login7TokenHandler implements TokenHandler {
   onSqlCollationChange(CollationChangeToken token) {
     connection.databaseCollation = token.newValue;
   }
+
+  @override
+  Map<String, Function> get TOKEN_FUNCTIONS => {
+        "onInfoMessage": onInfoMessage,
+        "onErrorMessage": onErrorMessage,
+        "onSSPI": onSSPI,
+        "onDatabaseChange": onDatabaseChange,
+        "onLanguageChange": onLanguageChange,
+        "onCharsetChange": onCharsetChange,
+        "onSqlCollationChange": onSqlCollationChange,
+        "onRoutingChange": onRoutingChange,
+        "onPacketSizeChange": onPacketSizeChange,
+        "onResetConnection": onResetConnection,
+        "onBeginTransaction": onBeginTransaction,
+        "onCommitTransaction": onCommitTransaction,
+        "onRollbackTransaction": onRollbackTransaction,
+        "onFedAuthInfo": onFedAuthInfo,
+        "onFeatureExtAck": onFeatureExtAck,
+        "onLoginAck": onLoginAck,
+        "onColMetadata": onColMetadata,
+        "onOrder": onOrder,
+        "onRow": onRow,
+        "onNBCRow": onNBCRow,
+        "onReturnStatus": onReturnStatus,
+        "onReturnValue": onReturnValue,
+        "onDoneProc": onDoneProc,
+        "onDoneInProc": onDoneInProc,
+        "onDone": onDone,
+        "onDatabaseMirroringPartner": onDatabaseMirroringPartner,
+      };
 }
 
 //!
@@ -794,6 +883,36 @@ class RequestTokenHandler implements TokenHandler {
   onSqlCollationChange(CollationChangeToken token) {
     connection.databaseCollation = token.newValue;
   }
+
+  @override
+  Map<String, Function> get TOKEN_FUNCTIONS => {
+        "onInfoMessage": onInfoMessage,
+        "onErrorMessage": onErrorMessage,
+        "onSSPI": onSSPI,
+        "onDatabaseChange": onDatabaseChange,
+        "onLanguageChange": onLanguageChange,
+        "onCharsetChange": onCharsetChange,
+        "onSqlCollationChange": onSqlCollationChange,
+        "onRoutingChange": onRoutingChange,
+        "onPacketSizeChange": onPacketSizeChange,
+        "onResetConnection": onResetConnection,
+        "onBeginTransaction": onBeginTransaction,
+        "onCommitTransaction": onCommitTransaction,
+        "onRollbackTransaction": onRollbackTransaction,
+        "onFedAuthInfo": onFedAuthInfo,
+        "onFeatureExtAck": onFeatureExtAck,
+        "onLoginAck": onLoginAck,
+        "onColMetadata": onColMetadata,
+        "onOrder": onOrder,
+        "onRow": onRow,
+        "onNBCRow": onNBCRow,
+        "onReturnStatus": onReturnStatus,
+        "onReturnValue": onReturnValue,
+        "onDoneProc": onDoneProc,
+        "onDoneInProc": onDoneInProc,
+        "onDone": onDone,
+        "onDatabaseMirroringPartner": onDatabaseMirroringPartner,
+      };
 }
 
 //!
@@ -941,4 +1060,34 @@ class AttentionTokenHandler implements TokenHandler {
   onSqlCollationChange(CollationChangeToken token) {
     throw UnimplementedError();
   }
+
+  @override
+  Map<String, Function> get TOKEN_FUNCTIONS => {
+        "onInfoMessage": onInfoMessage,
+        "onErrorMessage": onErrorMessage,
+        "onSSPI": onSSPI,
+        "onDatabaseChange": onDatabaseChange,
+        "onLanguageChange": onLanguageChange,
+        "onCharsetChange": onCharsetChange,
+        "onSqlCollationChange": onSqlCollationChange,
+        "onRoutingChange": onRoutingChange,
+        "onPacketSizeChange": onPacketSizeChange,
+        "onResetConnection": onResetConnection,
+        "onBeginTransaction": onBeginTransaction,
+        "onCommitTransaction": onCommitTransaction,
+        "onRollbackTransaction": onRollbackTransaction,
+        "onFedAuthInfo": onFedAuthInfo,
+        "onFeatureExtAck": onFeatureExtAck,
+        "onLoginAck": onLoginAck,
+        "onColMetadata": onColMetadata,
+        "onOrder": onOrder,
+        "onRow": onRow,
+        "onNBCRow": onNBCRow,
+        "onReturnStatus": onReturnStatus,
+        "onReturnValue": onReturnValue,
+        "onDoneProc": onDoneProc,
+        "onDoneInProc": onDoneInProc,
+        "onDone": onDone,
+        "onDatabaseMirroringPartner": onDatabaseMirroringPartner,
+      };
 }

@@ -38,7 +38,7 @@ class _Data {
   });
 }
 
-parseChallenge(Buffer buffer) {
+_Data parseChallenge(Buffer buffer) {
   _Data challenge = _Data();
 
   challenge.magic = buffer.slice(0, 8).toString_({'encoding': 'utf8'});

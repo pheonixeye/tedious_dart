@@ -32,7 +32,7 @@ class DoneTokenData {
   });
 }
 
-parseToken(
+void parseToken(
   StreamParser parser,
   ParserOptions options,
   void Function(DoneTokenData data) callback,
@@ -74,7 +74,7 @@ parseToken(
   });
 }
 
-doneParser(
+void doneParser(
   StreamParser parser,
   ParserOptions options,
   void Function(DoneToken data) callback,
@@ -91,7 +91,7 @@ doneParser(
   });
 }
 
-doneInProcParser(
+void doneInProcParser(
   StreamParser parser,
   ParserOptions options,
   void Function(DoneInProcToken data) callback,
@@ -108,7 +108,7 @@ doneInProcParser(
   });
 }
 
-doneProcParser(
+void doneProcParser(
   StreamParser parser,
   ParserOptions options,
   void Function(DoneProcToken data) callback,

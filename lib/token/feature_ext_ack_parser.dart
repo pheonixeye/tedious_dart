@@ -14,7 +14,7 @@ const Map<String, int> FEATURE_ID = {
   'TERMINATOR': 0xFF
 };
 
-featureExtAckParser(
+void featureExtAckParser(
   StreamParser parser,
   ParserOptions options,
   void Function(FeatureExtAckToken data) callback,

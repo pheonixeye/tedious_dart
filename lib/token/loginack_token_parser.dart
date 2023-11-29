@@ -7,7 +7,7 @@ const interfaceTypes = {
   1: 'SQL_TSQL',
 };
 
-loginAckParser(
+void loginAckParser(
   StreamParser parser,
   ParserOptions options,
   void Function(LoginAckToken data) callback,

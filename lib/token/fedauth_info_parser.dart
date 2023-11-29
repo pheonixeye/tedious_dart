@@ -8,7 +8,7 @@ const FEDAUTHINFOID = {
   'SPN': 0x02,
 };
 
-fedAuthInfoParser(
+void fedAuthInfoParser(
   StreamParser parser,
   ParserOptions options,
   void Function(FedAuthInfoToken data) callback,

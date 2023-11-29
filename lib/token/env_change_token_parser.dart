@@ -30,7 +30,7 @@ Map<int, EnvChangeEvents> _types = {
   20: EnvChangeEvents(name: 'ROUTING_CHANGE', event: 'routingChange'),
 };
 
-readNewAndOldValue(
+void readNewAndOldValue(
   StreamParser parser,
   num length,
   EnvChangeEvents type,
@@ -177,7 +177,7 @@ readNewAndOldValue(
   }
 }
 
-envChangeParser(StreamParser parser, ParserOptions _options,
+void envChangeParser(StreamParser parser, ParserOptions _options,
     void Function(EnvChangeToken? token)? callback) {
   parser.readUInt16LE((length) {
     parser.readUInt8((typeNumber) {

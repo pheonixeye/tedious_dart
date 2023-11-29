@@ -1,7 +1,7 @@
 import 'package:tedious_dart/token/stream_parser.dart';
 import 'package:tedious_dart/token/token.dart';
 
-returnStatusParser(
+void returnStatusParser(
   StreamParser parser,
   ParserOptions options,
   void Function(ReturnStatusToken token) callback,

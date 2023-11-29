@@ -3,7 +3,7 @@ import 'package:tedious_dart/token/stream_parser.dart';
 import 'package:tedious_dart/token/token.dart';
 import 'package:tedious_dart/value_parser.dart';
 
-nullHandler(
+void nullHandler(
   StreamParser parser,
   ColumnMetadata columnMetadata,
   ParserOptions options,

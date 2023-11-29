@@ -17,7 +17,7 @@ class ColumnMetadata extends Metadata {
   });
 }
 
-readTableName(
+void readTableName(
   StreamParser parser,
   ParserOptions options,
   Metadata metadata,
@@ -53,7 +53,7 @@ readTableName(
   }
 }
 
-readColumnName(
+void readColumnName(
   StreamParser parser,
   ParserOptions options,
   num index,
@@ -74,7 +74,7 @@ readColumnName(
   });
 }
 
-readColumn(
+void readColumn(
   StreamParser parser,
   ParserOptions options,
   num index,

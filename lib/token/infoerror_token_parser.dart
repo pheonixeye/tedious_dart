@@ -22,7 +22,7 @@ class InfoErrorTokenData {
   });
 }
 
-parseToken(
+void parseToken(
   StreamParser parser,
   ParserOptions options,
   void Function(InfoErrorTokenData data) callback,
@@ -64,7 +64,7 @@ parseToken(
   });
 }
 
-infoParser(
+void infoParser(
   StreamParser parser,
   ParserOptions options,
   void Function(InfoMessageToken data) callback,
@@ -82,7 +82,7 @@ infoParser(
   });
 }
 
-errorParser(
+void errorParser(
   StreamParser parser,
   ParserOptions options,
   void Function(ErrorMessageToken data) callback,
