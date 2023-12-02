@@ -72,13 +72,13 @@ const Map<String, int> FEDAUTH_OPTIONS = {
 const FEATURE_EXT_TERMINATOR = 0xFF;
 
 class Login7Options {
-  int tdsVersion;
-  int packetSize;
-  int clientProgVer;
-  int clientPid;
-  int connectionId;
-  int clientTimeZone;
-  int clientLcid;
+  final int tdsVersion;
+  final int packetSize;
+  final int clientProgVer;
+  final int clientPid;
+  final int connectionId;
+  final int clientTimeZone;
+  final int clientLcid;
 
   Login7Options({
     this.clientLcid = 0x00000409, //LCID for english //default

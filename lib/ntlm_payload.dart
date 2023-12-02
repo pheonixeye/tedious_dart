@@ -32,11 +32,10 @@ class NTLMOptions {
 }
 
 class NTLMResponsePayload {
-  Buffer? data;
-  NTLMOptions loginData;
+  late final Buffer data;
+  final NTLMOptions loginData;
 
   NTLMResponsePayload({
-    required this.data,
     required this.loginData,
   }) {
     data = createResponse(loginData);
@@ -117,7 +116,7 @@ class NTLMResponsePayload {
     return data.data;
   }
 
-  createClientNonce() {
+  Buffer createClientNonce() {
     final clientNonce = Buffer.alloc(8, 0);
     var nidx = 0;
     while (nidx < 8) {
@@ -127,7 +126,7 @@ class NTLMResponsePayload {
     return clientNonce;
   }
 
-  ntlmv2Response(
+  Buffer ntlmv2Response(
     String domain,
     String user,
     String password,
@@ -151,7 +150,7 @@ class NTLMResponsePayload {
     return hmacMD5(data, hash);
   }
 
-  createTimestamp(num time) {
+  Buffer createTimestamp(num time) {
     final tenthsOfAMicrosecond =
         (BigInt.from(time) + BigInt.from(11644473600)) * BigInt.from(10000000);
 
@@ -165,7 +164,7 @@ class NTLMResponsePayload {
     return result;
   }
 
-  lmv2Response(
+  Buffer lmv2Response(
     String domain,
     String user,
     String password,
@@ -187,27 +186,27 @@ class NTLMResponsePayload {
     return response;
   }
 
-  ntv2Hash(String domain, String user, String password) {
+  Buffer ntv2Hash(String domain, String user, String password) {
     final hash = ntHash(password);
     final identity =
         Buffer.from(user.toUpperCase() + domain.toUpperCase(), 0, 0, 'ucs2');
     return hmacMD5(identity, hash);
   }
 
-  ntHash(String text) {
+  Buffer ntHash(String text) {
     final unicodeString = Buffer.from(text, 0, 0, 'ucs2');
     var m = MD4Digest().process(unicodeString.buffer);
     return Buffer.from(m);
     //TODO: REVISE
   }
 
-  hmacMD5(Buffer data, Buffer key) {
+  Buffer hmacMD5(Buffer data, Buffer key) {
     var hmac = Hmac(md5, key.buffer);
     var output = AccumulatorSink<Digest>();
     ByteConversionSink input = hmac.startChunkedConversion(output);
     input.add(data.buffer);
     input.close();
-    return output.events.first;
+    return Buffer(output.events.first as List<int>);
     //TODO: REVISE
   }
 }

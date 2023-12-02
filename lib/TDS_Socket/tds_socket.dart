@@ -3,11 +3,15 @@ import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:tedious_dart/TDS_Socket/ev.dart';
 import 'package:tedious_dart/TDS_Socket/st.dart';
+import 'package:tedious_dart/Translator/translator.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
 
 class TdsSocket extends Bloc<TdsSocketEvent, TdsSocketState> {
   late final RawSocket _socket;
-  TdsSocket() : super(TdsSocketNotConnected()) {
+  final Translator translator;
+  TdsSocket()
+      : translator = Translator(),
+        super(TdsSocketNotConnected()) {
     on<ConnectEvent>((event, emit) async {
       emit(TdsSocketConnecting());
       try {
@@ -38,9 +42,11 @@ class TdsSocket extends Bloc<TdsSocketEvent, TdsSocketState> {
         console.log(['Not Connected Yet, Retry in 500ms.']);
         await Future.delayed(Duration(milliseconds: 500));
       }
-
+      // final data = _socket.read(event.len);
       emit(TdsSocketReading(_socket.read(event.len)));
+      translator.add(TranslateEvent(_socket.read(event.len)));
       emit(TdsSocketConnected());
+      // translator.add(FlushEvent());
     });
 
     on<DisconnectEvent>((event, emit) async {

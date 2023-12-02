@@ -44,11 +44,11 @@ class PreloginPayloadVersion {
   final int build;
   final int subbuild;
 
-  PreloginPayloadVersion({
-    required this.major,
-    required this.minor,
-    required this.build,
-    required this.subbuild,
+  const PreloginPayloadVersion({
+    this.major = 0,
+    this.minor = 0,
+    this.build = 0,
+    this.subbuild = 0,
   });
 }
 
@@ -57,8 +57,8 @@ class PreloginPayloadOptions {
   PreloginPayloadVersion version;
 
   PreloginPayloadOptions({
-    required this.encrypt,
-    required this.version,
+    this.encrypt = false,
+    this.version = const PreloginPayloadVersion(),
   });
 }
 
@@ -87,15 +87,7 @@ class PreloginPayload {
     if (bufferOrOptions is Buffer) {
       // ignore: unnecessary_cast
       data = bufferOrOptions as Buffer;
-      options = PreloginPayloadOptions(
-        encrypt: false,
-        version: PreloginPayloadVersion(
-          major: 0,
-          minor: 0,
-          build: 0,
-          subbuild: 0,
-        ),
-      );
+      options = PreloginPayloadOptions();
     } else {
       options = bufferOrOptions as PreloginPayloadOptions;
       createOptions();

@@ -3,7 +3,6 @@
 import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:sprintf/sprintf.dart';
 import 'package:tedious_dart/meta/annotations.dart';
-import 'package:tedious_dart/models/logger_stacktrace.dart';
 
 const HEADER_LENGTH = 8;
 
@@ -63,13 +62,10 @@ class Packet {
       buffer = Buffer.alloc(HEADER_LENGTH, 0);
       buffer.writeUInt8(type, OFFSET.Type.value);
       buffer.writeUInt8(STATUS['NORMAL']!, OFFSET.Status.value);
-      //todo: change eom according to message / packet size
       buffer.writeUInt16BE(DEFAULT_SPID, OFFSET.SPID.value);
       buffer.writeUInt8(DEFAULT_PACKETID, OFFSET.PacketID.value);
       buffer.writeUInt8(DEFAULT_WINDOW, OFFSET.Window.value);
       setLength();
-      console.log(['packet header ==>>']);
-      print(buffer.buffer);
     }
   }
 
@@ -127,8 +123,6 @@ class Packet {
 
   Packet addData(Buffer data) {
     buffer = Buffer.concat([buffer, data]);
-    console.log(['packet data after concat ==>>']);
-    print(buffer.buffer);
     setLength();
     return this;
   }

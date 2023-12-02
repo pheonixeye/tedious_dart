@@ -4,23 +4,23 @@ import 'package:magic_buffer_copy/magic_buffer.dart';
 import 'package:tedious_dart/token/stream_parser.dart';
 import 'package:tedious_dart/token/token.dart';
 
-class _Data {
+class ChallengeData {
   String? magic;
-  num? type;
-  num? domainLen;
-  num? domainMax;
-  num? domainOffset;
-  num? flags;
+  int? type;
+  int? domainLen;
+  int? domainMax;
+  int? domainOffset;
+  int? flags;
   Buffer? nonce;
   Buffer? zeroes;
-  num? targetLen;
-  num? targetMax;
-  num? targetOffset;
+  int? targetLen;
+  int? targetMax;
+  int? targetOffset;
   Buffer? oddData;
   String? domain;
   Buffer? target;
 
-  _Data({
+  ChallengeData({
     this.domain,
     this.domainLen,
     this.domainMax,
@@ -38,8 +38,8 @@ class _Data {
   });
 }
 
-_Data parseChallenge(Buffer buffer) {
-  _Data challenge = _Data();
+ChallengeData parseChallenge(Buffer buffer) {
+  ChallengeData challenge = ChallengeData();
 
   challenge.magic = buffer.slice(0, 8).toString_({'encoding': 'utf8'});
   challenge.type = buffer.readInt32LE(8);
@@ -54,15 +54,15 @@ _Data parseChallenge(Buffer buffer) {
   challenge.targetOffset = buffer.readInt32LE(44);
   challenge.oddData = buffer.slice(48, 56);
   challenge.domain = buffer
-      .slice(56, 56 + challenge.domainLen! as int)
+      .slice(56, 56 + challenge.domainLen!)
       .toString_({'encoding': 'ucs2'});
-  challenge.target = buffer.slice(56 + challenge.domainLen! as int,
-      (56 + challenge.domainLen! + challenge.targetLen!) as int);
+  challenge.target = buffer.slice(56 + challenge.domainLen!,
+      (56 + challenge.domainLen! + challenge.targetLen!));
 
   return challenge;
 }
 
-sspiParser(
+void sspiParser(
   StreamParser parser,
   ParserOptions options,
   void Function(SSPIToken token) callback,

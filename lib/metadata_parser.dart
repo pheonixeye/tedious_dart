@@ -111,7 +111,7 @@ void readSchema(
 
 void readUDTInfo(
   StreamParser parser,
-  void Function(UdtInfo? udtInfo) callback,
+  void Function(UdtInfo udtInfo) callback,
 ) {
   parser.readUInt16LE((maxByteSize) {
     parser.readBVarChar((dbname) {
@@ -132,7 +132,7 @@ void readUDTInfo(
   });
 }
 
-metadataParse(
+void metadataParse(
   StreamParser parser,
   ParserOptions options,
   void Function(Metadata metadata) callback,

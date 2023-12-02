@@ -46,13 +46,13 @@ void main(List<String> args) async {
   console.log(['\nlogin7 Server Response (LOGINACK):\n']);
   final login7ResponsePacket = Packet(Buffer(login7Response));
   print(login7ResponsePacket.toString());
-  StreamParser.parseTokens(
-    iterable: Stream.fromIterable([Buffer(login7Response)]),
-    debug: Debug(options: DebugOptions()),
-    options: ParserOptions(),
-  ).listen((event) {
-    print(event);
-  });
+  // StreamParser.parseTokens(
+  //   iterable: Stream.fromIterable([Buffer(login7Response)]),
+  //   debug: Debug(options: DebugOptions()),
+  //   options: ParserOptions(),
+  // ).listen((event) {
+  //   print(event);
+  // });
   console.log(['\nCalled StreamParser.parseTokens(Buffer(Login7Response)):\n']);
   await Future.delayed(duration);
   print('sqlbatchpayload ==>> to be sent');

@@ -23,6 +23,7 @@ class TdsSocketConnected extends TdsSocketState {
 class TdsSocketError extends TdsSocketState {
   TdsSocketError(this.error) : super() {
     console.log([error.toString()]);
+    throw error;
   }
   final Object error;
 }
@@ -36,7 +37,6 @@ class TdsSocketWriting extends TdsSocketState {
 class TdsSocketReading extends TdsSocketState {
   TdsSocketReading(this.data) : super() {
     console.log(['Socket is Reading...']);
-    console.log(['$data']);
   }
   final Uint8List? data;
 }

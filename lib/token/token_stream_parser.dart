@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:events_emitter/emitters/event_emitter.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/message.dart';
+import 'package:tedious_dart/models/sync_async_iterable.dart';
 import 'package:tedious_dart/token/handler.dart';
 import 'package:tedious_dart/token/stream_parser.dart';
 import 'package:tedious_dart/token/token.dart';
@@ -21,7 +22,7 @@ class TokenStreamParser extends EventEmitter {
   }) : parser = StreamParser.parseTokens(
           debug: debug,
           options: options,
-          iterable: message.controller.stream,
+          iterable: SyncAsyncIterable(message.controller.stream),
         ).asBroadcastStream() {
     sub = parser.listen((data) {
       //todo:

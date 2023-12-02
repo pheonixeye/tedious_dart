@@ -6,6 +6,7 @@ import 'package:tedious_dart/conn_const_typedef.dart';
 import 'package:tedious_dart/debug.dart';
 import 'package:tedious_dart/models/errors.dart';
 import 'package:tedious_dart/models/logger_stacktrace.dart';
+import 'package:tedious_dart/models/sync_async_iterable.dart';
 import 'package:tedious_dart/token/colmetadata_token_parser.dart';
 import 'package:tedious_dart/token/done_token_parser.dart';
 import 'package:tedious_dart/token/env_change_token_parser.dart';
@@ -66,8 +67,8 @@ class StreamBuffer {
   int position;
 
   StreamBuffer({
-    required Stream<Buffer> iterable,
-  })  : iterator = StreamIterator(iterable),
+    required SyncAsyncIterable<Buffer> iterable,
+  })  : iterator = StreamIterator(iterable.streamOrIterable),
         buffer = Buffer.alloc(0),
         position = 0;
 
@@ -104,7 +105,7 @@ class StreamParser {
         next = null;
 
   static Stream<Token?> parseTokens({
-    required Stream<Buffer> iterable,
+    required SyncAsyncIterable<Buffer> iterable,
     required Debug debug,
     required ParserOptions options,
     List<ColumnMetadata> colMetadata = const [],
